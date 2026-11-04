@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alma</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--mute:#6b6b70;--line:#e4e2dd;--acc:#2f7d6d;--bad:#b4473a;--bar:#e9e6df}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--card:#1f1f23;--ink:#ececef;--mute:#9a9aa2;--line:#2e2e34;--acc:#5fc2ad;--bad:#e2786a;--bar:#2c2c32}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 12px;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mute)}.dot.on{background:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.big{font-size:20px;font-weight:600}.mute{color:var(--mute)}
+.row{display:flex;justify-content:space-between;gap:8px;margin:4px 0}
+.bar{height:8px;background:var(--bar);border-radius:4px;overflow:hidden;position:relative}
+.bar i{position:absolute;top:0;bottom:0;background:var(--acc);border-radius:4px}
+.bar.mid::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+button{font:inherit;padding:12px 8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button:active{transform:scale(.98)}button.prim{background:var(--acc);border-color:var(--acc);color:#fff}
+input{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.err{color:var(--bad)}
+</style></head><body><main>
+<h1><span class="dot" id="dot"></span>Alma</h1>
+<div class="card" id="login" hidden><h2>Token</h2>
+<p class="mute">El token del dispositivo está en <code>alma_dev_creds.h</code> (ALMA_DEV_TOKEN). Se guarda solo en este teléfono.</p>
+<input id="tok" type="password" autocomplete="off"><p><button class="prim" id="save">Guardar</button></p></div>
+<div id="app" hidden>
+<div class="card"><h2>Ahora</h2><div class="big" id="doing">—</div><div class="mute" id="state"></div>
+<div class="row"><span id="mood"></span><span class="mute" id="val"></span></div></div>
+<div class="card"><h2>Bienestar</h2><div class="row"><span class="big" id="wbl">—</span><span class="mute" id="wbn"></span></div>
+<div class="bar mid"><i id="wbb"></i></div></div>
+<div class="card"><h2>Energía</h2><div class="row"><span>Batería</span><b id="bat">—</b></div>
+<div class="row"><span>Alimentación</span><b id="pow">—</b></div><div class="row"><span>Volver a casa</span><b id="home">—</b></div></div>
+<div class="card"><h2>Personas</h2><div id="ppl" class="mute">—</div></div>
+<div class="card"><h2>Personalidad</h2><div id="traits"></div><div class="mute" id="age"></div></div>
+<div class="card"><h2>Pedirle</h2><div class="grid" id="cmds"></div><p class="mute" id="cmdmsg"></p></div>
+<p class="mute" id="upd"></p>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const DOING={bhv_blink_idle:"Parpadea",bhv_look_around:"Mira alrededor",bhv_doze:"Dormita",bhv_sleep_cycle:"Duerme",bhv_stretch:"Se estira",bhv_go_rest:"Va a descansar",bhv_go_home:"Vuelve a casa",bhv_greet:"Te saluda",bhv_follow_face:"Te sigue con la mirada",bhv_enjoy_pet:"Disfruta tus caricias",bhv_seek_person:"Te busca",bhv_ask_attention:"Pide atención",bhv_investigate_face:"Investiga una cara",bhv_shy_retreat:"Se aleja tímida",bhv_play_bow:"Invita a jugar",bhv_play_solo:"Juega sola",bhv_dance:"Baila",bhv_chase_turn:"Persigue",bhv_happy_wiggle:"Se menea contenta",bhv_routine:"Hace sus cosas",bhv_explore:"Explora",bhv_inspect_obstacle:"Examina algo",bhv_startle:"Se asusta",bhv_sulk:"Está enfurruñada",bhv_yawn_bored:"Bosteza",bhv_confused:"No entiende",bhv_refuse:"No quiere",bhv_listen:"Te escucha",bhv_come_here:"Viene",bhv_turn_around:"Gira",bhv_stop:"Se detiene",bhv_reflex_freeze:"¡Cuidado, un borde!",bhv_reflex_struggle:"Forcejea",bhv_ask_help:"Pide ayuda"};
+const ST={ST_BOOT:"arrancando",ST_AWAKE:"despierta",ST_PERFORMING:"activa",ST_RESTING:"descansando",ST_SLEEPING:"dormida",ST_LISTENING:"escuchando",ST_REFLEX:"reflejo"};
+const SM={SM_SCARED:"😨 asustada",SM_SLEEPY:"😴 con sueño",SM_GRUMPY:"😠 gruñona",SM_BORED:"😐 aburrida",SM_PLAYFUL:"😜 juguetona",SM_HAPPY:"😊 contenta",SM_CALM:"🙂 tranquila"};
+const POW={battery:"batería",usb:"USB",home_station:"Home Station"};
+const HOME={off:"—",searching:"buscando la base",approaching:"acercándose",turning:"media vuelta",docking:"subiendo",docked:"llegó",failed:"no llegó"};
+const TR=[["trait_boldness","Valentía"],["trait_energy","Energía"],["trait_sociability","Sociabilidad"],["trait_playfulness","Juego"],["trait_impulsivity","Impulsividad"]];
+const CMDS=[["dance","💃 Baila"],["come","👋 Ven"],["turn_around","🔄 Gira"],["look_at_me","👀 Mírame"],["play","🎾 Juega"],["greet","🙋 Saluda"],["go_home","🏠 A cargar"],["sleep","🌙 A dormir"],["wake_up","☀️ Despierta"],["stop","✋ Para"]];
+let tok=null;try{tok=localStorage.getItem("alma_tok")}catch(e){}
+function wbLabel(w){return w<-600?"deprimida":w<-200?"triste":w<200?"normal":w<600?"contenta":"radiante"}
+async function api(path,opt){const r=await fetch(path,Object.assign({headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"}},opt||{}));if(r.status==401){showLogin();throw new Error("token")}return r.json()}
+function showLogin(){$("login").hidden=false;$("app").hidden=true}
+async function tick(){try{const s=await api("/api/state");$("login").hidden=true;$("app").hidden=false;$("dot").className="dot on";
+$("doing").textContent=DOING[s.doing]||(s.doing?s.doing:"Nada en particular");$("state").textContent=ST[s.state]||s.state;
+$("mood").textContent=SM[s.simple_mood]||s.simple_mood;$("val").textContent="ánimo "+(s.valence>=0?"+":"")+s.valence.toFixed(2);
+const w=s.wellbeing;$("wbl").textContent=wbLabel(w);$("wbn").textContent=Math.round(w)+" / ±1023";
+const b=$("wbb");if(w>=0){b.style.left="50%";b.style.width=(w/1023*50)+"%"}else{b.style.left=(50+w/1023*50)+"%";b.style.width=(-w/1023*50)+"%"}
+b.style.background=w<0?"var(--bad)":"var(--acc)";
+$("bat").textContent=Math.round(s.battery_pct)+" %";$("pow").textContent=POW[s.power]||s.power;$("home").textContent=HOME[s.going_home]||s.going_home;
+const pp=(s.people_present||[]).map(p=>"persona "+p.person_id+" · apego "+p.attachment.toFixed(2));
+if(s.last_face)pp.push("última cara: "+(s.last_face.person_id==255?"desconocida":(s.last_face.name||("id "+s.last_face.person_id)))+", hace "+s.last_face.seconds_ago+" s");
+$("ppl").textContent=pp.length?"":"nadie a la vista";$("ppl").innerHTML=pp.map(x=>"<div>"+x.replace(/</g,"&lt;")+"</div>").join("")||"nadie a la vista";
+$("traits").innerHTML=TR.map(([k,n])=>'<div class="row"><span>'+n+'</span><span class="mute">'+s.traits[k].toFixed(2)+'</span></div><div class="bar"><i style="left:0;width:'+(s.traits[k]*100)+'%"></i></div>').join("");
+$("age").textContent="Edad: "+s.age_days+" días";$("upd").textContent="Actualizado "+new Date().toLocaleTimeString()}
+catch(e){$("dot").className="dot";if(e.message!="token")$("upd").innerHTML='<span class="err">Sin conexión con Alma</span>'}}
+$("cmds").innerHTML=CMDS.map(([a,n])=>'<button data-a="'+a+'">'+n+'</button>').join("");
+$("cmds").onclick=async e=>{const a=e.target.dataset.a;if(!a)return;try{await api("/api/command",{method:"POST",body:JSON.stringify({action_id:a})});$("cmdmsg").textContent="Se lo pediste: "+e.target.textContent+". Ella decide si obedece."}catch(err){$("cmdmsg").textContent="No se pudo mandar"}};
+$("save").onclick=()=>{tok=$("tok").value.trim();try{localStorage.setItem("alma_tok",tok)}catch(e){}tick()};
+if(!tok)showLogin();else tick();setInterval(()=>{if(tok)tick()},3000);
+</script></main></body></html>

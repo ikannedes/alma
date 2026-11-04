@@ -1,0 +1,27 @@
+{
+  "name": "alma-naval",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Batalla naval contra Alma. Basado en github.com/KelvinQiu802/battleship (MIT, commit 1973ba1a5a7f70f20cbfa2ad9f9a5ce08559cc71).",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}

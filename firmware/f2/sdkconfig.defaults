@@ -1,0 +1,21 @@
+# alma-f2: se agrega a ../sesion1/sdkconfig.defaults (ver CMakeLists.txt).
+
+# La tabla de particiones es la misma de sesion1, que es la original de EMO (02). No se escribe al robot.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="../sesion1/partitions.csv"
+
+# R15 (09; 06, "La partición nvs original"): Wi-Fi y calibración de la radio sin NVS. Las dos vienen en y.
+CONFIG_ESP_WIFI_NVS_ENABLED=n
+CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE=n
+
+# El bucle principal corre en la tarea de app_main
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# RAM-PROPUESTA.md, A: las variables con EXT_RAM_BSS_ATTR van a la PSRAM, y con ellas el .bss de lwip, net80211 y pp
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+
+# Batería con el driver ADC heredado (adc1_get_raw), como sesion1: sin segmento RTC FAST extra
+CONFIG_ADC_SUPPRESS_DEPRECATE_WARN=y
+
+# WiFi + escritura de memoria no cabía en la IRAM (2026-10-30: iram0_0_seg excedida en 1016 bytes). La recepción WiFi
+# sin código en IRAM es algo más lenta; a Alma le basta (SNTP, API local)
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n

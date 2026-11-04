@@ -1,0 +1,20 @@
+[Unit]
+Description=bgammon (servidor de backgammon para jugar con Alma; AGPL-3.0, codeberg.org/tslocum/bgammon)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=bgammon
+Group=bgammon
+# Las sales las pide bgammon aunque no haya cuentas (no hay base de datos); se generan una vez en el servidor.
+EnvironmentFile=/etc/bgammon.env
+ExecStart=/opt/bgammon/bgammon-server -tcp 127.0.0.1:1337 -ws 127.0.0.1:1338
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

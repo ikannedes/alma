@@ -1,0 +1,53 @@
+.over {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-top: 12px;
+}
+.over-title {
+  font-size: 2em;
+  font-weight: 800;
+}
+.over-winner {
+  font-size: 1.25em;
+}
+.over-winner.win {
+  color: #7ee2a8;
+}
+.over-winner.lose {
+  color: #ff8a8f;
+}
+.over-show {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 8px;
+}
+.show-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.data-card {
+  width: min(88vw, 280px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #15243a;
+  text-align: left;
+}
+.data-player {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.data-card p {
+  line-height: 1.6;
+}
+.mini-name {
+  font-size: 1em;
+  margin-bottom: 8px;
+}

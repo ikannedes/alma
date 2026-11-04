@@ -1,0 +1,40 @@
+# compilaciones y dependencias
+build/
+build_*/
+.gradle/
+.cxx/
+.kotlin/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+*.o
+*.apk
+*.aab
+*.elf
+*.map
+
+# credenciales (las reales viven fuera de esta carpeta)
+alma_dev_creds.h
+local.properties
+*.jks
+*.keystore
+firma.properties
+.env
+settings.json
+
+# notas internas: se quedan en la PC
+/AVANCE.md
+/ESTADO.md
+/HALLAZGOS-EMO.md
+/PLAN-RELOJ-v2.md
+/PROPUESTA-SPEC-*.md
+/REPORTE-F2.md
+/firmware/f2/*.md
+/firmware/sesion1/*.md
+/archivo/
+/sim/out/
+
+.idea/
+*.iml
+.vscode/

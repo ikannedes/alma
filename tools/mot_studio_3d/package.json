@@ -1,0 +1,19 @@
+{
+  "name": "mot-studio-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Visor 3D de .mot y de la marcha de EMO (local, sin internet al usarlo)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "node test/engine.test.mjs"
+  },
+  "dependencies": {
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "vite": "5.4.10",
+    "vite-plugin-singlefile": "2.0.3"
+  }
+}

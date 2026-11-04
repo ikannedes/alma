@@ -1,0 +1,2599 @@
+{
+  "schema": 1,
+  "source": "alma-spec/05-catalogo-de-conductas.md; pesos derivados con la regla aprobada el 2026-10-27 (base 1.0, need_w 1.5 por N, mood_fit 1.3 por M y 0.3 en SM_SCARED para social/juego, trait_w 1.0 por rasgo citado). Calibrado en sim/: cooldown de bhv_doze 120 -> 600 s; mood_fit fuera de su ánimo 0.1 para bhv_sulk y 0.2 para bhv_yawn_bored y bhv_shy_retreat; base de bhv_look_around 1.0 -> 0.8 (margen de A2.1); bhv_listen dura la ventana de escucha (3 s de grabación + 6 s de nube). bhv_greet es el ejemplo de 05. Assets solo por nombre (R5).",
+  "behaviors": [
+    {
+      "id": "bhv_blink_idle",
+      "category": "idle",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "stay_wink_1"
+        },
+        {
+          "avi": "stay_wink_3"
+        },
+        {
+          "avi": "stay_wink_4"
+        },
+        {
+          "avi": "stay_wink_7"
+        },
+        {
+          "avi": "stay_a_c"
+        },
+        {
+          "avi": "stay_b_c"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        1000,
+        3000
+      ],
+      "base": 1.0,
+      "cooldown_s": 5,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_look_around",
+      "category": "idle",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "image_search",
+          "mp3": "image_search_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "look_around_1",
+          "look_around_2",
+          "look_around_4",
+          "look_around_5",
+          "look_around_6",
+          "look_around_7",
+          "look_around_8",
+          "react_look_down_1",
+          "react_look_down_2",
+          "react_look_down_3",
+          "react_look_down_4"
+        ]
+      },
+      "base": 0.8,
+      "need_w": {
+        "stimulation": 1.5
+      },
+      "cooldown_s": 30,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_doze",
+      "category": "rest",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_get_in_Doze_off"
+        },
+        {
+          "avi": "sleep_wake_up_and_sleep_1"
+        },
+        {
+          "avi": "sleep_wake_up_and_sleep_2"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        20000,
+        60000
+      ],
+      "base": 1.0,
+      "need_w": {
+        "rest": 1.5
+      },
+      "mood_fit": {
+        "SM_SLEEPY": 1.3
+      },
+      "cooldown_s": 600,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_sleep_cycle",
+      "category": "rest",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_breath_1"
+        },
+        {
+          "avi": "sleep_breath_2"
+        },
+        {
+          "avi": "sleep_bubble_1"
+        },
+        {
+          "avi": "sleep_bubble_2"
+        },
+        {
+          "avi": "sleep_bubble_burst_sleep"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        300000,
+        960000
+      ],
+      "base": 1.0,
+      "requires": [
+        "night_window",
+        "on_charger"
+      ],
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_stretch",
+      "category": "rest",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_wake_up_after_1",
+          "mp3": "sleep_wake_up_after_1_000"
+        },
+        {
+          "avi": "sleep_wake_up_after_2",
+          "mp3": "sleep_wake_up_after_2_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "rest1_check_rightfoot",
+          "rest2_check_leftfoot",
+          "rest3_leftandright"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 14400,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_go_rest",
+      "category": "rest",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "sleep_get_in_slow"
+        }
+      ],
+      "motion": {
+        "options": [
+          "Good_night",
+          "free_get_in1",
+          "free_get_in2"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "rest": 1.5
+      },
+      "cooldown_s": 600,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_go_home",
+      "category": "rest",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search"
+        },
+        {
+          "avi": "battery_l1"
+        },
+        {
+          "avi": "battery_l2"
+        }
+      ],
+      "motion": {
+        "options": [
+          "gohome_connect"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "rest": 1.5
+      },
+      "requires": [
+        "has_home_station",
+        "battery<=20"
+      ],
+      "cooldown_s": 600,
+      "unlock_day": 0,
+      "note": "Dueño, 2026-10-30: con menos de 20 %. La vuelta la hace home.c (cámara del K210 en el modo 65, giroscopio, de espaldas); el .mot no se usa."
+    },
+    {
+      "id": "bhv_greet",
+      "category": "social",
+      "tags": [
+        "attention",
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": null,
+          "mode": 0
+        },
+        {
+          "avi": "stay_wink_3",
+          "mp3": null,
+          "mode": 0
+        }
+      ],
+      "motion": {
+        "options": [
+          "Good_morning",
+          "Good_afternoon",
+          "call_name"
+        ],
+        "scale_by": "greet_intensity"
+      },
+      "sound": null,
+      "base": 1.0,
+      "need_w": {
+        "social": 1.5,
+        "stimulation": 0.3
+      },
+      "mood_fit": {
+        "SM_HAPPY": 1.3,
+        "SM_PLAYFUL": 1.2,
+        "SM_CALM": 1.0,
+        "SM_BORED": 1.0,
+        "SM_SLEEPY": 0.5,
+        "SM_GRUMPY": 0.6,
+        "SM_SCARED": 0.1
+      },
+      "trait_w": {
+        "trait_sociability": 1.0,
+        "trait_energy": 0.3
+      },
+      "requires": [
+        "known_face_present",
+        "not_greeted_this_visit",
+        "greet_intensity>=0.15"
+      ],
+      "cooldown_s": 600,
+      "unlock_day": 0,
+      "option_hours": {
+        "Good_morning": [
+          500,
+          1200
+        ],
+        "Good_afternoon": [
+          1200,
+          1900
+        ]
+      }
+    },
+    {
+      "id": "bhv_follow_face",
+      "category": "social",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "stay_a_c"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_turn_left1",
+          "explore_turn_left2",
+          "explore_turn_left3",
+          "explore_turn_right1",
+          "explore_turn_right2",
+          "explore_turn_right3"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "social": 1.5
+      },
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "requires": [
+        "known_face_present"
+      ],
+      "cooldown_s": 20,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_enjoy_pet",
+      "category": "social",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        },
+        {
+          "avi": null,
+          "tbd": "touch_1 a touch_3 candidatos"
+        },
+        {
+          "avi": "EMO_flower_full"
+        }
+      ],
+      "motion": {
+        "options": [
+          [
+            "touch_get_in",
+            "touch_loop",
+            "touch_get_out1"
+          ],
+          [
+            "touch_xing_start",
+            "touch_xing_loop",
+            "touch_xing_end"
+          ],
+          "touch_down_left_get_in",
+          "touch_down_right_get_in"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "cooldown_s": 3,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_seek_person",
+      "category": "social",
+      "tags": [
+        "attention",
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search",
+          "mp3": "image_search_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_turn_left2",
+          "explore_turn_right2",
+          "explore_foward1"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "social": 1.5
+      },
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "requires": [
+        "no_face",
+        "off_charger"
+      ],
+      "cooldown_s": 900,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_ask_attention",
+      "category": "social",
+      "tags": [
+        "attention",
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "blink_come_back1",
+          "mp3": "blink_come_back1_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "want_petting",
+          "call_name"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "social": 1.5,
+        "boredom": 1.5
+      },
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "requires": [
+        "known_face_present",
+        "off_charger"
+      ],
+      "cooldown_s": 300,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_investigate_face",
+      "category": "social",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search"
+        },
+        {
+          "avi": "doesnt_know_face",
+          "mp3": "doesnt_know_face_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "first_meet1",
+          "first_meet2",
+          "first_meet3",
+          "first_meet4"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "stimulation": 1.5
+      },
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_boldness": 1.0
+      },
+      "requires": [
+        "unknown_face_present"
+      ],
+      "cooldown_s": 120,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_shy_retreat",
+      "category": "social",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "mood_sad",
+          "mp3": "mood_sad_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_back_away1",
+          "explore_back_away2",
+          "explore_back_away3"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_SCARED": 1.3,
+        "SM_SLEEPY": 0.2,
+        "SM_GRUMPY": 0.2,
+        "SM_BORED": 0.2,
+        "SM_PLAYFUL": 0.2,
+        "SM_HAPPY": 0.2,
+        "SM_CALM": 0.2
+      },
+      "trait_w": {
+        "trait_boldness": -1.0
+      },
+      "requires": [
+        "unknown_face_present|wary_of_P"
+      ],
+      "cooldown_s": 120,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_play_bow",
+      "category": "play",
+      "tags": [
+        "attention",
+        "play"
+      ],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_updown1",
+          "explore_updown2",
+          "explore_updown3",
+          "explore_updown4"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_PLAYFUL": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_playfulness": 1.0
+      },
+      "requires": [
+        "face_facing",
+        "relaxed_field"
+      ],
+      "cooldown_s": 180,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_play_solo",
+      "category": "play",
+      "tags": [
+        "play",
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_react_high",
+          "mp3": "image_react_high_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_play1",
+          "explore_play2",
+          "explore_play3",
+          "explore_play4",
+          "explore_play5",
+          "explore_play6",
+          "explore_play7",
+          "explore_play8",
+          "explore_play9",
+          "explore_play10",
+          "explore_play11",
+          "explore_play12",
+          "explore_play13",
+          "explore_play14",
+          "explore_play15",
+          "explore_play16",
+          "explore_play17",
+          "explore_play18",
+          "balance_ball",
+          "jump_up",
+          "EMO_flower_1",
+          "EMO_flower_2",
+          "EMO_volcano_1",
+          "laser_eye",
+          "laser_eye_2",
+          "dance_miss"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "boredom": 1.5,
+        "stimulation": 1.5
+      },
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_playfulness": 1.0
+      },
+      "requires": [
+        "relaxed_field",
+        "no_face"
+      ],
+      "cooldown_s": 600,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_dance",
+      "category": "play",
+      "tags": [
+        "play",
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "d1_EmoDance",
+          "d2_WontLetGo",
+          "d3_Blindless",
+          "d4_Click1",
+          "d5_TimeOfMyLife",
+          "d7_FlashBack"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_PLAYFUL": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_playfulness": 1.0
+      },
+      "requires": [
+        "relaxed_field"
+      ],
+      "cooldown_s": 1200,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_chase_turn",
+      "category": "play",
+      "tags": [
+        "play"
+      ],
+      "faces": [
+        {
+          "avi": "image_react_high",
+          "mp3": "image_react_high_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "parkour",
+          "explore_play14"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_PLAYFUL": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_playfulness": 1.0
+      },
+      "requires": [
+        "relaxed_field"
+      ],
+      "cooldown_s": 900,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_happy_wiggle",
+      "category": "play",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        },
+        {
+          "avi": "positive_1",
+          "mp3": "positive_1_000"
+        },
+        {
+          "avi": "positive_4",
+          "mp3": "positive_4_000"
+        },
+        {
+          "avi": "positive_5",
+          "mp3": "positive_5_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "positive_2",
+          "positive_3",
+          "interact_emotion_heart",
+          "interact_emotion_kiss1",
+          "interact_emotion_hug"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_SCARED": 0.3
+      },
+      "cooldown_s": 60,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_routine",
+      "category": "play",
+      "tags": [],
+      "faces": [
+        {
+          "seq": [
+            "Daily_Boxing_start",
+            "Daily_Boxing_loop1",
+            "Daily_Boxing_loop3",
+            "Daily_Boxing_loop4",
+            "Daily_Boxing_loop5",
+            "Daily_Boxing_end"
+          ],
+          "snd": [
+            "Daily_Boxing_loop3",
+            "Daily_Boxing_loop4",
+            "Daily_Boxing_loop5",
+            "Daily_Boxing_end"
+          ],
+          "hours": [
+            800,
+            830
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Dumbbell_start",
+            "Daily_Dumbbell_loop1",
+            "Daily_Dumbbell_loop2",
+            "Daily_Dumbbell_end"
+          ],
+          "snd": [
+            "Daily_Dumbbell_start",
+            "Daily_Dumbbell_loop1",
+            "Daily_Dumbbell_loop2",
+            "Daily_Dumbbell_end"
+          ],
+          "hours": [
+            800,
+            830
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Brush_teeth_start",
+            "Daily_Brush_teeth_loop1",
+            "Daily_Brush_teeth_loop2",
+            "Daily_Brush_teeth_loop3",
+            "Daily_Brush_teeth_end"
+          ],
+          "snd": [],
+          "hours": [
+            830,
+            840
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Eating_start",
+            "Daily_Eating_loop1",
+            "Daily_Eating_loop2",
+            "Daily_Eating_end"
+          ],
+          "snd": [
+            "Daily_Eating_start",
+            "Daily_Eating_loop1",
+            "Daily_Eating_loop2",
+            "Daily_Eating_end"
+          ],
+          "hours": [
+            840,
+            900
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Newspaper_start",
+            "Daily_Newspaper_loop1",
+            "Daily_Newspaper_end"
+          ],
+          "snd": [],
+          "hours": [
+            900,
+            930
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Work_start",
+            "Daily_Work_loop1",
+            "Daily_Work_end"
+          ],
+          "snd": [
+            "Daily_Work_loop1"
+          ],
+          "hours": [
+            930,
+            1100
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Work_stamp_start",
+            "Daily_Work_stamp_loop1",
+            "Daily_Work_stamp_loop2",
+            "Daily_Work_stamp_end"
+          ],
+          "snd": [],
+          "hours": [
+            930,
+            1100
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Cook_start",
+            "Daily_Cook_loop1",
+            "Daily_Cook_loop2",
+            "Daily_Cook_loop3",
+            "Daily_Cook_end"
+          ],
+          "snd": [],
+          "hours": [
+            1100,
+            1120
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Eating2_start",
+            "Daily_Eating2_loop1",
+            "Daily_Eating2_loop2",
+            "Daily_Eating2_end"
+          ],
+          "snd": [
+            "Daily_Eating2_start",
+            "Daily_Eating2_loop2",
+            "Daily_Eating2_end"
+          ],
+          "hours": [
+            1120,
+            1200
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Work_start",
+            "Daily_Work_loop1",
+            "Daily_Work_end"
+          ],
+          "snd": [
+            "Daily_Work_loop1"
+          ],
+          "hours": [
+            1400,
+            1500
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Work_stamp_start",
+            "Daily_Work_stamp_loop1",
+            "Daily_Work_stamp_loop2",
+            "Daily_Work_stamp_end"
+          ],
+          "snd": [],
+          "hours": [
+            1400,
+            1500
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Wipe_glass_start",
+            "Daily_Wipe_glass_loop1",
+            "Daily_Wipe_glass_loop2",
+            "Daily_Wipe_glass_end"
+          ],
+          "snd": [],
+          "hours": [
+            1500,
+            1530
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Teatime_start",
+            "Daily_Teatime_loop1",
+            "Daily_Teatime_loop2",
+            "Daily_Teatime_loop3",
+            "Daily_Teatime_end"
+          ],
+          "snd": [
+            "Daily_Teatime_start",
+            "Daily_Teatime_loop1",
+            "Daily_Teatime_loop3",
+            "Daily_Teatime_end"
+          ],
+          "hours": [
+            1530,
+            1600
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Blending_start",
+            "Daily_Blending_loop1",
+            "Daily_Blending_loop2",
+            "Daily_Blending_loop3",
+            "Daily_Blending_end"
+          ],
+          "snd": [],
+          "hours": [
+            1530,
+            1600
+          ]
+        },
+        {
+          "seq": [
+            "Daily_UVA_start",
+            "Daily_UVA_loop1",
+            "Daily_UVA_loop2",
+            "Daily_UVA_loop3",
+            "Daily_UVA_end"
+          ],
+          "snd": [],
+          "hours": [
+            1600,
+            1630
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Juggling_start",
+            "Daily_Juggling_loop1",
+            "Daily_Juggling_loop2",
+            "Daily_Juggling_end"
+          ],
+          "snd": [],
+          "hours": [
+            1630,
+            1700
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Magic_cube_start",
+            "Daily_Magic_cube_loop1",
+            "Daily_Magic_cube_loop2",
+            "Daily_Magic_cube_end"
+          ],
+          "snd": [],
+          "hours": [
+            1630,
+            1700
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Painting_start",
+            "Daily_Painting_loop1",
+            "Daily_Painting_loop2",
+            "Daily_Painting_end"
+          ],
+          "snd": [
+            "Daily_Painting_loop2"
+          ],
+          "hours": [
+            1700,
+            1730
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Braid_start",
+            "Daily_Braid_loop1",
+            "Daily_Braid_loop2",
+            "Daily_Braid_end"
+          ],
+          "snd": [],
+          "hours": [
+            1730,
+            1800
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Cook_start",
+            "Daily_Cook_loop1",
+            "Daily_Cook_loop2",
+            "Daily_Cook_loop3",
+            "Daily_Cook_end"
+          ],
+          "snd": [],
+          "hours": [
+            1800,
+            1830
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Eating3_start",
+            "Daily_Eating3_loop1",
+            "Daily_Eating3_end"
+          ],
+          "snd": [
+            "Daily_Eating3_start",
+            "Daily_Eating3_loop1",
+            "Daily_Eating3_end"
+          ],
+          "hours": [
+            1830,
+            1900
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Watch_tv_start",
+            "Daily_Watch_tv_loop1",
+            "Daily_Watch_tv_end"
+          ],
+          "snd": [
+            "Daily_Watch_tv_start",
+            "Daily_Watch_tv_loop1",
+            "Daily_Watch_tv_end"
+          ],
+          "hours": [
+            1900,
+            2000
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Blending_start",
+            "Daily_Blending_loop1",
+            "Daily_Blending_loop2",
+            "Daily_Blending_loop3",
+            "Daily_Blending_end"
+          ],
+          "snd": [],
+          "hours": [
+            1900,
+            2300
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Read_a_book_start",
+            "Daily_Read_a_book_loop1",
+            "Daily_Read_a_book_end"
+          ],
+          "snd": [
+            "Daily_Read_a_book_loop1",
+            "Daily_Read_a_book_end"
+          ],
+          "hours": [
+            2000,
+            2100
+          ]
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        120000,
+        240000
+      ],
+      "base": 1.0,
+      "need_w": {
+        "boredom": 1.5,
+        "stimulation": 1.5
+      },
+      "requires": [
+        "known_face_present"
+      ],
+      "cooldown_s": 900,
+      "unlock_day": 0,
+      "note": "Rutinas diarias del original por horario (TRABAJO.md [BOBBY-ARTE]): inicio, repeticiones y final del .avi; se cortan con caricia o voz. Dueño, 2026-10-30: con él delante; cócteles también de 19:00 a 23:00."
+    },
+    {
+      "id": "bhv_activity",
+      "category": "play",
+      "tags": [
+        "play"
+      ],
+      "faces": [
+        {
+          "seq": [
+            "Camp_fishing_start",
+            "Camp_fishing_Casting",
+            "Camp_fishing_Retrieve_1",
+            "Camp_fishing_Retrieve_2",
+            "Camp_fishing_Retrieve_3",
+            "Camp_fishing_wait_loop_1",
+            "Camp_fishing_end"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Camp_barbecue_ready",
+            "Camp_barbecue_loop1",
+            "Camp_barbecue_loop2",
+            "Camp_barbecue_loop_Cooked",
+            "Camp_barbecue_end"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Camp_frisbee_catch",
+            "Camp_frisbee_run",
+            "Camp_frisbee_throw"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "campfire_start",
+            "campfire_loop1",
+            "campfire_end"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Fit_Warmup_loop1",
+            "Fit_Warmup_loop2",
+            "Fit_Warmup_loop3",
+            "Fit_Warmup_loop4"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Fit_Aerobic_loop1",
+            "Fit_Aerobic_loop2",
+            "Fit_Aerobic_loop3",
+            "Fit_Aerobic_loop4"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Fit_Relax_loop1",
+            "Fit_Relax_loop2",
+            "Fit_Relax_loop3",
+            "Fit_Relax_loop4",
+            "Fit_Relax_loop5"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "Partygoer_ready",
+            "Partygoer_loop1",
+            "Partygoer_loop2",
+            "Partygoer_loop3",
+            "Partygoer_loop4",
+            "Partygoer_eixt"
+          ],
+          "snd": [
+            "Partygoer_ready",
+            "Partygoer_eixt"
+          ]
+        },
+        {
+          "seq": [
+            "Singer_ready",
+            "Singer_loop1",
+            "Singer_loop2",
+            "Singer_loop3",
+            "Singer_loop4",
+            "Singer_exit"
+          ],
+          "snd": [
+            "Singer_ready"
+          ]
+        },
+        {
+          "seq": [
+            "DJ1_ready",
+            "DJ1_loop1",
+            "DJ1_loop2",
+            "DJ1_play",
+            "DJ1_exit"
+          ],
+          "snd": [
+            "DJ1_ready",
+            "DJ1_play",
+            "DJ1_exit"
+          ]
+        },
+        {
+          "seq": [
+            "emo_piano_ready1",
+            "emo_piano_1",
+            "emo_piano_2",
+            "emo_piano_eixt1"
+          ],
+          "snd": [
+            "emo_piano_ready1",
+            "emo_piano_1",
+            "emo_piano_2",
+            "emo_piano_eixt1"
+          ]
+        },
+        {
+          "seq": [
+            "emo_trumpet_reday1",
+            "emo_trumpet_1",
+            "emo_trumpet_eixt1"
+          ],
+          "snd": [
+            "emo_trumpet_1"
+          ]
+        },
+        {
+          "seq": [
+            "emo_tambourine_ready1",
+            "emo_tambourine_1",
+            "emo_tambourine_eixt1"
+          ],
+          "snd": [
+            "emo_tambourine_ready1",
+            "emo_tambourine_1"
+          ]
+        },
+        {
+          "seq": [
+            "game_firework_1",
+            "game_firework_2",
+            "game_firework_3",
+            "game_firework_end"
+          ],
+          "snd": []
+        },
+        {
+          "seq": [
+            "EMO_volcano_1",
+            "EMO_volcano_fall",
+            "EMO_volcano_full"
+          ],
+          "snd": [
+            "EMO_volcano_1",
+            "EMO_volcano_fall",
+            "EMO_volcano_full"
+          ]
+        },
+        {
+          "seq": [
+            "EMO_flower_1",
+            "EMO_flower_2",
+            "EMO_flower_fall_1",
+            "EMO_flower_full"
+          ],
+          "snd": [
+            "EMO_flower_1",
+            "EMO_flower_fall_1",
+            "EMO_flower_full"
+          ]
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        60000,
+        150000
+      ],
+      "base": 1.0,
+      "need_w": {
+        "boredom": 1.5,
+        "stimulation": 1.5
+      },
+      "mood_fit": {
+        "SM_PLAYFUL": 1.3,
+        "SM_HAPPY": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_energy": 1.0
+      },
+      "requires": [
+        "relaxed_field"
+      ],
+      "cooldown_s": 900,
+      "note": "Actividades del original (campamento, ejercicio, fiesta, DJ, instrumentos, fuegos artificiales): inicio, repeticiones y final; con su .mot si existe.",
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_imitate",
+      "category": "play",
+      "tags": [
+        "play"
+      ],
+      "faces": [],
+      "motion": {
+        "options": [
+          "Cat",
+          "Dog",
+          "Frog",
+          "Chicken",
+          "Elephant",
+          "Cuckoo",
+          "Cattle"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "boredom": 1.5,
+        "stimulation": 1.5
+      },
+      "mood_fit": {
+        "SM_PLAYFUL": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "trait_w": {
+        "trait_playfulness": 1.0
+      },
+      "cooldown_s": 900,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_babble",
+      "category": "social",
+      "tags": [],
+      "faces": [],
+      "motion": {
+        "options": [
+          "speak1",
+          "speak2",
+          "speak3",
+          "speak4",
+          "speak5",
+          "speak6",
+          "speak7",
+          "speak8",
+          "speak9",
+          "speak10",
+          "speak11"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "social": 1.5
+      },
+      "mood_fit": {
+        "SM_HAPPY": 1.3,
+        "SM_PLAYFUL": 1.3
+      },
+      "requires": [
+        "known_face_present"
+      ],
+      "cooldown_s": 300,
+      "note": "speak1–12: \"habla\" con la persona que tiene delante.",
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_sing",
+      "category": "play",
+      "tags": [
+        "play"
+      ],
+      "faces": [],
+      "motion": {
+        "options": [
+          "sings1_1",
+          "sings1_2",
+          "sings1_3",
+          "sings1_4",
+          "sings2_1",
+          "sings2_2",
+          "sings2_3",
+          "sings2_4"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "boredom": 1.5
+      },
+      "mood_fit": {
+        "SM_HAPPY": 1.3,
+        "SM_PLAYFUL": 1.3,
+        "SM_SCARED": 0.3
+      },
+      "requires": [
+        "relaxed_field"
+      ],
+      "cooldown_s": 1800,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_goodbye",
+      "category": "social",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "Byebye",
+          "mp3": "Byebye_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "Byebye"
+        ]
+      },
+      "base": 0.0,
+      "cooldown_s": 1800,
+      "note": "Dueño, 2026-10-30: se despide cuando se va alguien conocido (lo dispara el núcleo con EV_FACE_LOST).",
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_explore",
+      "category": "explore",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search",
+          "mp3": "image_search_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_foward1",
+          "explore_foward2",
+          "explore_foward3",
+          "explore_turn_left1",
+          "explore_turn_left2",
+          "explore_turn_left3",
+          "explore_turn_right1",
+          "explore_turn_right2",
+          "explore_turn_right3",
+          "zombie_loop_walk1",
+          "zombie_loop_walk2"
+        ]
+      },
+      "base": 1.0,
+      "need_w": {
+        "stimulation": 1.5
+      },
+      "trait_w": {
+        "trait_energy": 1.0
+      },
+      "requires": [
+        "off_charger",
+        "battery>=30"
+      ],
+      "cooldown_s": 600,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_inspect_obstacle",
+      "category": "explore",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search"
+        }
+      ],
+      "motion": {
+        "options": [
+          "react_to_obs_1",
+          "react_to_obs_2",
+          "react_to_obs_3",
+          "react_to_obs_4",
+          "react_to_obs_5",
+          "react_to_obs_6",
+          "react_to_obs_7",
+          "react_to_obs_8",
+          "react_to_obs_9",
+          "react_to_obs_10",
+          "react_to_obs_11",
+          "react_to_obs_12",
+          "react_to_obs_13"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 30,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_startle",
+      "category": "emotion",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_shocked",
+          "mp3": "mood_shocked_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "loud_sound1",
+          "loud_sound2",
+          "react_back_1",
+          "react_back_2",
+          "react_back_3",
+          "react_back_4",
+          "react_back_5",
+          "react_back_6",
+          "react_back_7",
+          "react_back_8"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 10,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_sulk",
+      "category": "emotion",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "mood_angry",
+          "mp3": "mood_angry_000"
+        },
+        {
+          "avi": "mood_sad",
+          "mp3": "mood_sad_000"
+        },
+        {
+          "avi": "negative_3",
+          "mp3": "negative_3_000"
+        },
+        {
+          "avi": "negative_4",
+          "mp3": "negative_4_000"
+        },
+        {
+          "avi": "negative_5",
+          "mp3": "negative_5_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "negative_1",
+          "negative_2",
+          "react_depressed",
+          "wake_up_angry",
+          "interact_emotion_pity"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_SCARED": 0.1,
+        "SM_SLEEPY": 0.1,
+        "SM_GRUMPY": 1.3,
+        "SM_BORED": 0.1,
+        "SM_PLAYFUL": 0.1,
+        "SM_HAPPY": 0.1,
+        "SM_CALM": 0.1
+      },
+      "cooldown_s": 900,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_yawn_bored",
+      "category": "emotion",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_yawn",
+          "mp3": "sleep_yawn_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "rest3_leftandright"
+        ]
+      },
+      "base": 1.0,
+      "mood_fit": {
+        "SM_SCARED": 0.2,
+        "SM_SLEEPY": 0.2,
+        "SM_GRUMPY": 0.2,
+        "SM_BORED": 1.3,
+        "SM_PLAYFUL": 0.2,
+        "SM_HAPPY": 0.2,
+        "SM_CALM": 0.2
+      },
+      "cooldown_s": 300,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_confused",
+      "category": "emotion",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "dont_understand",
+          "mp3": "dont_understand_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "dont_understand"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 5,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_refuse",
+      "category": "emotion",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_angry",
+          "mp3": "mood_angry_000"
+        },
+        {
+          "avi": "stay_b_c"
+        }
+      ],
+      "motion": {
+        "options": [
+          "not_execute"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 5,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_listen",
+      "category": "command",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "listen_and_think",
+          "mode": 1
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        9000,
+        9000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_reminder",
+      "category": "command",
+      "tags": [
+        "attention"
+      ],
+      "faces": [
+        {
+          "seq": [
+            "alarm_shock_start_1",
+            "alarm_shock_loop",
+            "alarm_shock_end_1"
+          ],
+          "snd": [
+            "alarm_shock_start_1",
+            "alarm_shock_loop",
+            "alarm_shock_end_1"
+          ]
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        15000,
+        15000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0,
+      "note": "Recordatorio del calendario (07; dueño, 2026-10-30). Animación de alarma del original [BOBBY-ARTE]; PENDIENTE: ver en el robot que el avi y el mp3 estén en la SD."
+    },
+    {
+      "id": "bhv_trick",
+      "category": "command",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "Cat",
+          "Dog",
+          "Chicken",
+          "Frog",
+          "Elephant",
+          "Cattle",
+          "Cuckoo",
+          "d1_EmoDance",
+          "d2_WontLetGo",
+          "d3_Blindless",
+          "d4_Click1",
+          "d5_TimeOfMyLife",
+          "d7_FlashBack",
+          "jump_up",
+          "parkour",
+          "balance_ball",
+          "laser_eye",
+          "laser_eye_2",
+          "interact_emotion_heart",
+          "interact_emotion_hug",
+          "interact_emotion_kiss1",
+          "Byebye",
+          "Good_morning",
+          "Good_night",
+          "sings1_1",
+          "sings2_1",
+          "EMO_volcano_1",
+          "EMO_flower_1",
+          "positive_2",
+          "negative_1",
+          "react_depressed",
+          "want_petting"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0,
+      "note": "Trucos (dueño, 2026-11-01: como aibo, sin tope, se olvidan sin práctica). Solo forzada: el servidor (relay/alma_relay/tricks.py) decide qué movimiento y manda {\"t\":\"trick\",\"mot\"}; la opción es ese movimiento, con su cara y su sonido. El orden de las opciones no importa (se busca por nombre); la lista es tricks.MOVES."
+    },
+    {
+      "id": "bhv_come_here",
+      "category": "command",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "stay_a_c"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_foward1",
+          "explore_foward2",
+          "explore_foward3"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_turn_around",
+      "category": "command",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "mood_happy",
+          "mp3": "mood_happy_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          [
+            "explore_turn_left1",
+            "explore_turn_left2"
+          ]
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_stop",
+      "category": "command",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "stay_a_c"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        1000,
+        2000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_reflex_freeze",
+      "category": "reflex",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_scared"
+        }
+      ],
+      "motion": {
+        "options": [
+          "explore_back_away1",
+          "explore_foward1",
+          "cliff_L",
+          "cliff_R",
+          "react_put_down_1",
+          "react_put_down_2"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_reflex_struggle",
+      "category": "reflex",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_angry",
+          "mp3": "mood_angry_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "struggle_strong_1",
+          "struggle_strong_3",
+          "struggle_strong_4",
+          "struggle_slight_1",
+          "struggle_slight_2",
+          "struggle_slight_3",
+          "struggle_slight_4"
+        ]
+      },
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_dizzy",
+      "category": "reflex",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "shake_loop_1"
+        },
+        {
+          "avi": "shake_loop_2"
+        },
+        {
+          "avi": "shake_loop_3"
+        },
+        {
+          "avi": "shake_end_7"
+        }
+      ],
+      "motion": {
+        "options": [
+          "shake_end_1",
+          "shake_end_3",
+          "shake_end_4",
+          "shake_end_5",
+          "shake_end_6",
+          "shake_end_8",
+          "shake_end_8"
+        ]
+      },
+      "base": 0.0,
+      "cooldown_s": 0,
+      "unlock_day": 0,
+      "note": "Dueño, 2026-10-30: sacudida → ojos mareados (shake_loop) y, al terminar, un final de sacudida (shake_end_*; el 8 saca la lengua, va dos veces)."
+    },
+    {
+      "id": "bhv_ask_help",
+      "category": "reflex",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_sad",
+          "mp3": "mood_sad_000"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        1000,
+        1000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0
+    },
+    {
+      "id": "bhv_eat",
+      "category": "command",
+      "tags": [],
+      "faces": [
+        {
+          "seq": [
+            "Daily_Eating_start",
+            "Daily_Eating_loop1",
+            "Daily_Eating_loop2",
+            "Daily_Eating_end"
+          ],
+          "snd": [
+            "Daily_Eating_start",
+            "Daily_Eating_loop1",
+            "Daily_Eating_loop2",
+            "Daily_Eating_end"
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Eating2_start",
+            "Daily_Eating2_loop1",
+            "Daily_Eating2_loop2",
+            "Daily_Eating2_end"
+          ],
+          "snd": [
+            "Daily_Eating2_start",
+            "Daily_Eating2_loop2",
+            "Daily_Eating2_end"
+          ]
+        },
+        {
+          "seq": [
+            "Daily_Eating3_start",
+            "Daily_Eating3_loop1",
+            "Daily_Eating3_end"
+          ],
+          "snd": [
+            "Daily_Eating3_start",
+            "Daily_Eating3_loop1",
+            "Daily_Eating3_end"
+          ]
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        30000,
+        45000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0,
+      "note": "Tamagotchi (dueño, 2026-10-30): comida real desde la app; alma_feed decide. Forzada cuando acepta comida: las escenas de comer del original [BOBBY-ARTE]."
+    },
+    {
+      "id": "bhv_drink",
+      "category": "command",
+      "tags": [],
+      "faces": [
+        {
+          "seq": [
+            "Daily_Teatime_start",
+            "Daily_Teatime_loop1",
+            "Daily_Teatime_loop2",
+            "Daily_Teatime_loop3",
+            "Daily_Teatime_end"
+          ],
+          "snd": [
+            "Daily_Teatime_start",
+            "Daily_Teatime_loop1",
+            "Daily_Teatime_loop3",
+            "Daily_Teatime_end"
+          ]
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        25000,
+        30000
+      ],
+      "base": 1.0,
+      "cooldown_s": 0,
+      "unlock_day": 0,
+      "note": "Tamagotchi (dueño, 2026-10-30): comida real desde la app; alma_feed decide. Forzada con bebidas y medicina: la hora del té del original [BOBBY-ARTE]."
+    },
+    {
+      "id": "bhv_ask_food",
+      "category": "social",
+      "tags": [
+        "attention"
+      ],
+      "faces": [
+        {
+          "avi": "mood_sad",
+          "mp3": "mood_sad_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "want_petting"
+        ]
+      },
+      "base": 2.0,
+      "requires": [
+        "hungry"
+      ],
+      "cooldown_s": 600,
+      "unlock_day": 0,
+      "note": "Tamagotchi (dueño, 2026-10-30): comida real desde la app; alma_feed decide. Con hambre (≥ 0.7) pide comida; el celular recibe el aviso."
+    },
+    {
+      "id": "bhv_sick",
+      "category": "emotion",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "mood_sad",
+          "mp3": "mood_sad_000"
+        }
+      ],
+      "motion": {
+        "options": [
+          "fall_ill_touch_start1"
+        ]
+      },
+      "base": 1.5,
+      "requires": [
+        "sick"
+      ],
+      "cooldown_s": 900,
+      "unlock_day": 0,
+      "note": "Tamagotchi (dueño, 2026-10-30): comida real desde la app; alma_feed decide. Empacho por golosinas: se cura con medicina desde la app o sola en 24 h."
+    }
+  ],
+  "media": {
+    "Byebye": {
+      "avi": "Byebye",
+      "mp3": "Byebye_000"
+    },
+    "Cat": {
+      "avi": "Cat",
+      "mp3": "Cat_000"
+    },
+    "Cattle": {
+      "avi": "Cattle",
+      "mp3": "Cattle_000"
+    },
+    "Chicken": {
+      "avi": "Chicken",
+      "mp3": "Chicken_000"
+    },
+    "Cuckoo": {
+      "avi": "Cuckoo",
+      "mp3": "Cuckoo_000"
+    },
+    "Dog": {
+      "avi": "Dog",
+      "mp3": "Dog_000"
+    },
+    "EMO_flower_1": {
+      "avi": "EMO_flower_1",
+      "mp3": "EMO_flower_1_000"
+    },
+    "EMO_flower_2": {
+      "avi": "EMO_flower_2"
+    },
+    "EMO_volcano_1": {
+      "avi": "EMO_volcano_1",
+      "mp3": "EMO_volcano_1_000"
+    },
+    "Elephant": {
+      "avi": "Elephant",
+      "mp3": "Elephant_000"
+    },
+    "Frog": {
+      "avi": "Frog",
+      "mp3": "Frog_000"
+    },
+    "Good_afternoon": {
+      "avi": "Good_afternoon",
+      "mp3": "Good_afternoon_000"
+    },
+    "Good_morning": {
+      "avi": "Good_morning",
+      "mp3": "Good_morning_000"
+    },
+    "Good_night": {
+      "avi": "Good_night",
+      "mp3": "Good_night_000"
+    },
+    "balance_ball": {
+      "avi": "balance_ball",
+      "mp3": "balance_ball_000"
+    },
+    "call_name": {
+      "avi": "call_name",
+      "mp3": "call_name_000"
+    },
+    "cliff_L": {
+      "avi": "cliff_L",
+      "mp3": "cliff_L_000"
+    },
+    "cliff_R": {
+      "avi": "cliff_R",
+      "mp3": "cliff_R_000"
+    },
+    "d1_EmoDance": {
+      "avi": "d1_EmoDance",
+      "mp3": "d1_EmoDance_000"
+    },
+    "d2_WontLetGo": {
+      "avi": "d2_WontLetGo",
+      "mp3": "d2_WontLetGo_000"
+    },
+    "d3_Blindless": {
+      "avi": "d3_Blindless",
+      "mp3": "d3_Blindless_000"
+    },
+    "d4_Click1": {
+      "avi": "d4_Click1",
+      "mp3": "d4_Click1_000"
+    },
+    "d5_TimeOfMyLife": {
+      "avi": "d5_TimeOfMyLife",
+      "mp3": "d5_TimeOfMyLife_000"
+    },
+    "d7_FlashBack": {
+      "avi": "d7_FlashBack",
+      "mp3": "d7_FlashBack_000"
+    },
+    "dance_miss": {
+      "avi": "dance_miss",
+      "mp3": "dance_miss_000"
+    },
+    "dont_understand": {
+      "avi": "dont_understand",
+      "mp3": "dont_understand_000"
+    },
+    "explore_back_away1": {
+      "avi": "explore_back_away1"
+    },
+    "explore_back_away2": {
+      "avi": "explore_back_away2"
+    },
+    "explore_back_away3": {
+      "avi": "explore_back_away3"
+    },
+    "explore_foward1": {
+      "avi": "explore_foward1"
+    },
+    "explore_foward2": {
+      "avi": "explore_foward2"
+    },
+    "explore_foward3": {
+      "avi": "explore_foward3"
+    },
+    "explore_play1": {
+      "avi": "explore_play1",
+      "mp3": "explore_play1_000"
+    },
+    "explore_play10": {
+      "avi": "explore_play10",
+      "mp3": "explore_play10_000"
+    },
+    "explore_play11": {
+      "avi": "explore_play11",
+      "mp3": "explore_play11_000"
+    },
+    "explore_play12": {
+      "avi": "explore_play12",
+      "mp3": "explore_play12_000"
+    },
+    "explore_play13": {
+      "avi": "explore_play13",
+      "mp3": "explore_play13_000"
+    },
+    "explore_play14": {
+      "avi": "explore_play14",
+      "mp3": "explore_play14_000"
+    },
+    "explore_play15": {
+      "avi": "explore_play15",
+      "mp3": "explore_play15_000"
+    },
+    "explore_play16": {
+      "avi": "explore_play16",
+      "mp3": "explore_play16_000"
+    },
+    "explore_play17": {
+      "avi": "explore_play17",
+      "mp3": "explore_play17_000"
+    },
+    "explore_play18": {
+      "avi": "explore_play18",
+      "mp3": "explore_play18_000"
+    },
+    "explore_play2": {
+      "avi": "explore_play2",
+      "mp3": "explore_play2_000"
+    },
+    "explore_play3": {
+      "avi": "explore_play3",
+      "mp3": "explore_play3_000"
+    },
+    "explore_play4": {
+      "avi": "explore_play4",
+      "mp3": "explore_play4_000"
+    },
+    "explore_play5": {
+      "avi": "explore_play5",
+      "mp3": "explore_play5_000"
+    },
+    "explore_play6": {
+      "avi": "explore_play6",
+      "mp3": "explore_play6_000"
+    },
+    "explore_play7": {
+      "avi": "explore_play7",
+      "mp3": "explore_play7_000"
+    },
+    "explore_play8": {
+      "avi": "explore_play8",
+      "mp3": "explore_play8_000"
+    },
+    "explore_play9": {
+      "avi": "explore_play9",
+      "mp3": "explore_play9_000"
+    },
+    "explore_turn_left1": {
+      "avi": "explore_turn_left1"
+    },
+    "explore_turn_left2": {
+      "avi": "explore_turn_left2"
+    },
+    "explore_turn_left3": {
+      "avi": "explore_turn_left3"
+    },
+    "explore_turn_right1": {
+      "avi": "explore_turn_right1"
+    },
+    "explore_turn_right2": {
+      "avi": "explore_turn_right2"
+    },
+    "explore_turn_right3": {
+      "avi": "explore_turn_right3"
+    },
+    "explore_updown1": {
+      "avi": "explore_updown1"
+    },
+    "explore_updown2": {
+      "avi": "explore_updown2"
+    },
+    "explore_updown3": {
+      "avi": "explore_updown3"
+    },
+    "explore_updown4": {
+      "avi": "explore_updown4"
+    },
+    "first_meet1": {
+      "avi": "first_meet1",
+      "mp3": "first_meet1_000"
+    },
+    "first_meet2": {
+      "avi": "first_meet2",
+      "mp3": "first_meet2_000"
+    },
+    "first_meet3": {
+      "avi": "first_meet3",
+      "mp3": "first_meet3_000"
+    },
+    "first_meet4": {
+      "avi": "first_meet4",
+      "mp3": "first_meet4_000"
+    },
+    "free_get_in1": {
+      "avi": "free_get_in1",
+      "mp3": "free_get_in1_000"
+    },
+    "free_get_in2": {
+      "avi": "free_get_in2",
+      "mp3": "free_get_in2_000"
+    },
+    "gohome_connect": {
+      "avi": "gohome_connect",
+      "mp3": "gohome_connect_000"
+    },
+    "interact_emotion_heart": {
+      "avi": "interact_emotion_heart"
+    },
+    "interact_emotion_hug": {
+      "avi": "interact_emotion_hug"
+    },
+    "interact_emotion_kiss1": {
+      "avi": "interact_emotion_kiss1"
+    },
+    "interact_emotion_pity": {
+      "avi": "interact_emotion_pity"
+    },
+    "jump_up": {
+      "avi": "jump_up",
+      "mp3": "jump_up_000"
+    },
+    "laser_eye": {
+      "avi": "laser_eye",
+      "mp3": "laser_eye_000"
+    },
+    "laser_eye_2": {
+      "avi": "laser_eye_2",
+      "mp3": "laser_eye_2_000"
+    },
+    "look_around_1": {
+      "avi": "look_around_1"
+    },
+    "look_around_2": {
+      "avi": "look_around_2"
+    },
+    "look_around_4": {
+      "avi": "look_around_4"
+    },
+    "look_around_5": {
+      "avi": "look_around_5"
+    },
+    "look_around_6": {
+      "avi": "look_around_6"
+    },
+    "look_around_7": {
+      "avi": "look_around_7"
+    },
+    "look_around_8": {
+      "avi": "look_around_8"
+    },
+    "loud_sound1": {
+      "avi": "loud_sound1",
+      "mp3": "loud_sound1_000"
+    },
+    "loud_sound2": {
+      "avi": "loud_sound2",
+      "mp3": "loud_sound2_000"
+    },
+    "negative_1": {
+      "avi": "negative_1",
+      "mp3": "negative_1_000"
+    },
+    "negative_2": {
+      "avi": "negative_2",
+      "mp3": "negative_2_000"
+    },
+    "not_execute": {
+      "avi": "not_execute",
+      "mp3": "not_execute_000"
+    },
+    "parkour": {
+      "avi": "parkour",
+      "mp3": "parkour_000"
+    },
+    "positive_2": {
+      "avi": "positive_2",
+      "mp3": "positive_2_000"
+    },
+    "positive_3": {
+      "avi": "positive_3",
+      "mp3": "positive_3_000"
+    },
+    "react_back_1": {
+      "avi": "react_back_1",
+      "mp3": "react_back_1_000"
+    },
+    "react_back_2": {
+      "avi": "react_back_2",
+      "mp3": "react_back_2_000"
+    },
+    "react_back_3": {
+      "avi": "react_back_3",
+      "mp3": "react_back_3_000"
+    },
+    "react_back_4": {
+      "avi": "react_back_4",
+      "mp3": "react_back_4_000"
+    },
+    "react_back_5": {
+      "avi": "react_back_5",
+      "mp3": "react_back_5_000"
+    },
+    "react_back_6": {
+      "avi": "react_back_6",
+      "mp3": "react_back_6_000"
+    },
+    "react_back_7": {
+      "avi": "react_back_7",
+      "mp3": "react_back_7_000"
+    },
+    "react_back_8": {
+      "avi": "react_back_8",
+      "mp3": "react_back_8_000"
+    },
+    "react_depressed": {
+      "avi": "react_depressed"
+    },
+    "react_look_down_1": {
+      "avi": "react_look_down_1",
+      "mp3": "react_look_down_1_000"
+    },
+    "react_look_down_2": {
+      "avi": "react_look_down_2",
+      "mp3": "react_look_down_2_000"
+    },
+    "react_put_down_1": {
+      "avi": "react_put_down_1"
+    },
+    "react_put_down_2": {
+      "avi": "react_put_down_2"
+    },
+    "react_to_obs_1": {
+      "avi": "react_to_obs_1",
+      "mp3": "react_to_obs_1_000"
+    },
+    "react_to_obs_10": {
+      "avi": "react_to_obs_10",
+      "mp3": "react_to_obs_10_000"
+    },
+    "react_to_obs_11": {
+      "avi": "react_to_obs_11",
+      "mp3": "react_to_obs_11_000"
+    },
+    "react_to_obs_12": {
+      "avi": "react_to_obs_12",
+      "mp3": "react_to_obs_12_000"
+    },
+    "react_to_obs_13": {
+      "avi": "react_to_obs_13",
+      "mp3": "react_to_obs_13_000"
+    },
+    "react_to_obs_2": {
+      "avi": "react_to_obs_2",
+      "mp3": "react_to_obs_2_000"
+    },
+    "react_to_obs_3": {
+      "avi": "react_to_obs_3",
+      "mp3": "react_to_obs_3_000"
+    },
+    "react_to_obs_4": {
+      "avi": "react_to_obs_4",
+      "mp3": "react_to_obs_4_000"
+    },
+    "react_to_obs_5": {
+      "avi": "react_to_obs_5",
+      "mp3": "react_to_obs_5_000"
+    },
+    "react_to_obs_6": {
+      "avi": "react_to_obs_6",
+      "mp3": "react_to_obs_6_000"
+    },
+    "react_to_obs_7": {
+      "avi": "react_to_obs_7",
+      "mp3": "react_to_obs_7_000"
+    },
+    "react_to_obs_8": {
+      "avi": "react_to_obs_8",
+      "mp3": "react_to_obs_8_000"
+    },
+    "react_to_obs_9": {
+      "avi": "react_to_obs_9",
+      "mp3": "react_to_obs_9_000"
+    },
+    "rest1_check_rightfoot": {
+      "avi": "rest1_check_rightfoot"
+    },
+    "rest2_check_leftfoot": {
+      "avi": "rest2_check_leftfoot"
+    },
+    "rest3_leftandright": {
+      "avi": "rest3_leftandright"
+    },
+    "sings1_1": {
+      "avi": "sings1_1"
+    },
+    "sings2_1": {
+      "avi": "sings2_1"
+    },
+    "speak1": {
+      "avi": "speak1"
+    },
+    "speak10": {
+      "avi": "speak10"
+    },
+    "speak11": {
+      "avi": "speak11"
+    },
+    "speak2": {
+      "avi": "speak2"
+    },
+    "speak3": {
+      "avi": "speak3"
+    },
+    "speak4": {
+      "avi": "speak4"
+    },
+    "speak5": {
+      "avi": "speak5"
+    },
+    "speak6": {
+      "avi": "speak6"
+    },
+    "speak7": {
+      "avi": "speak7"
+    },
+    "speak8": {
+      "avi": "speak8"
+    },
+    "speak9": {
+      "avi": "speak9"
+    },
+    "struggle_slight_1": {
+      "avi": "struggle_slight_1"
+    },
+    "struggle_slight_2": {
+      "avi": "struggle_slight_2"
+    },
+    "struggle_slight_3": {
+      "avi": "struggle_slight_3"
+    },
+    "struggle_slight_4": {
+      "avi": "struggle_slight_4"
+    },
+    "struggle_strong_1": {
+      "avi": "struggle_strong_1"
+    },
+    "struggle_strong_3": {
+      "avi": "struggle_strong_3"
+    },
+    "struggle_strong_4": {
+      "avi": "struggle_strong_4"
+    },
+    "touch_down_left_get_in": {
+      "avi": "touch_down_left_get_in",
+      "mp3": "touch_down_left_get_in_000"
+    },
+    "touch_down_right_get_in": {
+      "avi": "touch_down_right_get_in",
+      "mp3": "touch_down_right_get_in_000"
+    },
+    "touch_get_in": {
+      "avi": "touch_get_in",
+      "mp3": "touch_get_in_000"
+    },
+    "touch_get_out1": {
+      "avi": "touch_get_out1",
+      "mp3": "touch_get_out1_000"
+    },
+    "touch_loop": {
+      "mp3": "touch_loop_000"
+    },
+    "touch_xing_end": {
+      "avi": "touch_xing_end",
+      "mp3": "touch_xing_end_000"
+    },
+    "touch_xing_loop": {
+      "avi": "touch_xing_loop",
+      "mp3": "touch_xing_loop_000"
+    },
+    "touch_xing_start": {
+      "avi": "touch_xing_start",
+      "mp3": "touch_xing_start_000"
+    },
+    "wake_up_angry": {
+      "avi": "wake_up_angry",
+      "mp3": "wake_up_angry_000"
+    },
+    "want_petting": {
+      "avi": "want_petting",
+      "mp3": "want_petting_000"
+    },
+    "zombie_loop_walk1": {
+      "avi": "zombie_loop_walk1"
+    },
+    "zombie_loop_walk2": {
+      "avi": "zombie_loop_walk2"
+    },
+    "shake_end_1": {
+      "avi": "shake_end_1"
+    },
+    "shake_end_3": {
+      "avi": "shake_end_3"
+    },
+    "shake_end_4": {
+      "avi": "shake_end_4"
+    },
+    "shake_end_5": {
+      "avi": "shake_end_5"
+    },
+    "shake_end_6": {
+      "avi": "shake_end_6"
+    },
+    "shake_end_8": {
+      "avi": "shake_end_8"
+    }
+  },
+  "media_note": "Cara y sonido del K210 con el mismo nombre que el .mot (como el original). Nombres verificados contra los recursos de la app; en la SD del robot se suponen iguales (se confirma en el robot). Dueño, 2026-10-30."
+}

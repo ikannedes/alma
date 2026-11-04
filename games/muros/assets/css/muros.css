@@ -1,0 +1,304 @@
+/* =========================================================================
+ * Muros: estilos (versión para Alma, pensada para el teléfono).
+ * Las variables de color, la tipografía Manrope y el estilo de botones,
+ * tarjetas y ventanas vienen de assets/css/app.css del repo original
+ * (22ABLE22/quoridor, MIT). El resto es la maqueta compacta de Muros.
+ * ========================================================================= */
+
+/* ---------------- typeface ---------------- */
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('../fonts/manrope-latin-400.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------------- tokens ---------------- */
+:root {
+    /* type scale (Tailwind) */
+    --text-xs: 12px;    --lh-xs: 16px;
+    --text-sm: 14px;    --lh-sm: 20px;
+    --text-base: 16px;  --lh-base: 24px;
+    --text-lg: 18px;    --lh-lg: 28px;
+    --text-xl: 20px;    --lh-xl: 28px;
+    --text-2xl: 24px;   --lh-2xl: 32px;
+    --text-3xl: 30px;   --lh-3xl: 36px;
+    --text-4xl: 36px;   --lh-4xl: 40px;
+    --text-5xl: 48px;   --lh-5xl: 1;
+    --text-6xl: 60px;   --lh-6xl: 1;
+
+    /* spacing scale */
+    --s-0: 0;     --s-25: 2px;  --s-50: 4px;   --s-75: 8px;
+    --s-100: 12px; --s-200: 16px; --s-300: 24px; --s-400: 32px;
+    --s-500: 40px; --s-600: 48px; --s-700: 64px; --s-800: 80px;
+    --s-900: 96px;
+
+    /* radius scale (Tailwind) */
+    --r-sm: 2px; --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-2xl: 16px; --r-full: 9999px;
+
+    /* motion */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-500: 500ms;
+    --dur-300: 300ms;
+
+    /* colour — light theme */
+    --bg: #f2f0ec;
+    --surface: #ffffff;
+    --surface-sunk: #f8f6f1;
+    --line: #e2ded6;
+    --line-soft: #edeae3;
+    --text: #33302a;
+    --text-strong: #241f18;
+    --muted: #6f6a5e;
+    --faint: #8f887a;
+    --accent: #9c5322;
+    --accent-ink: #ffffff;
+    --accent-soft: #f7efe6;
+    --accent-line: #d9b48f;
+    --positive: #2f7d5b;
+
+    --board-bg: #3a3428;
+    --board-edge: #241f16;
+    --cell: #efe6d3;
+    --cell-line: #dbd0b8;
+    --groove: #c9bda0;
+    --piece-ring: #fffdf8;
+    --goal-dim: 0.7;
+
+    --overlay: rgba(28, 23, 15, 0.55);
+    --shadow-1: 0 1px 2px rgba(60, 50, 30, 0.07);
+    --shadow-2: 0 8px 24px rgba(60, 50, 30, 0.10);
+    --shadow-3: 0 24px 60px rgba(40, 32, 20, 0.22);
+
+    --hero-h: 220px;   /* decorative hero board, content sized, no layout shift */
+}
+
+:root[data-theme='dark'] {
+    --bg: #131209;
+    --surface: #181818;
+    --surface-sunk: #1f1f1f;
+    --line: #272727;
+    --line-soft: #313131;
+    --text: #d9d6cc;
+    --text-strong: #f2efe8;
+    --muted: #a29d90;
+    --faint: #6f6a5e;
+    --accent: #d2965f;
+    --accent-ink: #131209;
+    --accent-soft: #272727;
+    --accent-line: #8a6136;
+    --positive: #4dbd8a;
+
+    --board-bg: #101318;
+    --board-edge: #272c35;
+    --cell: #2a313c;
+    --cell-line: #3a4250;
+    --groove: #1c222b;
+    --piece-ring: #0d0f13;
+    --goal-dim: 0.75;
+
+    --overlay: rgba(4, 6, 10, 0.7);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme='auto'] {
+        --bg: #131209;
+        --surface: #181818;
+        --surface-sunk: #1f1f1f;
+        --line: #272727;
+        --line-soft: #313131;
+        --text: #d9d6cc;
+        --text-strong: #f2efe8;
+        --muted: #a29d90;
+        --faint: #6f6a5e;
+        --accent: #d2965f;
+        --accent-ink: #131209;
+        --accent-soft: #272727;
+        --accent-line: #8a6136;
+        --positive: #4dbd8a;
+
+        --board-bg: #101318;
+        --board-edge: #272c35;
+        --cell: #2a313c;
+        --cell-line: #3a4250;
+        --groove: #1c222b;
+        --piece-ring: #0d0f13;
+        --goal-dim: 0.75;
+
+        --overlay: rgba(4, 6, 10, 0.7);
+        --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+        --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* ---------------- base ---------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+    margin: 0;
+    /* 44px de la barra fija de Alma (el puente también lo pone) y aire abajo para su burbuja */
+    padding: 44px 0 96px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: var(--text-base);
+    line-height: var(--lh-base);
+    -webkit-font-smoothing: antialiased;
+}
+h1, h2, p, ol, ul { margin: 0; }
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.juego {
+    width: min(680px, 100%);
+    margin: 0 auto;
+    padding: var(--s-100) var(--s-200) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-100);
+}
+
+/* ---------------- cabecera ---------------- */
+.cabecera { display: flex; align-items: center; gap: var(--s-100); }
+.cabecera h1 { font-size: var(--text-xl); line-height: var(--lh-xl); font-weight: 700; color: var(--text-strong); }
+.acciones { margin-left: auto; display: flex; gap: var(--s-75); }
+
+/* ---------------- botones (del repo) ---------------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-75);
+    padding: var(--s-75) var(--s-100);
+    font-size: var(--text-base); font-weight: 600; line-height: var(--lh-base);
+    color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition: background-color var(--dur-300) var(--ease), border-color var(--dur-300) var(--ease),
+        transform var(--dur-300) var(--ease);
+}
+.btn:hover { background: var(--surface-sunk); border-color: var(--accent-line); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
+.btn-sm { padding: var(--s-50) var(--s-100); font-size: var(--text-sm); line-height: var(--lh-sm); }
+.btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+
+/* ---------------- estado ---------------- */
+.estado {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-50) var(--s-100);
+    min-height: 42px;
+    padding: var(--s-75) var(--s-100);
+    font-size: var(--text-sm); line-height: var(--lh-sm);
+    background: var(--surface-sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-xl);
+}
+.estado b { color: var(--text-strong); }
+.estado .meta { color: var(--muted); }
+.estado .btn { margin-left: auto; }
+.estado .punto {
+    display: inline-block; width: 10px; height: 10px; border-radius: var(--r-full);
+    background: var(--pc, var(--muted)); margin-right: var(--s-50); vertical-align: -1px;
+}
+.pensando i {
+    display: inline-block; width: 5px; height: 5px; margin-left: 3px; border-radius: 50%;
+    background: currentColor; opacity: .3; animation: latido 1.2s infinite;
+}
+.pensando i:nth-child(2) { animation-delay: .2s; }
+.pensando i:nth-child(3) { animation-delay: .4s; }
+@keyframes latido { 40% { opacity: 1; } }
+
+/* ---------------- tablero ---------------- */
+.tablero-marco { display: flex; justify-content: center; min-height: 0; }
+.tablero-marco canvas { display: block; border-radius: var(--r-xl); touch-action: none; }
+.tablero-marco.inactivo canvas { opacity: .55; }
+
+/* ---------------- jugadores ---------------- */
+.jugadores { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-75); }
+.player {
+    --pc: var(--muted);
+    display: grid; gap: var(--s-50);
+    padding: var(--s-75) var(--s-100);
+    background: var(--surface-sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-xl);
+    min-width: 0;
+}
+.player.turn { border-color: var(--pc); box-shadow: 0 0 0 1px var(--pc) inset; }
+.player.win { box-shadow: 0 0 0 2px var(--pc) inset; }
+.p-row { display: flex; align-items: center; gap: var(--s-75); min-width: 0; }
+.p-dot { width: 12px; height: 12px; border-radius: var(--r-full); background: var(--pc);
+    box-shadow: 0 0 0 2px var(--piece-ring); flex: 0 0 auto; }
+.p-name { font-size: var(--text-sm); line-height: var(--lh-sm); font-weight: 700; color: var(--text-strong); }
+.p-dist { margin-left: auto; font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--muted);
+    white-space: nowrap; font-variant-numeric: tabular-nums; }
+.p-dist b { color: var(--text-strong); }
+.p-walls { display: flex; gap: 2px; flex-wrap: wrap; }
+.p-wall { width: 10px; height: 5px; border-radius: var(--r-sm); background: var(--pc); }
+.p-wall.used { background: var(--line); }
+
+/* ---------------- plegables ---------------- */
+.plegable {
+    background: var(--surface-sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-xl);
+    padding: var(--s-75) var(--s-100);
+    font-size: var(--text-sm); line-height: var(--lh-sm);
+}
+.plegable summary { cursor: pointer; font-weight: 700; color: var(--text-strong); }
+.historial { margin-top: var(--s-75); padding-left: var(--s-300); max-height: 220px; overflow-y: auto; }
+.historial li { padding: 1px 0; }
+.historial li.alma { color: var(--alma); }
+.reglas { margin-top: var(--s-75); padding-left: var(--s-200); color: var(--text); }
+.reglas li + li { margin-top: var(--s-50); }
+:root { --alma: #3f6fd8; }
+
+/* ---------------- ventana de fin ---------------- */
+.overlay {
+    position: fixed; inset: 0; z-index: 150;
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--s-300);
+    background: var(--overlay);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.overlay.hidden, .hidden { display: none !important; }
+.modal {
+    width: min(420px, 100%);
+    padding: var(--s-300);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--shadow-3);
+    text-align: center;
+}
+.modal h2 { font-size: var(--text-2xl); line-height: var(--lh-2xl); color: var(--win-color, var(--text-strong)); }
+.modal .sub { margin: var(--s-50) 0 var(--s-300); font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--muted); }
+.modal-acciones { display: flex; gap: var(--s-100); }
+.modal-acciones .btn { flex: 1 1 auto; }
+
+/* ---------------- aviso breve ---------------- */
+.toast {
+    position: fixed; top: 56px; left: 50%; z-index: 200;
+    max-width: calc(100% - var(--s-400));
+    padding: var(--s-75) var(--s-200);
+    font-size: var(--text-sm); line-height: var(--lh-sm); font-weight: 600;
+    color: var(--surface); background: var(--text-strong);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    pointer-events: none; opacity: 0;
+    transform: translateX(-50%) translateY(-16px);
+    transition: opacity var(--dur-300) var(--ease), transform var(--dur-300) var(--ease);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { color: #fff; background: #b3261e; }
+
+@media (prefers-reduced-motion: reduce) {
+    .pensando i { animation: none; opacity: .7; }
+    .btn, .toast { transition: none; }
+}

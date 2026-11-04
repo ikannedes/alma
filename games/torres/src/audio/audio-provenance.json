@@ -1,0 +1,213 @@
+{
+  "assets": [],
+  "author": {
+    "id": "repository-contributors",
+    "statement": "Created from scratch for this repository without third-party or comparison audio."
+  },
+  "license": {
+    "id": "CC0-1.0",
+    "statement": "The authors dedicate these procedural recipes and their generated waveforms to the public domain under CC0-1.0."
+  },
+  "recipes": [
+    {
+      "authorId": "repository-contributors",
+      "cueId": "strike-release",
+      "family": "attack",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 0,
+        "decayTicks": 2,
+        "durationTicks": 8,
+        "endFrequencyHz": 220,
+        "gainBasisPoints": 3200,
+        "oscillator": "square",
+        "releaseTicks": 4,
+        "startFrequencyHz": 440
+      },
+      "sha256": "fc55493e915b05a2b1bb182e2ffa0ce93aea93994443271abe673b4694a63f4e",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1600, "sampleRateHz": 12000, "sha256": "4383bd90cb28333a73fd3413bfa44bc9d8120f1e95f18bc555297fd726b9ee10" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "crown-award",
+      "family": "crown",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 2,
+        "decayTicks": 4,
+        "durationTicks": 32,
+        "endFrequencyHz": 990,
+        "gainBasisPoints": 4200,
+        "oscillator": "triangle",
+        "releaseTicks": 10,
+        "startFrequencyHz": 660
+      },
+      "sha256": "1a49aa681850f356c74736ef1bc28da23547d7b590e8a3d5b941a1ef8cd83b76",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 6400, "sampleRateHz": 12000, "sha256": "f3f47e3faf9cac46f5484ae80bc0f692b586d9039c55c7b3bc0e75a2352fe936" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "vital-damage",
+      "family": "damage",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 0,
+        "decayTicks": 2,
+        "durationTicks": 10,
+        "endFrequencyHz": 90,
+        "gainBasisPoints": 3500,
+        "oscillator": "sawtooth",
+        "releaseTicks": 5,
+        "startFrequencyHz": 180
+      },
+      "sha256": "4ecf886fbb32adb2774f70270a62b1b170d5de658bf23c67cd2657e9e4ee5056",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 2000, "sampleRateHz": 12000, "sha256": "36c4e19b5db288b7190c6bd4dd80f68916ca8fb6cb1352a16779a9cdd39ab218" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "unit-fall",
+      "family": "death",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 5,
+        "durationTicks": 24,
+        "endFrequencyHz": 65,
+        "gainBasisPoints": 3800,
+        "oscillator": "triangle",
+        "releaseTicks": 12,
+        "startFrequencyHz": 260
+      },
+      "sha256": "f1347e01936f1a91055b90933b33486aad27f6719f7c787f0116c3598d29acf6",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 4800, "sampleRateHz": 12000, "sha256": "dc3a0365ac8d94bebedfb821c771640f4c756de442cf224abbc7a78ff4cc1d18" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "field-deploy",
+      "family": "deploy",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 2,
+        "decayTicks": 4,
+        "durationTicks": 18,
+        "endFrequencyHz": 330,
+        "gainBasisPoints": 2800,
+        "oscillator": "sine",
+        "releaseTicks": 8,
+        "startFrequencyHz": 220
+      },
+      "sha256": "7933a0ad4a6b085c1f28ebe17c1fb6dbac82d69639d771bd0c8c44ee5a57704c",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 3600, "sampleRateHz": 12000, "sha256": "38458522375ca3784a931188371e2b95e7494a49ad11288c9b4647c27d52305d" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "contact-impact",
+      "family": "impact",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 0,
+        "decayTicks": 2,
+        "durationTicks": 8,
+        "endFrequencyHz": 60,
+        "gainBasisPoints": 4000,
+        "oscillator": "square",
+        "releaseTicks": 4,
+        "startFrequencyHz": 120
+      },
+      "sha256": "6f05f92bc957ec04f1828a30bb3cc8df28cc1f9b7df47d16878c4d42e205fdb9",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1600, "sampleRateHz": 12000, "sha256": "c393a7b60fdfd0c5ecbe028de2fa87d19a7e1efc5a7366d6a6df69f4cf251e29" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "bolt-flight",
+      "family": "launch",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 4,
+        "durationTicks": 16,
+        "endFrequencyHz": 1080,
+        "gainBasisPoints": 2200,
+        "oscillator": "sine",
+        "releaseTicks": 6,
+        "startFrequencyHz": 720
+      },
+      "sha256": "769e4f166c6728104108323e6bb0bf45fd16f7f1c95f5862d43321c2c7982139",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 3200, "sampleRateHz": 12000, "sha256": "6fac17bd91a61f445ee67d7f1a2c87a3692917743d844f67d75c0951ea0d2ccb" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "match-complete",
+      "family": "matchEnd",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 2,
+        "decayTicks": 8,
+        "durationTicks": 48,
+        "endFrequencyHz": 220,
+        "gainBasisPoints": 4500,
+        "oscillator": "triangle",
+        "releaseTicks": 16,
+        "startFrequencyHz": 440
+      },
+      "sha256": "e4bfc4706b99c8b8cf4fdc853c8bd3bfb6403a48f7ad3f2cf32728e2027e7f95",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 9600, "sampleRateHz": 12000, "sha256": "d2ccdf386eac92898404f7549d9aae39f022171c628cca1c21e05bfcf75ee70b" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "phase-overtime",
+      "family": "overtime",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 5,
+        "durationTicks": 24,
+        "endFrequencyHz": 495,
+        "gainBasisPoints": 3500,
+        "oscillator": "square",
+        "releaseTicks": 10,
+        "startFrequencyHz": 330
+      },
+      "sha256": "12ffaa76d362efb61350dac576e04caed05cace07346b8f75a0f920bc976814f",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 4800, "sampleRateHz": 12000, "sha256": "54d616b11f3e03add8b989a17a4f6c8d67382c6e3b3f32db5096a8b9f4854280" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "phase-tiebreak",
+      "family": "tiebreak",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 4,
+        "durationTicks": 20,
+        "endFrequencyHz": 600,
+        "gainBasisPoints": 3600,
+        "oscillator": "sawtooth",
+        "releaseTicks": 8,
+        "startFrequencyHz": 300
+      },
+      "sha256": "11d636f26e051d25fd8d63a2a11b03f059594ed2587b367d83c62a8ac95d0c57",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 4000, "sampleRateHz": 12000, "sha256": "6686f3b465c72d8f8025ff84b49aa5819f006fa5ca19cff804157fe30da6e5ad" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "tower-fall",
+      "family": "tower",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 8,
+        "durationTicks": 40,
+        "endFrequencyHz": 40,
+        "gainBasisPoints": 5000,
+        "oscillator": "sawtooth",
+        "releaseTicks": 18,
+        "startFrequencyHz": 140
+      },
+      "sha256": "4fa95fc7c87e49baa09e85952bceaa45820d2414be83abc03f3428a8cbfd8a2a",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 8000, "sampleRateHz": 12000, "sha256": "f17f7c2985f462b32cfaf839c2b923dcae66171eff4c5f7d7bae21ae7ff64834" }
+    }
+  ],
+  "schema": "original-audio-provenance",
+  "version": 1
+}

@@ -1,0 +1,59 @@
+.App {
+  max-width: 1000px;
+  margin: 0 auto;
+  /* abajo queda sitio para la burbuja y los avisos del puente de Alma */
+  padding: 12px 12px 130px;
+}
+
+.btn {
+  border: 1px solid #3a5579;
+  background: #1a2c47;
+  color: #e8eef7;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn:hover:not(:disabled) {
+  background: #23395a;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-main {
+  background: #b7a3ff;
+  border-color: #b7a3ff;
+  color: #1a1424;
+}
+.btn-main:hover:not(:disabled) {
+  background: #c9baff;
+}
+.btn-big {
+  font-size: 1.15em;
+  padding: 14px 28px;
+}
+.btn-ghost {
+  background: transparent;
+}
+
+.aviso {
+  margin: 8px 0 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #2a2033;
+  color: #ffd9de;
+  font-weight: 600;
+  text-align: center;
+}
+.aviso .btn {
+  margin-left: 8px;
+  min-height: 0;
+  padding: 6px 10px;
+}
+
+.new-game {
+  text-align: center;
+  margin-top: 20px;
+}

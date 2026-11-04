@@ -1,0 +1,153 @@
+{
+  "assets": [],
+  "author": {
+    "id": "repository-contributors",
+    "statement": "Created from scratch for this repository without third-party or comparison audio."
+  },
+  "license": {
+    "id": "CC0-1.0",
+    "statement": "The authors dedicate these procedural recipes and their generated waveforms to the public domain under CC0-1.0."
+  },
+  "mix": {
+    "ceiling": 29491,
+    "headroomBasisPoints": 900,
+    "maxPolyphony": 64,
+    "voiceGainBasisPoints": 275
+  },
+  "recipes": [
+    {
+      "authorId": "repository-contributors",
+      "cueId": "soft-locomotion",
+      "family": "movement",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 3,
+        "durationTicks": 12,
+        "endFrequencyHz": 180,
+        "gainBasisPoints": 2600,
+        "oscillator": "sine",
+        "releaseTicks": 5,
+        "startFrequencyHz": 240,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 2600, "oscillator": "triangle", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 5000, "gainBasisPoints": 1600, "oscillator": "sine", "phaseOffset": 16384 }
+        ]
+      },
+      "sha256": "5c2748c7fceda5cf6b57efb004ca5ba1fc330267531941e6f42c8a268dc8abc0",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 2400, "sampleRateHz": 12000, "sha256": "3b45bb6d87dc782610502cc1217d64a1fe438fe40b6a974108032de51e8a2ce5" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "card-select",
+      "family": "cardSelect",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 0,
+        "decayTicks": 1,
+        "durationTicks": 6,
+        "endFrequencyHz": 1320,
+        "gainBasisPoints": 2200,
+        "oscillator": "square",
+        "releaseTicks": 3,
+        "startFrequencyHz": 880,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 2200, "oscillator": "sine", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 5000, "gainBasisPoints": 1400, "oscillator": "triangle", "phaseOffset": 16384 }
+        ]
+      },
+      "sha256": "f2a3acde14d6d3f82ea6282cff05213e97c216c74647aa48ad6f86dd44dcf62e",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1200, "sampleRateHz": 12000, "sha256": "e16561583ea875d348b6e1fd5c43ad474b0da7b28fd01ea601bf53d5a295796e" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "card-play",
+      "family": "cardPlay",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 2,
+        "durationTicks": 10,
+        "endFrequencyHz": 520,
+        "gainBasisPoints": 2800,
+        "oscillator": "triangle",
+        "releaseTicks": 5,
+        "startFrequencyHz": 260,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 2400, "oscillator": "sine", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 5000, "gainBasisPoints": 1200, "oscillator": "sine", "phaseOffset": 16384 }
+        ]
+      },
+      "sha256": "7866f9a972be3e7f057aec0bd9b7baf493df80e5105229a1492d805f1e929a24",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 2000, "sampleRateHz": 12000, "sha256": "98abc939fecabb67dc0ad9536e6828a1516b4d51dcf0d323a8d5aaf7037c29f8" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "ui-confirm",
+      "family": "uiConfirm",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 2,
+        "durationTicks": 8,
+        "endFrequencyHz": 780,
+        "gainBasisPoints": 2400,
+        "oscillator": "sine",
+        "releaseTicks": 4,
+        "startFrequencyHz": 540,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 1800, "oscillator": "triangle", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 30000, "gainBasisPoints": 1200, "oscillator": "sine", "phaseOffset": 8192 }
+        ]
+      },
+      "sha256": "15d4c4781f6f53a90d03ee18c12895c1f10b2406a6d6c484109243faf03421d1",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1600, "sampleRateHz": 12000, "sha256": "08d30556501eeed516d3caca42f64350804993fc61891da40236b0d605d98b99" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "ui-reject",
+      "family": "uiReject",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 0,
+        "decayTicks": 2,
+        "durationTicks": 8,
+        "endFrequencyHz": 110,
+        "gainBasisPoints": 2400,
+        "oscillator": "sawtooth",
+        "releaseTicks": 4,
+        "startFrequencyHz": 190,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 1800, "oscillator": "square", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 5000, "gainBasisPoints": 1200, "oscillator": "triangle", "phaseOffset": 32768 }
+        ]
+      },
+      "sha256": "b13c85f3dfed5c886f0c26b9840e8f7375b12f5475628810d59b020bb9292e80",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1600, "sampleRateHz": 12000, "sha256": "2287f818f919f13cd15239e1fb219a072d81a396c6ce64f9210dad2b2aab47a8" }
+    },
+    {
+      "authorId": "repository-contributors",
+      "cueId": "ui-toggle",
+      "family": "uiToggle",
+      "licenseId": "CC0-1.0",
+      "recipe": {
+        "attackTicks": 1,
+        "decayTicks": 2,
+        "durationTicks": 7,
+        "endFrequencyHz": 440,
+        "gainBasisPoints": 2100,
+        "oscillator": "triangle",
+        "releaseTicks": 3,
+        "startFrequencyHz": 320,
+        "layers": [
+          { "frequencyRatioBasisPoints": 20000, "gainBasisPoints": 1600, "oscillator": "sine", "phaseOffset": 0 },
+          { "frequencyRatioBasisPoints": 5000, "gainBasisPoints": 1000, "oscillator": "sine", "phaseOffset": 16384 }
+        ]
+      },
+      "sha256": "2a1bdd96f81fa41a4cf64714123c95df81d1faab69226f075016038b7feeb371",
+      "waveform": { "channels": 1, "format": "pcm-s16le", "sampleCount": 1400, "sampleRateHz": 12000, "sha256": "0a3976c969ca03f9b6406d89847b69420e7c6e88a4048ebf04569b9e3ae3da45" }
+    }
+  ],
+  "schema": "original-audio-provenance",
+  "version": 2
+}

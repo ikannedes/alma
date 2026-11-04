@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0f1117">
+<title>Backgammon con Alma</title>
+<!-- Tablero: Boxcars de Trevor Slocum (AGPL-3.0, codeberg.org/tslocum/boxcars), con los parches de Alma
+     (relay/third_party/bgammon/boxcars.patch). Este archivo solo lo carga. -->
+<style>
+html,body{margin:0;height:100%;background:#0f1117;color:#cfd3dc;font-family:system-ui,sans-serif;overflow:hidden}
+#ld{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
+#bar{width:min(260px,70vw);height:6px;border-radius:3px;background:#262a35;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:#8b7cf6;transition:width .2s}
+</style>
+</head>
+<body>
+<div id="ld"><div>🎲 Abriendo el tablero…</div><div id="bar"><i></i></div><div id="msg" style="font-size:13px;opacity:.7">La primera vez tarda un poco (se queda guardado).</div></div>
+<script src="wasm_exec.js"></script>
+<script>
+// Descarga con progreso (el .wasm pesa ~30 MB sin comprimir) y arranca Boxcars.
+(async () => {
+  const bar = document.querySelector("#bar i"), msg = document.getElementById("msg");
+  try {
+    const r = await fetch("boxcars.wasm");
+    if (!r.ok) throw new Error(r.status === 401 ? "inicia sesión en la app de Alma" : "error " + r.status);
+    const total = +r.headers.get("x-wasm-size") || 31000000, chunks = [];
+    let got = 0;
+    for (const rd = r.body.getReader();;) {
+      const {done, value} = await rd.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      bar.style.width = Math.min(100, got / total * 100) + "%";
+    }
+    const go = new Go();
+    const {instance} = await WebAssembly.instantiate(await new Blob(chunks).arrayBuffer(), go.importObject);
+    document.getElementById("ld").remove();
+    go.run(instance);
+  } catch (e) {
+    msg.textContent = "No pude abrir el tablero: " + e.message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# ESP32-D0WD-V3 clásico (no S3), flash de 16 MB en DIO a 40 MHz como el original (02; cabecera de ota_0: 02 40)
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# Tabla de particiones original (no se escribe)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+
+# PSRAM: chip de 8 MB, el ESP32 clásico mapea 4 MB (02). Si no aparece, la app sigue.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_TYPE_AUTO=y
+CONFIG_SPIRAM_SPEED_40M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# Consola por UART0 (COM9) a 115200
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+CONFIG_FREERTOS_HZ=1000
+
+# Nada escribe en el flash: sin volcado de núcleo; ante un pánico se detiene en vez de reiniciar en bucle
+CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y
+CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y
+
+# Prueba f): ADC con el driver heredado (adc1_get_raw), para no agregar un segmento RTC FAST a la imagen (sesion1.md)
+CONFIG_ADC_SUPPRESS_DEPRECATE_WARN=y

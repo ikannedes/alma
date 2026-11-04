@@ -1,0 +1,121 @@
+/* Página exterior de "Batalla de torres": deja sitio a la barra fija (44 px) del puente
+   de Alma, escala el tablero 720×1280 (iframe) para que quepa entero y pinta la portada. */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  background:
+    radial-gradient(circle at 50% 35%, #293946 0 18%, transparent 58%),
+    #111820;
+  font-family: system-ui, sans-serif;
+}
+
+.torres-marco {
+  position: fixed;
+  inset: 44px 0 0 0;
+  overflow: hidden;
+}
+
+.torres-tablero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 720px;
+  height: 1280px;
+  border: 0;
+  background: #111820;
+  transform-origin: top left;
+}
+
+/* La burbuja de Alma va arriba (su lado) para no tapar la mano del dueño.
+   "body" sube la especificidad: el puente inyecta su estilo después de esta hoja. */
+body .alma-bubble {
+  top: 52px;
+  bottom: auto;
+  transform: translateX(-50%) translateY(-12px);
+}
+
+body .alma-bubble.on {
+  transform: translateX(-50%) translateY(0);
+}
+
+.torres-portada {
+  position: fixed;
+  inset: 44px 0 0 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #0b1218d9;
+}
+
+.torres-portada[hidden] {
+  display: none;
+}
+
+.torres-panel {
+  width: min(100%, 420px);
+  box-sizing: border-box;
+  padding: 20px 18px;
+  border: 2px solid #3b4a55;
+  border-radius: 16px;
+  color: #f4ebd6;
+  background: #16222b;
+  box-shadow: 0 16px 50px #000a;
+}
+
+.torres-panel h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  letter-spacing: .02em;
+}
+
+.torres-panel p,
+.torres-panel li {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.torres-panel ul {
+  margin: 8px 0 14px;
+  padding-left: 20px;
+}
+
+.torres-boton {
+  width: 100%;
+  min-height: 50px;
+  border: 0;
+  border-radius: 12px;
+  color: #1b130c;
+  background: #f2a25e;
+  font: 800 19px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.torres-boton:disabled {
+  opacity: .6;
+  cursor: progress;
+}
+
+.torres-estado {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: #ffd9de;
+}
+
+.torres-creditos {
+  margin: 12px 0 0;
+  color: #b9c3c9;
+  font-size: 12px !important;
+}
+
+.torres-creditos a {
+  color: #b7a3ff;
+}

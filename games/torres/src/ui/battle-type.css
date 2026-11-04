@@ -1,0 +1,13 @@
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("./fonts/BarlowCondensed-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+body[data-app-frame="true"] .game-ui-hud-frame .hud-card__name {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-synthesis: none;
+}

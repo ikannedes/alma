@@ -1,0 +1,202 @@
+/* Estilos basados en los del repo original (MIT), adaptados: colores dueño/Alma, barra superior y móvil. */
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --background: #f2f2f2;
+  --dot: #ffffff;
+  --dot-borde: #9a9a9a;
+  --edge-empty: #d9d9d9;
+  --edge-hover: #b9b9b9;
+  --dialog-background: #ffffff;
+  --dialog-border: #c9c9c9;
+  --button-background: #f4f4f4;
+  --button-hover: #e8e8e8;
+  --text: #202020;
+  /* Dueño = azul, Alma = morado (como la barra de Alma). */
+  --dueno: 37 99 235;
+  --alma: 147 92 246;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  overflow: hidden;
+  background: var(--background);
+  color: var(--text);
+  overscroll-behavior: none;
+}
+
+#root { height: 100%; }
+
+button, select { font: inherit; }
+
+/* El puente pone 44 px arriba (padding del body); el resto es para el juego. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding: 8px 12px 12px;
+  gap: 8px;
+}
+
+.barra { width: min(100%, 560px); display: grid; gap: 8px; }
+
+.marcador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.chip span { font-size: 18px; font-weight: 700; }
+.chip.del-dueno { background: rgb(var(--dueno) / 18%); }
+.chip.de-alma { background: rgb(var(--alma) / 20%); }
+
+.turno { font-weight: 600; text-align: center; }
+.turno.del-dueno { color: rgb(var(--dueno)); }
+.turno.de-alma { color: rgb(var(--alma)); }
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+.controles label { display: inline-flex; align-items: center; gap: 6px; }
+.controles select, .controles button, .dialog-actions button {
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--dialog-border);
+  border-radius: 8px;
+  background: var(--button-background);
+  color: var(--text);
+}
+.controles button { font-weight: 700; cursor: pointer; }
+.controles button:disabled { opacity: 0.5; cursor: default; }
+
+.mensaje { margin: 0; font-size: 14px; text-align: center; color: #c2410c; }
+
+.zona {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+
+.board-stage {
+  position: relative;
+  width: min(100cqw, 100cqh, 640px);
+  aspect-ratio: 1;
+  background: var(--background);
+  isolation: isolate;
+  touch-action: manipulation;
+}
+
+.box, .edge, .dot { position: absolute; }
+
+.box { z-index: 0; pointer-events: none; transition: background-color 200ms; }
+.box.del-dueno { background: rgb(var(--dueno) / 28%); }
+.box.de-alma { background: rgb(var(--alma) / 30%); }
+
+.edge {
+  z-index: 1;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  appearance: none;
+  background: var(--edge-empty);
+  cursor: default;
+  transition: background-color 90ms linear;
+}
+/* Zona de toque más ancha que la línea dibujada, para el dedo. */
+.edge::before { content: ""; position: absolute; }
+.edge-h::before { inset: -9px 0; }
+.edge-v::before { inset: 0 -9px; }
+
+.edge:not(:disabled) { cursor: pointer; }
+.edge.owner-none:not(:disabled):hover { background: var(--edge-hover); }
+.edge:disabled::before { pointer-events: none; }
+
+.edge.del-dueno { background: rgb(var(--dueno) / 55%); }
+.edge.de-alma { background: rgb(var(--alma) / 60%); }
+.edge.edge-last { z-index: 3; }
+.edge.edge-last.del-dueno { background: rgb(var(--dueno)); }
+.edge.edge-last.de-alma { background: rgb(var(--alma)); }
+
+.edge:focus-visible { z-index: 5; outline: 2px solid currentColor; outline-offset: 1px; }
+.board-stage[aria-busy="true"] .edge.owner-none { cursor: progress; }
+
+.dot {
+  z-index: 4;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 1px var(--dot-borde);
+  pointer-events: none;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 30%);
+}
+
+.result-dialog {
+  width: min(340px, 100%);
+  padding: 22px;
+  border: 1px solid var(--dialog-border);
+  border-radius: 12px;
+  background: var(--dialog-background);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 24%);
+  text-align: center;
+}
+.result-dialog p { margin: 0 0 20px; font-size: 16px; line-height: 1.6; }
+.result-dialog b { font-size: 22px; }
+
+.dialog-actions { display: flex; justify-content: center; gap: 8px; }
+.dialog-actions button { cursor: pointer; }
+.dialog-actions button:hover, .controles button:not(:disabled):hover { background: var(--button-hover); }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #2b2b2b;
+    --dot: #cacaca;
+    --dot-borde: #cacaca;
+    --edge-empty: #414141;
+    --edge-hover: #5a5a5a;
+    --dialog-background: #353535;
+    --dialog-border: #5b5b5b;
+    --button-background: #444444;
+    --button-hover: #505050;
+    --text: #f0f0f0;
+    --dueno: 96 165 250;
+    --alma: 183 163 255;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box, .edge { transition: none; }
+}

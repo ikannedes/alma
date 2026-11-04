@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.16)
+set(PROJECT_VER "0.2.0")
+if("$ENV{ALMA_SERVOS_DISABLED}" STREQUAL "1")
+    set(PROJECT_VER "${PROJECT_VER}-remota")
+endif()
+if("$ENV{ALMA_F2_API}" STREQUAL "1")
+    set(PROJECT_VER "${PROJECT_VER}-api")
+endif()
+# Misma base que sesion1 (ESP-IDF v5.2.1, esp32, flash DIO 40 MHz 16 MB, tabla original, PSRAM, consola) y lo de f2 encima
+set(SDKCONFIG_DEFAULTS "${CMAKE_CURRENT_LIST_DIR}/../sesion1/sdkconfig.defaults;${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults")
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(alma-f2)

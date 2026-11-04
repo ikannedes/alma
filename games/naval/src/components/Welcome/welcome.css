@@ -1,0 +1,21 @@
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding-top: 6vh;
+}
+.welcome-art {
+  width: min(70vw, 260px);
+  height: auto;
+}
+.welcome-title {
+  font-size: 2.2em;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.welcome-intro {
+  max-width: 460px;
+  color: #b9c6d8;
+}

@@ -1,0 +1,62 @@
+diff --git a/flags_web.go b/flags_web.go
+index d317084..6f6e33e 100644
+--- a/flags_web.go
++++ b/flags_web.go
+@@ -3,9 +3,13 @@
+ package main
+ 
+ import (
++	"net/url"
++	"syscall/js"
++
+ 	"codeberg.org/tslocum/boxcars/game"
+ )
+ 
++// Alma: la app abre el tablero con ?u=<dueño>&j=<alma>; el servidor es el mismo sitio (/bg/ws).
+ func parseFlags() *game.Game {
+ 	locale, err := game.GetLocale()
+ 	if err != nil {
+@@ -13,5 +17,12 @@ func parseFlags() *game.Game {
+ 	}
+ 	game.LoadLocale(locale)
+ 
+-	return game.NewGame()
++	g := game.NewGame()
++	loc := js.Global().Get("location")
++	g.ServerAddress = "wss://" + loc.Get("host").String() + "/bg/ws"
++	if q, err := url.ParseQuery(loc.Get("search").String()[min(1, len(loc.Get("search").String())):]); err == nil {
++		g.Username = q.Get("u")
++		g.JoinPlayer = q.Get("j")
++	}
++	return g
+ }
+diff --git a/game/game.go b/game/game.go
+index e8333b8..d1686db 100644
+--- a/game/game.go
++++ b/game/game.go
+@@ -603,6 +603,7 @@ type Game struct {
+ 	loggedIn      bool
+ 
+ 	JoinGame   int
++	JoinPlayer string // Alma: al abrir, entra a la partida de este jugador (si no se retomó una)
+ 	Mute       bool
+ 	Instant    bool
+ 	Fullscreen bool
+@@ -1662,6 +1663,17 @@ func (g *Game) initialize() {
+ 				time.Sleep(100 * time.Millisecond)
+ 			}
+ 		}()
++	} else if g.JoinPlayer != "" {
++		g.Connect()
++		go func() {
++			for g.client == nil || !g.client.loggedIn {
++				time.Sleep(100 * time.Millisecond)
++			}
++			time.Sleep(1500 * time.Millisecond) // el servidor manda primero la partida que se retoma
++			if g.board.gameState.Player1.Name == "" && g.board.gameState.Player2.Name == "" {
++				g.client.Out <- []byte("j " + g.JoinPlayer)
++			}
++		}()
+ 	}
+ }
+ 

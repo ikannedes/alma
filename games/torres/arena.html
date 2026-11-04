@@ -1,0 +1,21 @@
+<!doctype html>
+<!-- Modificado para Alma, 2026-10-31: tablero de "Batalla de torres" (Alma juega el norte), cargado en un iframe por index.html.
+     Derivado de public/ui-arena-shell.html de Moss & Ember (repositorio de ThatXliner en GitHub,
+     commit 75d30d1, AGPL-3.0-only): textos en español, rutas y entrada propia (src/alma/arena.js). -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="color-scheme" content="dark">
+    <title>Batalla de torres · tablero</title>
+    <link rel="stylesheet" href="./src/ui/arena-shell.css">
+    <link rel="stylesheet" href="./src/ui/battle-type.css">
+    <link rel="stylesheet" href="./src/alma/arena-produccion.css">
+    <link rel="stylesheet" href="./src/alma/arena.css">
+  </head>
+  <body>
+    <div data-arena-shell-root></div>
+    <p class="torres-aviso" data-aviso hidden>Abre este juego desde Alma.</p>
+    <script type="module" src="./src/alma/arena.js"></script>
+  </body>
+</html>

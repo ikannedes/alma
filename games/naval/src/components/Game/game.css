@@ -1,0 +1,215 @@
+/* Tableros: el tamaño de casilla se ajusta al ancho (cabe en un móvil de 320 px). */
+.grid {
+  --cell: min(38px, calc((100vw - 60px) / 9));
+  display: grid;
+  grid-template-columns: repeat(9, var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: 3px;
+  justify-content: center;
+  user-select: none;
+  touch-action: manipulation;
+}
+.grid-small {
+  --cell: min(26px, calc((100vw - 60px) / 9));
+  gap: 2px;
+}
+.lbl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  font-weight: 700;
+  color: #7f93ad;
+}
+
+.block {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background-color: #1e3a5f;
+  cursor: pointer;
+}
+.board-p2 .block {
+  background-color: #1d4256;
+}
+.grid.disabled .block {
+  cursor: default;
+}
+.grid:not(.disabled) .block.empty:hover {
+  background-color: #2f5c8c;
+}
+
+/* barcos (colores del repo, algo más apagados para fondo oscuro) */
+.block.Carrier,
+.ship-unit.Carrier {
+  background-color: #1cb4b4;
+}
+.block.Battleship,
+.ship-unit.Battleship {
+  background-color: #e08a14;
+}
+.block.Destroyer,
+.ship-unit.Destroyer {
+  background-color: #7cc41f;
+}
+.block.Submarine,
+.ship-unit.Submarine {
+  background-color: #e3bd6a;
+}
+.block.Patrol,
+.ship-unit.Patrol {
+  background-color: #e35f48;
+}
+
+.block.placing {
+  background-color: rgba(255, 166, 0, 0.6);
+}
+.block.forbidden {
+  background-color: rgba(255, 60, 60, 0.55);
+}
+.block.selecting {
+  background-color: #5fb4e6;
+}
+
+/* disparos: agua = punto, tocado = aspa roja, hundido = aspa sobre fondo oscuro */
+.block.miss::after,
+.block.hit::after,
+.block.sank::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+.block.miss::after {
+  content: '•';
+  color: #9fc2e6;
+  font-size: 1.3em;
+}
+.block.hit {
+  background-color: #e5484d;
+}
+.block.hit::after {
+  content: '✕';
+  color: #fff;
+}
+.block.sank {
+  background-color: #3a1218;
+  box-shadow: inset 0 0 0 2px #e5484d;
+}
+.block.sank::after {
+  content: '✕';
+  color: #ff8a8f;
+}
+.block.last {
+  outline: 3px solid #ffe066;
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+.board-container {
+  text-align: center;
+}
+.board-title {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin: 0 auto 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  max-width: calc(var(--w, 360px));
+}
+.board-title-p1 {
+  background-color: #8a2346;
+}
+.board-title-p2 {
+  background-color: #3c4a63;
+}
+
+.game-area {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.tip {
+  text-align: center;
+  min-height: 3.2em;
+  color: #b9c6d8;
+}
+.tip.small {
+  font-size: 0.9em;
+  max-width: 560px;
+  margin: 0 auto 12px;
+}
+.tip-last {
+  font-size: 1.05em;
+  color: #e8eef7;
+}
+.tip-last.tocado,
+.tip-last.hundido {
+  color: #ff8a8f;
+  font-weight: 700;
+}
+
+/* colocación */
+.placing-body {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.placing-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 360px);
+}
+.harbour {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.ship-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 2px solid #2d4466;
+  border-radius: 10px;
+  background: #15243a;
+  cursor: pointer;
+  text-align: left;
+}
+.ship-container:hover,
+.ship-selected {
+  border-color: #b7a3ff;
+  background: #1f2f4b;
+}
+.ship-name {
+  font-weight: 600;
+  font-size: 0.95em;
+}
+.harbour-ship {
+  display: flex;
+  gap: 2px;
+}
+.ship-unit {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.actions .btn {
+  flex: 1 1 auto;
+}

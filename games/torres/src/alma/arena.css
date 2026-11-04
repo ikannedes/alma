@@ -1,0 +1,23 @@
+/* Tablero (iframe) de "Batalla de torres": se ocultan los controles del juego original que
+   aquí no se usan. El reinicio va por la portada de Alma (nunca vuelve el bot integrado),
+   no hay elección de mazo y los avisos de mecánicas sin verificar son de desarrollo. */
+
+[data-ui="restart"],
+[data-ui="deck-choice-open"],
+[data-ui="deck-choice"],
+.combat-policy-question {
+  display: none !important;
+}
+
+.torres-aviso {
+  position: fixed;
+  inset: auto 0 45% 0;
+  margin: 0;
+  color: #ffd9de;
+  font: 700 28px system-ui, sans-serif;
+  text-align: center;
+}
+
+.torres-aviso[hidden] {
+  display: none;
+}

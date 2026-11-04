@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Muros · juega con Alma</title>
+<meta name="theme-color" content="#f2f0ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131209" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23241f18'/%3E%3Crect x='7' y='7' width='8' height='8' rx='1.5' fill='%23f2f0ec'/%3E%3Crect x='17' y='7' width='8' height='8' rx='1.5' fill='%23f2f0ec' opacity='.45'/%3E%3Crect x='7' y='17' width='8' height='8' rx='1.5' fill='%23f2f0ec' opacity='.45'/%3E%3Crect x='17' y='17' width='8' height='8' rx='1.5' fill='%239c5322'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/manrope-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/muros.css">
+</head>
+<body>
+
+<main class="juego">
+  <header class="cabecera">
+    <h1>Muros</h1>
+    <div class="acciones">
+      <button id="caminosBtn" class="btn btn-sm" type="button" aria-pressed="true" title="Mostrar los caminos más cortos">Caminos</button>
+      <button id="nuevaBtn" class="btn btn-sm" type="button">Nueva partida</button>
+    </div>
+  </header>
+
+  <div class="estado" id="estado" role="status" aria-live="polite">Conectando con Alma…</div>
+
+  <div class="tablero-marco" id="marco">
+    <canvas id="board" width="600" height="600" tabindex="0" role="application"
+            aria-label="Tablero de Muros. Flechas para mover el cursor, Intro para jugar, W para poner muro, R para girarlo, Esc para volver a mover."></canvas>
+  </div>
+
+  <div class="jugadores" id="jugadores"></div>
+
+  <details class="plegable" id="historialBox">
+    <summary>Jugadas</summary>
+    <ol class="historial" id="historial" reversed></ol>
+  </details>
+
+  <details class="plegable">
+    <summary>Reglas</summary>
+    <ul class="reglas">
+      <li>Gana quien llegue primero al lado contrario: tú (rojo) subes a la fila 9; Alma (azul) baja a la fila 1.</li>
+      <li>En tu turno: mueve tu ficha una casilla (toca una casilla iluminada) o pon un muro (toca una ranura entre casillas).</li>
+      <li>Cada muro tapa dos casillas. No puede encimarse ni cruzarse con otro, y nunca puede dejar a nadie sin camino.</li>
+      <li>Si las fichas quedan pegadas puedes saltar la de Alma; si detrás hay muro, saltas en diagonal.</li>
+      <li>Cada uno tiene 10 muros. Las líneas punteadas son el camino más corto de cada uno.</li>
+      <li>Alma juega con calma: puedes cerrar la página mientras piensa, te avisa cuando juegue.</li>
+    </ul>
+  </details>
+</main>
+
+<div id="finOverlay" class="overlay hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="finTitulo">
+    <h2 id="finTitulo">Fin de la partida</h2>
+    <p class="sub" id="finSub"></p>
+    <div class="modal-acciones">
+      <button id="otraBtn" type="button" class="btn btn-primary">Otra partida</button>
+      <button id="verBtn" type="button" class="btn">Ver el tablero</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<!-- Motor de reglas y dibujo del repo original (sin su IA); muros.js y partida.js son de Alma. -->
+<script src="js/rules.js"></script>
+<script src="js/render.js"></script>
+<script src="js/input.js"></script>
+<script src="js/muros.js"></script>
+<script src="js/partida.js"></script>
+</body>
+</html>

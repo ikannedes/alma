@@ -1,0 +1,59 @@
+Moss & Ember notices
+====================
+
+Project-authored work
+---------------------
+
+Unless a file or its provenance record says otherwise, code and original
+artwork created for this repository are Copyright (C) contributors to
+ThatXliner/clash-royale-clone and are licensed under GNU AGPL version 3 only
+(SPDX: AGPL-3.0-only). The canonical license text is in LICENSE.
+
+The logo and banner in docs/brand/ are original Moss & Ember artwork. The
+gameplay.png file is an unchanged copy of the existing
+artifacts/card-art-round-3/critic/app-shell/phone-small-battle-390x844.png browser evidence capture; it is
+included as project-authored interface artwork, not as new test evidence.
+
+Authored assets with separate licenses
+--------------------------------------
+
+The following assets have explicit provenance records and keep those license
+terms rather than inheriting the project license:
+
+* Procedural audio recipes and generated waveforms are authored for this
+  repository and dedicated under CC0-1.0. See
+  src/audio/audio-provenance.json and
+  src/audio/audio-production-provenance.json.
+* The three original SVG icons under public/assets/icons/ are authored in
+  this repository and licensed CC0-1.0 in the visual asset manifest in
+  src/content/visual-asset-manifest.js.
+
+The bundled Barlow Condensed Bold typeface is a third-party font by The Barlow
+Project Authors, Copyright 2017, under the SIL Open Font License 1.1. Its full
+license is shipped at public/licenses/BarlowCondensed-OFL.txt, and its
+unchanged source and license provenance is recorded in docs/fonts/provenance.json.
+It retains the OFL terms and is not project-authored artwork or AGPL-3.0-only
+material.
+
+Third-party dependencies retain the licenses declared by their respective
+packages. The development-only browser test tooling is not copied into the
+game release. Consult package metadata and the lockfile for exact dependency
+versions and upstream license files.
+
+Comparison corpus
+-----------------
+
+The files under reference/ are a comparison corpus, not Moss & Ember game
+content. They may contain or describe information and material from third
+parties. Their provenance and confidence notes are in reference/README.md,
+reference/stats/SOURCES.md, and adjacent source records. Those materials are
+not covered by the project license, are excluded from the game release, and
+are not licensed for redistribution by this notice. Do not copy or bundle
+them as game assets or product text.
+
+License text provenance
+-----------------------
+
+LICENSE is the verbatim GNU Affero General Public License, version 3, fetched
+from https://www.gnu.org/licenses/agpl-3.0.txt. Its SHA-256 is
+0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0.

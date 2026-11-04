@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- Batalla de torres (Alma). Página exterior: puente de Alma, portada y marco escalado.
+     El tablero de Moss & Ember (AGPL-3.0-only) va dentro de un iframe (arena.html), igual
+     que en la aplicación original, para que el toque se mida sin transformaciones. -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#101a22">
+    <title>Batalla de torres</title>
+    <link rel="stylesheet" href="./src/alma/marco.css">
+  </head>
+  <body>
+    <div class="torres-marco" data-marco></div>
+    <section class="torres-portada" data-portada aria-labelledby="torres-titulo">
+      <div class="torres-panel">
+        <h1 id="torres-titulo" data-titulo>Batalla de torres</h1>
+        <div data-texto>
+          <p>Tú juegas <strong>abajo</strong>; Alma juega <strong>arriba</strong>.</p>
+          <ul>
+            <li>Toca una carta y después un sitio de tu campo para desplegarla.</li>
+            <li>La energía se recarga sola, hasta 10. Cada carta tiene su coste.</li>
+            <li>Gana quien derribe más torres en 3 minutos. Si cae la torre del rey, se acaba al instante. Si hay empate, prórroga.</li>
+          </ul>
+        </div>
+        <button type="button" class="torres-boton" data-boton disabled>Cargando…</button>
+        <p class="torres-estado" data-estado role="status" aria-live="polite"></p>
+        <p class="torres-creditos">Basado en <em>Moss &amp; Ember</em> (AGPL-3.0). <a href="./licencias.html">Licencias y código fuente</a></p>
+      </div>
+    </section>
+    <script type="module" src="./src/alma/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+ "formato": "alma-anim/1",
+ "nombre": "alma_hola",
+ "nota": "Primera animación escrita por Claude (2026-10-30). Ángulos y parámetros dentro de los rangos de los .mot de fábrica. Sin probar en el robot.",
+ "cuadros": [
+  { "pose": [90, 90, 90, 90], "ms": 300 },
+  { "balanceo": { "ciclos": 2, "T": 800, "altura": 20, "fase": 10 } },
+  { "pose": [90, 90, 90, 90], "ms": 200 },
+  { "pose": [90, 90, 108, 108], "ms": 300 },
+  { "pose": [90, 90, 72, 72], "ms": 450 },
+  { "pose": [90, 90, 90, 90], "ms": 300 },
+  { "caminar": { "ciclos": 2, "T": 800, "caderas": 15, "pies": 10, "desvio": 0, "fase": 0, "dir": "adelante" } },
+  { "pose": [90, 90, 90, 90], "ms": 250 },
+  { "girar": { "ciclos": 1.5, "T": 900, "cadera_a": 12, "cadera_b": -12, "pies": 10, "desvio": 0, "fase": 0, "dir": "izquierda" } },
+  { "pose": [90, 90, 90, 90], "ms": 250 },
+  { "pose": [72, 108, 90, 90], "ms": 220 },
+  { "pose": [108, 72, 90, 90], "ms": 220 },
+  { "pose": [72, 108, 90, 90], "ms": 220 },
+  { "pose": [108, 72, 90, 90], "ms": 220 },
+  { "pose": [90, 90, 90, 90], "ms": 400 }
+ ]
+}

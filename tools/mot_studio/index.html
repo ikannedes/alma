@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mot-studio</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #667085; --line: #d9dde4; --accent: #2f6fde;
+  --bad: #c62828; --bad-bg: #fde8e8; --step: #fff3d6; --step-ink: #8a5a00; --sel: #e7efff;
+  --s0: #2f6fde; --s1: #d9480f; --s2: #2b8a3e; --s3: #9c36b5; --grid: #eceef2; --body: #c9ced8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --panel: #1c2027; --ink: #e6e9ef; --muted: #98a2b3; --line: #2e3440; --accent: #6ea0ff;
+    --bad: #ff6b6b; --bad-bg: #3a1d1f; --step: #3a3019; --step-ink: #f2c46d; --sel: #23324f;
+    --s0: #6ea0ff; --s1: #ff8c5a; --s2: #5fd07a; --s3: #d58bf0; --grid: #262b34; --body: #4a5262;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 16px; margin: 0 8px 0 0; }
+header .note { color: var(--muted); font-size: 12px; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+select, input[type=text], input[type=number] { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+label.file { border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; background: var(--panel); }
+label.file input { display: none; }
+main { display: grid; grid-template-columns: 320px 1fr; gap: 12px; padding: 12px 16px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+#list { max-height: 72vh; overflow: auto; border-top: 1px solid var(--line); margin-top: 8px; }
+#list table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#list td, #list th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+#list tr.row { cursor: pointer; }
+#list tr.row:hover, #list tr.cur { background: var(--sel); }
+#list td.name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+#list td.modes { white-space: normal; }
+.tag { display: inline-block; padding: 0 5px; border-radius: 4px; font-size: 11px; background: var(--grid); }
+.tag.step { background: var(--step); color: var(--step-ink); }
+.tag.warn { background: var(--bad-bg); color: var(--bad); }
+.row2 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+#right { display: grid; gap: 12px; min-width: 0; }
+.viz { display: grid; grid-template-columns: 1fr 340px; gap: 12px; align-items: start; }
+@media (max-width: 1200px) { .viz { grid-template-columns: 1fr; } }
+canvas { width: 100%; display: block; }
+#graph { height: 300px; }
+#figure { height: 300px; }
+.legend span { margin-right: 10px; font-size: 12px; }
+.legend i { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; }
+#errors { color: var(--bad); font-size: 12px; margin: 6px 0 0; white-space: pre-line; }
+#editor { overflow: auto; max-height: 46vh; }
+#editor table { border-collapse: collapse; font-size: 12px; width: 100%; }
+#editor th, #editor td { border-bottom: 1px solid var(--line); padding: 2px 4px; text-align: right; white-space: nowrap; }
+#editor th { position: sticky; top: 0; background: var(--panel); }
+#editor td.l { text-align: left; }
+#editor input { width: 58px; text-align: right; padding: 1px 4px; }
+#editor input.bad { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+#editor tr.step td { background: var(--step); color: var(--step-ink); }
+#editor tr.now td { outline: 1px solid var(--accent); }
+#editor td.act button { padding: 0 6px; font-size: 11px; }
+.map { font-size: 12px; display: grid; grid-template-columns: auto auto auto; gap: 4px 8px; align-items: center; margin-top: 8px; }
+.unconfirmed { color: var(--step-ink); background: var(--step); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+.muted { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>mot-studio</h1>
+  <label class="file">Abrir carpeta…<input id="pickDir" type="file" webkitdirectory multiple></label>
+  <label class="file">Abrir archivos…<input id="pickFiles" type="file" accept=".mot,.mo,.m" multiple></label>
+  <span class="note">Los .mot se leen en el navegador y no salen de esta PC (09, R5). Formato: 02, "Formato .mot".</span>
+</header>
+<main>
+  <section class="panel">
+    <h2>Archivos</h2>
+    <div class="row2">
+      <input id="search" type="text" placeholder="buscar…" style="flex:1;min-width:0">
+      <select id="prefix"><option value="">todos</option></select>
+    </div>
+    <div class="row2">
+      <button id="chainBtn" disabled>Encadenar marcados (0)</button>
+      <span id="count" class="muted"></span>
+    </div>
+    <div id="list"><p class="muted">Abre la carpeta <code>emo_backup/spiffs/mot</code>.</p></div>
+  </section>
+  <section id="right">
+    <div class="panel">
+      <div class="row2">
+        <strong id="curName">sin archivo</strong>
+        <span id="curInfo" class="muted"></span>
+        <span style="flex:1"></span>
+        <label class="muted">Duración del cuadro:
+          <select id="interp">
+            <option value="linear">transición lineal</option>
+            <option value="hold">salto y espera</option>
+          </select>
+        </label>
+        <button id="exportBtn" class="primary" disabled>Exportar .mot</button>
+      </div>
+      <div class="muted">La semántica de la duración es PENDIENTE (02); las dos lecturas se pueden comparar aquí.</div>
+      <div id="errors"></div>
+    </div>
+    <div class="viz">
+      <div class="panel">
+        <h2>Servos contra el tiempo</h2>
+        <canvas id="graph"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--s0)"></i>S0</span><span><i style="background:var(--s1)"></i>S1</span>
+          <span><i style="background:var(--s2)"></i>S2</span><span><i style="background:var(--s3)"></i>S3</span>
+          <span class="tag step">paso / giro</span> <span class="muted">clic en la gráfica para ir a ese tiempo</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>EMO de frente</h2>
+        <canvas id="figure"></canvas>
+        <div class="row2" style="margin-top:6px">
+          <button id="prevBtn" title="cuadro anterior">⏮</button>
+          <button id="playBtn">▶ reproducir</button>
+          <button id="nextBtn" title="cuadro siguiente">⏭</button>
+          <select id="speed">
+            <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option><option value="2">2×</option>
+          </select>
+          <span id="clock" class="muted"></span>
+        </div>
+        <div class="muted">Mapa S0..S3 → parte del cuerpo <span class="unconfirmed">sin confirmar hasta la sesión 1</span></div>
+        <div class="map" id="map"></div>
+        <div class="row2" style="margin-top:6px"><button id="mapReset">Mapa por omisión</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Cuadros</h2>
+      <div class="row2">
+        <button id="mirrorBtn" disabled>Espejar izq./der. (S0↔S1, S2↔S3)</button>
+        <label class="muted">Escalar amplitud ×<input id="scaleK" type="number" value="0.5" step="0.1" min="0" max="3" style="width:60px"></label>
+        <button id="scaleBtn" disabled>Aplicar</button>
+        <button id="revertBtn" disabled>Deshacer cambios</button>
+        <span class="muted">Los cuadros de paso y giro se muestran y no se editan (05, regla †).</span>
+      </div>
+      <div id="editor"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Núcleo portable: mismo formato y nombres de campos que alma-spec/tools/mot_tool.py. Las pruebas de Node
+     (test/test_mot_studio.js) ejecutan exactamente este bloque. -->
+<script id="mot-core">
+var MotCore = (function () {
+  "use strict";
+  var FRAME = 20;
+  var MODES = { 0xFE: "pose", 0x01: "paso", 0x02: "giro" };
+  var MODE_BYTE = { pose: 0xFE, paso: 0x01, giro: 0x02 };
+  /* Rangos observados en los 317 .mot (02): R10 */
+  var S_RANGE = [[40, 160], [53, 130], [0, 150], [30, 180]];
+  var MS_RANGE = [40, 6400];
+  var NEUTRAL = [90, 90, 90, 90];
+
+  function hex2(b) { return ("0" + b.toString(16)).slice(-2); }
+  function checksum(frame) { var s = 0; for (var i = 4; i < 18; i++) s += frame[i]; return s & 0xFF; }
+  function modeName(b) { return Object.prototype.hasOwnProperty.call(MODES, b) ? MODES[b] : "0x" + hex2(b); }
+  function modeByte(name) {
+    if (Object.prototype.hasOwnProperty.call(MODE_BYTE, name)) return MODE_BYTE[name];
+    if (/^0x[0-9a-f]{2}$/i.test(name)) return parseInt(name, 16);
+    throw new Error("modo desconocido " + name);
+  }
+
+  /* parse(data) como mot_tool.parse: lista de {type, mode, gait, s, ms}; lanza Error si algo no cuadra. */
+  function parse(data) {
+    if (data.length % FRAME) throw new Error("tamaño " + data.length + " no es múltiplo de " + FRAME);
+    var frames = [];
+    for (var i = 0; i < data.length; i += FRAME) {
+      var f = data.subarray(i, i + FRAME), n = i / FRAME;
+      if (!(f[0] === 0x55 && f[1] === 0xAA && f[2] === 0x55 && f[3] === 0xAA) || f[19] !== 0xED || f[15] !== 0)
+        throw new Error("cuadro " + n + ": firma inválida");
+      var c = checksum(f);
+      if (c !== f[18]) throw new Error("cuadro " + n + ": checksum 0x" + hex2(c) + " != 0x" + hex2(f[18]));
+      frames.push({
+        type: f[4], mode: modeName(f[5]),
+        gait: Array.prototype.slice.call(f.subarray(6, 11)),
+        s: Array.prototype.slice.call(f.subarray(11, 15)),
+        ms: f[16] | (f[17] << 8),
+      });
+    }
+    return frames;
+  }
+
+  /* build(frame_type, mode, gait, s, ms) como mot_tool.build: un cuadro de 20 bytes. */
+  function build(frame_type, mode, gait, s, ms) {
+    var body = [frame_type, mode].concat(gait, s, [0, ms & 0xFF, ms >> 8]);
+    var sum = 0;
+    for (var i = 0; i < body.length; i++) sum += body[i];
+    return Uint8Array.from([0x55, 0xAA, 0x55, 0xAA].concat(body, [sum & 0xFF, 0xED]));
+  }
+
+  function serialize(frames) {
+    var out = new Uint8Array(frames.length * FRAME);
+    frames.forEach(function (fr, k) { out.set(build(fr.type, modeByte(fr.mode), fr.gait, fr.s, fr.ms), k * FRAME); });
+    return out;
+  }
+
+  function isPose(fr) { return fr.mode === "pose"; }
+  function isByte(v) { return Number.isInteger(v) && v >= 0 && v <= 255; }
+
+  /* Errores que impiden exportar: [{frame, field, msg}] */
+  function validate(frames) {
+    var errs = [];
+    if (!frames.length) errs.push({ frame: -1, field: "", msg: "sin cuadros" });
+    frames.forEach(function (fr, k) {
+      if (!Number.isInteger(fr.ms) || fr.ms < MS_RANGE[0] || fr.ms > MS_RANGE[1])
+        errs.push({ frame: k, field: "ms", msg: "cuadro " + k + ": duración " + fr.ms + " ms fuera de " + MS_RANGE[0] + "–" + MS_RANGE[1] });
+      if (!isByte(fr.type) || fr.gait.length !== 5 || !fr.gait.every(isByte) || fr.s.length !== 4 || !fr.s.every(isByte))
+        errs.push({ frame: k, field: "bytes", msg: "cuadro " + k + ": algún campo no es un byte" });
+      if (isPose(fr)) fr.s.forEach(function (a, j) {
+        if (!Number.isInteger(a) || a < S_RANGE[j][0] || a > S_RANGE[j][1])
+          errs.push({ frame: k, field: "s" + j, msg: "cuadro " + k + ": S" + j + " = " + a + "° fuera del rango observado " + S_RANGE[j][0] + "–" + S_RANGE[j][1] });
+      });
+    });
+    return errs;
+  }
+
+  function clone(frames) { return frames.map(function (f) { return { type: f.type, mode: f.mode, gait: f.gait.slice(), s: f.s.slice(), ms: f.ms }; }); }
+
+  /* Ediciones: solo tocan cuadros de pose; los de paso y giro pasan intactos. */
+  function mirror(frames) {
+    return clone(frames).map(function (f) { if (isPose(f)) f.s = [f.s[1], f.s[0], f.s[3], f.s[2]]; return f; });
+  }
+  function scale(frames, k) {
+    return clone(frames).map(function (f) {
+      if (isPose(f)) f.s = f.s.map(function (a) { return Math.round(90 + (a - 90) * k); });
+      return f;
+    });
+  }
+  function concat(list) { return list.reduce(function (acc, fr) { return acc.concat(clone(fr)); }, []); }
+
+  function stats(frames) {
+    var modes = {};
+    var total = 0;
+    frames.forEach(function (f) { modes[f.mode] = true; total += f.ms; });
+    return { frames: frames.length, ms: total, modes: Object.keys(modes) };
+  }
+
+  function starts(frames) { var t = 0; return frames.map(function (f) { var s = t; t += f.ms; return s; }); }
+
+  /* Pose en el tiempo t (ms). "linear": la duración es la transición desde la pose anterior (desde 90° al inicio).
+     "hold": la pose se toma al empezar el cuadro y se sostiene. Paso y giro mantienen la última pose. */
+  function poseAt(frames, t, interp) {
+    var prev = NEUTRAL.slice(), acc = 0;
+    for (var k = 0; k < frames.length; k++) {
+      var f = frames[k], end = acc + f.ms, target = isPose(f) ? f.s : prev;
+      if (t < end || k === frames.length - 1) {
+        var u = f.ms > 0 ? Math.min(1, Math.max(0, (t - acc) / f.ms)) : 1;
+        var s = interp === "hold" ? target.slice() : prev.map(function (a, j) { return a + (target[j] - a) * u; });
+        return { s: s, frame: k, mode: f.mode, u: u };
+      }
+      prev = target.slice();
+      acc = end;
+    }
+    return { s: prev, frame: -1, mode: "", u: 0 };
+  }
+
+  return { FRAME: FRAME, MODES: MODES, S_RANGE: S_RANGE, MS_RANGE: MS_RANGE, checksum: checksum, parse: parse, build: build,
+           serialize: serialize, validate: validate, mirror: mirror, scale: scale, concat: concat, clone: clone,
+           stats: stats, starts: starts, poseAt: poseAt, isPose: isPose, modeByte: modeByte };
+})();
+if (typeof module !== "undefined") module.exports = MotCore;
+</script>
+
+<script>
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var PARTS = [
+  { key: "legL", name: "pierna izquierda (de EMO)" }, { key: "legR", name: "pierna derecha (de EMO)" },
+  { key: "footL", name: "pie izquierdo (de EMO)" }, { key: "footR", name: "pie derecho (de EMO)" },
+];
+/* Por omisión: orden interno del firmware original sobre GPIO_MAP (02; sesion1.md): S0 = GPIO21 pierna izq.,
+   S1 = GPIO25 pierna der., S2 = GPIO5 pie izq., S3 = GPIO26 pie der. Sin confirmar hasta la sesión 1. */
+var DEFAULT_MAP = { legL: { s: 0, inv: false }, legR: { s: 1, inv: false }, footL: { s: 2, inv: false }, footR: { s: 3, inv: false } };
+var MAP_KEY = "motstudio.map.v1";
+
+var st = { files: [], order: [], cur: null, orig: null, frames: [], name: "", t: 0, playing: false, last: 0,
+           map: loadMap(), checked: [] };
+
+function loadMap() {
+  try { var m = JSON.parse(localStorage.getItem(MAP_KEY)); if (m && m.legL) return m; } catch (e) { /* sin almacenamiento */ }
+  return JSON.parse(JSON.stringify(DEFAULT_MAP));
+}
+function saveMap() { try { localStorage.setItem(MAP_KEY, JSON.stringify(st.map)); } catch (e) { /* sin almacenamiento */ } }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function prefixOf(n) { var m = n.match(/^[A-Za-z]+/); return m ? m[0] + "*" : "otros"; }
+function fmtS(ms) { return (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + " s"; }
+
+/* ---------- carga ---------- */
+function loadFileList(fileList) {
+  /* Como mot_tool.py: algunos nombres vienen truncados a 32 bytes (".mo", ".m") en la SPIFFS original */
+  var arr = Array.prototype.filter.call(fileList, function (f) { return /\.(mot|mo|m)$/i.test(f.name); });
+  Promise.all(arr.map(function (f) {
+    return f.arrayBuffer().then(function (buf) { return { name: f.name, bytes: new Uint8Array(buf) }; });
+  })).then(function (items) { loadBuffers(items); });
+}
+function loadBuffers(items) {
+  st.files = items.map(function (it) {
+    var rec = { name: it.name, bytes: it.bytes, frames: null, error: null, stats: null };
+    try { rec.frames = MotCore.parse(it.bytes); rec.stats = MotCore.stats(rec.frames); } catch (e) { rec.error = e.message; }
+    return rec;
+  }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+  st.checked = [];
+  var prefixes = {};
+  st.files.forEach(function (f) { prefixes[prefixOf(f.name)] = (prefixes[prefixOf(f.name)] || 0) + 1; });
+  $("prefix").innerHTML = '<option value="">todos (' + st.files.length + ")</option>" + Object.keys(prefixes).sort().map(function (p) {
+    return '<option value="' + p + '">' + p + " (" + prefixes[p] + ")</option>";
+  }).join("");
+  renderList();
+  if (st.files.length) openFile(st.files.find(function (f) { return f.frames; }) || st.files[0]);
+}
+window.motStudioLoad = loadBuffers;   /* para cargar desde la consola o desde un arnés de pruebas */
+window.motStudioOpen = function (name) { var f = st.files.find(function (x) { return x.name === name; }); if (f) openFile(f); };
+window.motStudioSeek = function (t) { st.t = t; draw(); };
+
+/* ---------- lista ---------- */
+function renderList() {
+  var q = $("search").value.toLowerCase(), p = $("prefix").value;
+  var rows = st.files.filter(function (f) { return (!q || f.name.toLowerCase().indexOf(q) >= 0) && (!p || prefixOf(f.name) === p); });
+  $("count").textContent = rows.length + " de " + st.files.length;
+  if (!st.files.length) return;
+  $("list").innerHTML = '<table><tr><th></th><th>nombre</th><th>cuadros</th><th>duración</th><th>modos</th></tr>' + rows.map(function (f) {
+    var modes = f.error ? '<span class="tag warn">inválido</span>' : f.stats.modes.map(function (m) {
+      return '<span class="tag' + (m === "pose" ? "" : " step") + '">' + m + "</span>";
+    }).join(" ");
+    var i = st.files.indexOf(f);
+    return '<tr class="row' + (st.cur === f ? " cur" : "") + '" data-i="' + i + '">' +
+      '<td><input type="checkbox" data-c="' + i + '"' + (st.checked.indexOf(i) >= 0 ? " checked" : "") + (f.error ? " disabled" : "") + "></td>" +
+      '<td class="name" title="' + f.name + '">' + f.name + "</td><td>" + (f.error ? "—" : f.stats.frames) + "</td><td>" +
+      (f.error ? "—" : fmtS(f.stats.ms)) + '</td><td class="modes">' + modes + "</td></tr>";
+  }).join("") + "</table>";
+  $("chainBtn").textContent = "Encadenar marcados (" + st.checked.length + ")";
+  $("chainBtn").disabled = st.checked.length < 2;
+}
+$("list").addEventListener("click", function (e) {
+  var c = e.target.getAttribute && e.target.getAttribute("data-c");
+  if (c !== null && c !== undefined) {
+    var i = +c, k = st.checked.indexOf(i);
+    if (k >= 0) st.checked.splice(k, 1); else st.checked.push(i);   /* orden en que se marcan = orden de encadenado */
+    renderList();
+    return;
+  }
+  var tr = e.target.closest && e.target.closest("tr.row");
+  if (tr) openFile(st.files[+tr.getAttribute("data-i")]);
+});
+$("search").addEventListener("input", renderList);
+$("prefix").addEventListener("change", renderList);
+$("pickDir").addEventListener("change", function (e) { loadFileList(e.target.files); });
+$("pickFiles").addEventListener("change", function (e) { loadFileList(e.target.files); });
+$("chainBtn").addEventListener("click", function () {
+  var parts = st.checked.map(function (i) { return st.files[i]; });
+  var frames = MotCore.concat(parts.map(function (f) { return f.frames; }));
+  st.cur = null;
+  st.orig = MotCore.clone(frames);
+  setDoc(frames, "encadenado_" + parts.map(function (f) { return f.name.replace(/\.mot?$/i, ""); }).join("+").slice(0, 60) + ".mot");
+  $("curInfo").textContent = "encadenado de " + parts.length + " archivos";
+});
+
+/* ---------- documento actual ---------- */
+function openFile(f) {
+  st.cur = f;
+  stop();
+  if (f.error) {
+    st.frames = []; st.orig = []; st.name = f.name;
+    $("curName").textContent = f.name;
+    $("curInfo").textContent = "";
+    $("errors").textContent = "No se puede leer: " + f.error;
+    $("editor").innerHTML = "";
+    $("exportBtn").disabled = true;
+    renderList(); draw();
+    return;
+  }
+  st.orig = MotCore.clone(f.frames);
+  setDoc(MotCore.clone(f.frames), f.name);
+  renderList();
+}
+function setDoc(frames, name) {
+  st.frames = frames; st.name = name; st.t = 0;
+  $("curName").textContent = name;
+  refresh();
+}
+function dirty() { return JSON.stringify(st.frames) !== JSON.stringify(st.orig); }
+function refresh() {
+  var s = MotCore.stats(st.frames), errs = MotCore.validate(st.frames);
+  $("curInfo").textContent = s.frames + " cuadros · " + fmtS(s.ms) + " · " + s.modes.join(", ") + (dirty() ? " · editado" : "");
+  $("errors").textContent = errs.length ? errs.length + " error(es); no se puede exportar:\n" + errs.slice(0, 8).map(function (e) { return e.msg; }).join("\n") + (errs.length > 8 ? "\n…" : "") : "";
+  $("exportBtn").disabled = errs.length > 0;
+  ["mirrorBtn", "scaleBtn"].forEach(function (b) { $(b).disabled = !st.frames.length; });
+  $("revertBtn").disabled = !dirty();
+  renderEditor(errs);
+  draw();
+}
+
+/* ---------- editor ---------- */
+function renderEditor(errs) {
+  var bad = {};
+  errs.forEach(function (e) { bad[e.frame + ":" + e.field] = true; });
+  var now = MotCore.poseAt(st.frames, st.t, $("interp").value).frame;
+  var starts = MotCore.starts(st.frames);
+  $("editor").innerHTML = '<table><tr><th class="l">#</th><th class="l">modo</th><th>inicio</th><th>S0</th><th>S1</th><th>S2</th><th>S3</th><th>ms</th><th class="l">tipo / marcha</th><th></th></tr>' +
+    st.frames.map(function (f, k) {
+      var pose = MotCore.isPose(f);
+      var cell = function (field, v) {
+        if (!pose && field !== "ms") return "<td>" + v + "</td>";
+        if (!pose) return "<td>" + v + "</td>";
+        return '<td><input type="number" data-k="' + k + '" data-f="' + field + '" value="' + v + '"' + (bad[k + ":" + field] ? ' class="bad"' : "") + "></td>";
+      };
+      return '<tr class="' + (pose ? "" : "step") + (k === now ? " now" : "") + '"><td class="l">' + k + '</td><td class="l">' + (pose ? "pose" : '<span class="tag step">' + f.mode + "</span>") +
+        "</td><td>" + (starts[k] / 1000).toFixed(2) + "</td>" + f.s.map(function (a, j) { return cell("s" + j, a); }).join("") + cell("ms", f.ms) +
+        '<td class="l muted">0x' + ("0" + f.type.toString(16)).slice(-2) + " · " + f.gait.join(" ") + "</td>" +
+        '<td class="act">' + (pose ? '<button data-a="ins" data-k="' + k + '" title="insertar un cuadro neutro después">+</button>' +
+          '<button data-a="dup" data-k="' + k + '" title="duplicar">⧉</button>' : "") +
+        '<button data-a="del" data-k="' + k + '" title="borrar"' + (pose ? "" : " disabled") + ">✕</button></td></tr>";
+    }).join("") + "</table>";
+}
+$("editor").addEventListener("change", function (e) {
+  var k = e.target.getAttribute("data-k"), fld = e.target.getAttribute("data-f");
+  if (k === null || !fld) return;
+  var f = st.frames[+k], v = Number(e.target.value);
+  if (!MotCore.isPose(f)) return;
+  if (fld === "ms") f.ms = v; else f.s[+fld.slice(1)] = v;
+  refresh();
+});
+$("editor").addEventListener("click", function (e) {
+  var a = e.target.getAttribute && e.target.getAttribute("data-a");
+  if (!a) return;
+  var k = +e.target.getAttribute("data-k"), f = st.frames[k];
+  if (!MotCore.isPose(f)) return;
+  if (a === "del") st.frames.splice(k, 1);
+  if (a === "dup") st.frames.splice(k + 1, 0, MotCore.clone([f])[0]);
+  if (a === "ins") st.frames.splice(k + 1, 0, { type: f.type, mode: "pose", gait: f.gait.slice(), s: [90, 90, 90, 90], ms: 500 });
+  refresh();
+});
+$("mirrorBtn").addEventListener("click", function () { st.frames = MotCore.mirror(st.frames); refresh(); });
+$("scaleBtn").addEventListener("click", function () { st.frames = MotCore.scale(st.frames, Number($("scaleK").value)); refresh(); });
+$("revertBtn").addEventListener("click", function () { st.frames = MotCore.clone(st.orig); refresh(); });
+$("interp").addEventListener("change", draw);
+$("exportBtn").addEventListener("click", function () {
+  if (MotCore.validate(st.frames).length) return;
+  var bytes = MotCore.serialize(st.frames);
+  MotCore.parse(bytes);   /* doble verificación: lo exportado se vuelve a leer con el mismo parser */
+  var name = dirty() ? st.name.replace(/\.mot?$/i, "") + "_editado.mot" : st.name;
+  var url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+  var a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+});
+
+/* ---------- mapa ---------- */
+function renderMap() {
+  $("map").innerHTML = PARTS.map(function (p) {
+    var m = st.map[p.key];
+    return "<span>" + p.name + '</span><select data-p="' + p.key + '">' + [0, 1, 2, 3].map(function (j) {
+      return "<option value=" + j + (m.s === j ? " selected" : "") + ">S" + j + "</option>";
+    }).join("") + '</select><label><input type="checkbox" data-inv="' + p.key + '"' + (m.inv ? " checked" : "") + "> invertir</label>";
+  }).join("");
+}
+$("map").addEventListener("change", function (e) {
+  var p = e.target.getAttribute("data-p"), inv = e.target.getAttribute("data-inv");
+  if (p) st.map[p].s = +e.target.value;
+  if (inv) st.map[inv].inv = e.target.checked;
+  saveMap(); draw();
+});
+$("mapReset").addEventListener("click", function () { st.map = JSON.parse(JSON.stringify(DEFAULT_MAP)); saveMap(); renderMap(); draw(); });
+
+/* ---------- dibujo ---------- */
+function sizeCanvas(c) {
+  var r = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * r) || c.height !== Math.round(h * r)) { c.width = Math.round(w * r); c.height = Math.round(h * r); }
+  var g = c.getContext("2d");
+  g.setTransform(r, 0, 0, r, 0, 0);
+  return { g: g, w: w, h: h };
+}
+function total() { return MotCore.stats(st.frames).ms; }
+
+function drawGraph() {
+  var o = sizeCanvas($("graph")), g = o.g, w = o.w, h = o.h, L = 34, R = 8, T = 8, B = 22;
+  var interp = $("interp").value, T_ms = Math.max(total(), 1);
+  var X = function (t) { return L + (w - L - R) * t / T_ms; }, Y = function (a) { return T + (h - T - B) * (1 - a / 180); };
+  g.clearRect(0, 0, w, h);
+  g.font = "11px system-ui, sans-serif";
+  var starts = MotCore.starts(st.frames);
+  st.frames.forEach(function (f, k) {   /* bandas de paso y giro */
+    if (MotCore.isPose(f)) return;
+    g.fillStyle = css("--step"); g.fillRect(X(starts[k]), T, Math.max(1, X(starts[k] + f.ms) - X(starts[k])), h - T - B);
+  });
+  g.strokeStyle = css("--grid"); g.fillStyle = css("--muted"); g.lineWidth = 1;
+  [0, 45, 90, 135, 180].forEach(function (a) {
+    g.beginPath(); g.moveTo(L, Y(a)); g.lineTo(w - R, Y(a)); g.stroke();
+    g.fillText(a + "°", 2, Y(a) + 4);
+  });
+  var step = T_ms > 20000 ? 5000 : T_ms > 8000 ? 2000 : T_ms > 3000 ? 1000 : 500;
+  for (var t = 0; t <= T_ms; t += step) g.fillText((t / 1000) + " s", X(t) - 8, h - 6);
+  for (var j = 0; j < 4; j++) {   /* curvas, muestreadas con la misma poseAt que la figura */
+    g.strokeStyle = css("--s" + j); g.lineWidth = 2; g.beginPath();
+    var n = Math.max(2, Math.floor(w - L - R));
+    for (var i = 0; i <= n; i++) {
+      var tt = T_ms * i / n, p = MotCore.poseAt(st.frames, tt, interp);
+      if (i === 0) g.moveTo(X(tt), Y(p.s[j])); else g.lineTo(X(tt), Y(p.s[j]));
+    }
+    g.stroke();
+  }
+  var errs = MotCore.validate(st.frames);   /* ángulos fuera de rango: punto rojo al final del cuadro */
+  g.fillStyle = css("--bad");
+  errs.forEach(function (e) {
+    if (e.field[0] !== "s") return;
+    var k = e.frame, a = st.frames[k].s[+e.field.slice(1)];
+    g.beginPath(); g.arc(X(starts[k] + (interp === "hold" ? 0 : st.frames[k].ms)), Y(Math.max(0, Math.min(180, a))), 4, 0, 7); g.fill();
+  });
+  g.strokeStyle = css("--ink"); g.lineWidth = 1;   /* cursor */
+  g.beginPath(); g.moveTo(X(st.t), T); g.lineTo(X(st.t), h - B); g.stroke();
+}
+
+function drawFigure() {
+  var o = sizeCanvas($("figure")), g = o.g, w = o.w, h = o.h;
+  var p = MotCore.poseAt(st.frames, st.t, $("interp").value);
+  g.clearRect(0, 0, w, h);
+  var cx = w / 2, top = 30, bodyW = 150, bodyH = 110, hipY = top + bodyH, legLen = 85, footLen = 46;
+  g.fillStyle = css("--body"); g.strokeStyle = css("--ink"); g.lineWidth = 2;
+  roundRect(g, cx - bodyW / 2, top, bodyW, bodyH, 22); g.fill(); g.stroke();
+  g.fillStyle = css("--panel"); roundRect(g, cx - 52, top + 22, 104, 60, 12); g.fill();   /* pantalla */
+  g.fillStyle = css("--accent"); g.fillRect(cx - 30, top + 40, 14, 22); g.fillRect(cx + 16, top + 40, 14, 22);
+  /* De frente, la izquierda de EMO queda a la derecha de la imagen */
+  [{ side: +1, leg: "legL", foot: "footL" }, { side: -1, leg: "legR", foot: "footR" }].forEach(function (q) {
+    var lm = st.map[q.leg], fm = st.map[q.foot];
+    var la = (p.s[lm.s] - 90) * (lm.inv ? -1 : 1), fa = (p.s[fm.s] - 90) * (fm.inv ? -1 : 1);
+    var hx = cx + q.side * 42, rad = Math.PI / 180;
+    var kx = hx + Math.sin(la * rad) * legLen * q.side, ky = hipY + Math.cos(la * rad) * legLen;
+    g.strokeStyle = css("--s" + lm.s); g.lineWidth = 9; g.lineCap = "round";
+    g.beginPath(); g.moveTo(hx, hipY); g.lineTo(kx, ky); g.stroke();
+    g.strokeStyle = css("--s" + fm.s); g.lineWidth = 7;
+    var dx = Math.cos(fa * rad) * footLen / 2, dy = Math.sin(fa * rad) * footLen / 2 * q.side;
+    g.beginPath(); g.moveTo(kx - dx, ky - dy); g.lineTo(kx + dx, ky + dy); g.stroke();
+    g.fillStyle = css("--muted"); g.font = "11px system-ui, sans-serif";
+    g.fillText("S" + lm.s + " " + Math.round(p.s[lm.s]) + "°", hx + q.side * 18 - (q.side < 0 ? 46 : 0), hipY + 14);
+    g.fillText("S" + fm.s + " " + Math.round(p.s[fm.s]) + "°", kx - 22, ky + 26);
+  });
+  g.fillStyle = css("--muted"); g.font = "12px system-ui, sans-serif";
+  g.fillText("der. de EMO", 8, h - 8); g.fillText("izq. de EMO", w - 74, h - 8);
+  if (p.frame >= 0 && !MotCore.isPose(st.frames[p.frame])) {
+    g.fillStyle = css("--step-ink"); g.fillText("cuadro de " + p.mode + ": la pose se mantiene", cx - 90, 18);
+  }
+  $("clock").textContent = (st.t / 1000).toFixed(2) + " / " + (total() / 1000).toFixed(2) + " s · cuadro " + (p.frame >= 0 ? p.frame : "—");
+}
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+var lastEditorFrame = -1;
+function draw() {
+  drawGraph(); drawFigure();
+  var f = MotCore.poseAt(st.frames, st.t, $("interp").value).frame;
+  if (f !== lastEditorFrame) {   /* resalta el cuadro en curso sin reconstruir la tabla */
+    lastEditorFrame = f;
+    var rows = $("editor").querySelectorAll("tr");
+    rows.forEach(function (r, i) { r.classList.toggle("now", i - 1 === f); });
+  }
+}
+
+/* ---------- reproducción ---------- */
+function tick(now) {
+  if (!st.playing) return;
+  st.t += (now - st.last) * Number($("speed").value);
+  st.last = now;
+  if (st.t >= total()) { st.t = total(); stop(); }
+  draw();
+  if (st.playing) requestAnimationFrame(tick);
+}
+function play() { if (!st.frames.length) return; if (st.t >= total()) st.t = 0; st.playing = true; st.last = performance.now(); $("playBtn").textContent = "⏸ pausa"; requestAnimationFrame(tick); }
+function stop() { st.playing = false; $("playBtn").textContent = "▶ reproducir"; }
+$("playBtn").addEventListener("click", function () { if (st.playing) stop(); else play(); });
+function jumpFrame(d) {   /* va al final del cuadro (pose alcanzada en "lineal", recién tomada en "salto") */
+  stop();
+  if (!st.frames.length) return;
+  var starts = MotCore.starts(st.frames), interp = $("interp").value;
+  var k = MotCore.poseAt(st.frames, st.t, interp).frame;
+  var atEnd = function (i) { return interp === "hold" ? starts[i] : starts[i] + st.frames[i].ms - 1e-6; };
+  if (d > 0) k = Math.abs(st.t - atEnd(k)) < 1 ? Math.min(k + 1, st.frames.length - 1) : k;
+  else k = Math.max(0, Math.abs(st.t - atEnd(k)) < 1 ? k - 1 : k - (interp === "hold" ? 0 : 1));
+  st.t = Math.max(0, atEnd(k));
+  draw();
+}
+$("prevBtn").addEventListener("click", function () { jumpFrame(-1); });
+$("nextBtn").addEventListener("click", function () { jumpFrame(+1); });
+$("graph").addEventListener("click", function (e) {
+  var r = e.target.getBoundingClientRect(), L = 34, R = 8;
+  st.t = Math.max(0, Math.min(total(), (e.clientX - r.left - L) / (r.width - L - R) * total()));
+  stop(); draw();
+});
+window.addEventListener("resize", draw);
+if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+renderMap();
+draw();
+</script>
+</body>
+</html>

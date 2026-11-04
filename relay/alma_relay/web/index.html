@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Alma</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg"><meta name="theme-color" content="#16121d">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Diseño 2026-10-30: propuesta del dueño (Pixelcut), versión oscura. Una sola paleta: la app es oscura siempre. */
+:root{--bg:#16121d;--bg2:#241a26;--card:rgba(39,32,48,.86);--card2:rgba(55,45,66,.9);--edge:rgba(255,255,255,.07);--ink:#f5eff7;--mute:#a79db2;
+ --coral:#ff7b86;--mint:#7fe0c3;--lav:#b7a3ff;--sun:#ffc86b;--sky:#8fc7ff;--bad:#ff7b86;--ok:#7fe0c3;--track:rgba(255,255,255,.08)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg)}
+body{color:var(--ink);font:15px/1.45 Nunito,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+ background:radial-gradient(120% 60% at 50% 0%,#2b2038 0%,transparent 60%),radial-gradient(90% 50% at 100% 100%,#3a2230 0%,transparent 60%),var(--bg);background-attachment:fixed}
+main{max-width:560px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+h1,h2,.f{font-family:Fredoka,Nunito,sans-serif}
+.top{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--edge);border-radius:22px;padding:10px 12px 10px 18px;margin-bottom:14px;backdrop-filter:blur(10px)}
+.logo{font:600 26px Fredoka,sans-serif;color:var(--coral);letter-spacing:.2px}.logo span{font-size:18px;vertical-align:2px}
+.live{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}.live i{width:8px;height:8px;border-radius:50%;background:#6b6275}.live.on i{background:var(--mint);box-shadow:0 0 0 4px rgba(127,224,195,.15)}
+.sp{flex:1}
+.ib{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,123,134,.14);color:var(--coral);font-size:18px;display:grid;place-items:center;padding:0}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);backdrop-filter:blur(10px)}
+.card h2{font-size:15px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.mute{color:var(--mute)}.err{color:var(--bad)}.ok{color:var(--ok)}
+/* héroe */
+.hero{text-align:center;padding:18px 16px 14px}
+.face{width:min(210px,58vw);height:auto;display:block;margin:0 auto 6px;filter:drop-shadow(0 18px 24px rgba(0,0,0,.45))}
+/* EMO dibujado a mano: cabeza-pantalla con dos ojos de luz, patas delgadas y pies negros.
+   Capas: .emo (vaivén de baile/enfermo) > .bob (respira) > .cabeza (tiembla/mastica) > .mirada (mira a los lados, la mueve el JS con --mx/--my).
+   Cada ojo: .tam (tamaño) > .parpadeo > .iris, recortado por su máscara (#mOi/#mOd) con dos párpados (.psup arriba, .pinf abajo) que le dan la forma. */
+.face .emo,.face .bob,.face .cabeza,.face .tam,.face .parpadeo,.face .psup,.face .pinf{transform-box:fill-box;transform-origin:50% 50%}
+.face .emo{transform-origin:50% 100%}
+.face .bob{animation:bob 4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.face .mirada{transform:translate(var(--mx,0px),var(--my,0px));transition:transform .6s cubic-bezier(.3,.7,.3,1)}
+.face .tam,.face .psup,.face .pinf{transition:transform .45s ease}
+.face .parpadeo{animation:blink 5s infinite}
+@keyframes blink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.08)}}
+.face .iris{fill:url(#ojoAzul);transition:opacity .4s}
+.face .pantalla{transition:fill .5s}
+/* tranquila: ojos normales (no hace falta regla). Triste (tranquila con ánimo bajo): cejas caídas hacia afuera */
+.face.sad #mOi .psup{transform:translateY(9px) rotate(-14deg)}.face.sad #mOd .psup{transform:translateY(9px) rotate(14deg)}
+.face.sad .mirada{transform:translate(var(--mx,0px),calc(var(--my,0px) + 4px))}
+/* contenta: ^ ^ (el párpado de abajo sube en curva) */
+.face.happy .pinf{transform:translateY(-30px)}.face.happy .tam{transform:translateY(-3px)}
+.face.happy .bob{animation:brinco 1.6s ease-in-out infinite}
+@keyframes brinco{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}55%{transform:translateY(-6px)}}
+/* juguetona: guiño (ojo derecho en ^, el izquierdo grande) y rebote */
+.face.playful #mOd .pinf{transform:translateY(-30px)}.face.playful .od .tam{transform:translateY(-3px)}.face.playful .oi .tam{transform:scale(1.08)}
+.face.playful .bob{animation:rebote .9s cubic-bezier(.4,0,.6,1) infinite}
+.face.playful .cabeza{animation:ladeo 1.8s ease-in-out infinite}
+@keyframes rebote{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes ladeo{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+/* aburrida: medio párpado y la mirada abajo */
+.face.bored .psup{transform:translateY(18px)}.face.bored .mirada{transform:translate(var(--mx,0px),calc(var(--my,0px) + 5px))}
+.face.bored .parpadeo{animation-duration:7s}
+/* gruñona: párpados en diagonal, más bajos hacia el centro (enojo) */
+.face.grumpy #mOi .psup{transform:translateY(13px) rotate(20deg)}.face.grumpy #mOd .psup{transform:translateY(13px) rotate(-20deg)}
+.face.grumpy .tam{transform:scaleY(.9)}
+/* con sueño: párpados pesados y parpadeo lento */
+.face.sleepy .psup{transform:translateY(23px)}.face.sleepy .pinf{transform:translateY(-4px)}
+.face.sleepy .parpadeo{animation:cabeceo 4s ease-in-out infinite}.face.sleepy .bob{animation-duration:6s}
+@keyframes cabeceo{0%,30%,100%{transform:scaleY(1)}45%,60%{transform:scaleY(.15)}}
+/* asustada: ojos chicos y tiembla */
+.face.scared .tam{transform:scale(.62)}.face.scared .cabeza{animation:tiembla .14s linear infinite}
+@keyframes tiembla{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.4px)}75%{transform:translateX(1.4px)}}
+/* dormida: ojos cerrados en rayita, respira lento, Zz */
+.face.sleep .tam{transform:translateY(10px) scaleY(.11)}.face.sleep .parpadeo{animation:none}
+.face.sleep .bob{animation:bob 6s ease-in-out infinite}
+.face.sleep .mirada{transform:none}
+/* comiendo/bebiendo: mastica y entrecierra de gusto */
+.face.eat .cabeza{animation:mastica .45s ease-in-out infinite}.face.eat .pinf{transform:translateY(-18px)}
+@keyframes mastica{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(2px) scaleY(.97)}}
+/* bailando: se mece de lado a lado sobre los pies */
+.face.dance .emo{animation:baile 1.1s ease-in-out infinite}.face.dance .pinf{transform:translateY(-30px)}
+@keyframes baile{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+/* enferma: ojos verdes caídos y vaivén lento de zombi */
+.face.sick .iris{fill:url(#ojoVerde)}.face.sick .pantalla{fill:#060c07}
+.face.sick #mOi .psup{transform:translateY(15px) rotate(-16deg)}.face.sick #mOd .psup{transform:translateY(15px) rotate(16deg)}
+.face.sick .emo{animation:zombi 5s ease-in-out infinite}.face.sick .bob{animation-duration:6s}
+@keyframes zombi{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+/* sin conexión: pantalla apagada */
+.face.off{opacity:.6;filter:grayscale(.7) drop-shadow(0 18px 24px rgba(0,0,0,.45))}
+.face.off .iris{opacity:.07}.face.off *{animation-play-state:paused!important}
+.zz{font:600 15px Fredoka;fill:var(--lav);opacity:0}.face.sleep .zz{animation:zz 3s infinite}
+.face.sleep .zz2{animation-delay:1s}.face.sleep .zz3{animation-delay:2s}
+@keyframes zz{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-18px)}}
+@media (prefers-reduced-motion:reduce){.face *{animation:none!important;transition:none!important}.face.sleep .zz{opacity:.8}}
+.hello{font:600 25px Fredoka,sans-serif;margin:4px 0 0}.sub{color:var(--mute);font-size:13px;margin:0 0 12px}
+.pill{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 14px;margin:8px 0;font-weight:700}
+.pill.do{background:rgba(127,224,195,.13);color:#b9f3e2}.pill.md{background:rgba(183,163,255,.13);color:#dcd2ff}
+.moods{display:flex;justify-content:space-between;margin-top:12px;padding:0 4px}
+.moods span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;opacity:.35;filter:grayscale(.7);transition:.3s}
+.moods span.on{opacity:1;filter:none;background:rgba(255,123,134,.16);box-shadow:0 0 0 2px var(--coral)}
+/* filas */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.two>.card{margin:0}
+.wb{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.wbt{font:600 17px Fredoka}.track{position:relative;height:12px;border-radius:999px;background:linear-gradient(90deg,#6f86b8,#9aa7b9 35%,#f6d27a 62%,#ff8a8a)}
+.knob{position:absolute;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:#fff;border:5px solid var(--coral);box-shadow:0 2px 8px rgba(0,0,0,.4);transition:left .6s}
+.strip{display:flex;align-items:center;gap:12px;padding:12px 16px}
+.bat{display:flex;align-items:center;gap:8px;font-weight:700}.batI{width:30px;height:15px;border:2px solid var(--mute);border-radius:4px;position:relative}.batI:after{content:"";position:absolute;right:-5px;top:3px;width:3px;height:6px;background:var(--mute);border-radius:0 2px 2px 0}
+.batI i{position:absolute;left:1px;top:1px;bottom:1px;border-radius:2px;background:var(--mint)}
+.av{display:flex}.av span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 13px Fredoka;color:#16121d;margin-left:-8px;border:2px solid #241d2c}
+.tr{margin:8px 0}.tr .l{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}.tr .b{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.tr .b i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sun),var(--coral));transition:width .6s}
+.diary{background:linear-gradient(160deg,rgba(183,163,255,.22),rgba(183,163,255,.08));border:1px solid rgba(183,163,255,.2)}
+.diary p{font-style:italic;margin:0 0 6px}.evs{margin-top:10px;font-size:13px}.evs div{display:flex;gap:6px;margin:4px 0;color:var(--mute)}.evs b{color:var(--ink);font-weight:600}
+/* alarmas */
+.al{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--edge)}.al:last-child{border:0}
+.al .t{font:600 24px Fredoka;min-width:72px}.al.offa .t,.al.offa .n{opacity:.45}
+.sw{width:48px;height:28px;border-radius:14px;background:var(--track);position:relative;border:0;padding:0;flex:none}
+.sw:after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}.sw.on{background:var(--mint)}.sw.on:after{left:24px}
+.days{display:flex;gap:6px;margin:6px 0 10px}.days button{flex:1;padding:9px 0;border-radius:12px}.days button.on{background:var(--mint);border-color:var(--mint);color:#13261f;font-weight:800}
+details summary{cursor:pointer;margin:10px 0 4px;color:var(--mint);font-weight:700;list-style:none}details summary::-webkit-details-marker{display:none}
+/* órdenes */
+.cmds{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cmds button{border:0;border-radius:18px;padding:12px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 12px Nunito;color:#1b1520;transition:transform .12s}
+.cmds button:active{transform:scale(.94)}.cmds button i{font-style:normal;font-size:22px}
+/* comida */
+.ib{position:relative}.ib .nd{position:absolute;top:3px;right:3px;min-width:16px;height:16px;border-radius:8px;background:var(--coral);color:#16121d;font:800 10px/16px Nunito;padding:0 4px}
+.ag{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.ag img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;display:block;cursor:pointer}
+.ped{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--edge)}.ped:first-child{border-top:0;padding-top:0}.ped>i{font-style:normal;font-size:26px}
+.ped p{margin:0 0 8px}.ped .grid{margin:0}
+.nf{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--edge)}.nf:first-child{border-top:0;padding-top:0}.nf>i{font-style:normal;font-size:22px;line-height:1.2}
+.nf b{display:block}.nf p{margin:2px 0 4px}.nf small{color:var(--mute);font-size:12px}.nf.new b:after{content:" ●";color:var(--coral);font-size:10px;vertical-align:middle}
+.badge{font:700 12px Nunito;background:rgba(255,123,134,.16);color:#ffc1c7;border-radius:999px;padding:4px 10px}
+.hb{display:flex;align-items:center;gap:12px;margin-bottom:12px}.hb span{min-width:96px;font-size:13px}
+.foods button small{font:600 9px Nunito;opacity:.6}
+.htrack.full i{background:linear-gradient(90deg,var(--coral),var(--sun),var(--mint))}
+/* peso (dueño: "como la barra de triste-radiante, verde en el centro y rojo en las orillas"): escala 3–7, sano 4.4–5.6 */
+.wtrack{position:relative;height:10px;border-radius:999px;background:linear-gradient(90deg,#ff7b86 0%,#f6d27a 22%,#7fe0c3 35%,#7fe0c3 65%,#f6d27a 78%,#ff7b86 100%)}
+.wtrack .knob{width:18px;height:18px;min-width:0;margin:-9px 0 0 -9px;border-width:4px}.wlegend span{min-width:0!important}
+.htrack{flex:1;height:10px;border-radius:999px;background:var(--track);overflow:hidden}.htrack i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--mint),var(--sun),var(--coral));transition:width .6s}
+.foods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.foods button{border-radius:16px;padding:10px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font:700 11px Nunito;background:rgba(255,255,255,.05);transition:transform .12s}
+.foods button i{font-style:normal;font-size:26px}.foods button:active{transform:scale(.92)}.foods button:disabled{opacity:.35}
+.play{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,rgba(255,123,134,.22),rgba(183,163,255,.18));border-color:rgba(255,123,134,.25)}
+.pgames{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pgames a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:16px;background:rgba(255,255,255,.06);
+ color:var(--ink);text-decoration:none;font:700 12px Nunito;text-align:center}.pgames a i{font-style:normal;font-size:26px}
+.pgames a small{font:600 10px Nunito;opacity:.65}.pgames a.open{outline:2px solid var(--coral)}
+.playg{background:linear-gradient(135deg,rgba(255,123,134,.22),rgba(183,163,255,.18));border-color:rgba(255,123,134,.25)}
+.play>div{flex:1}.play .go{font:600 30px Fredoka;color:var(--coral)}.play b{color:var(--sun)}
+/* formularios */
+label{display:block;font-size:13px;color:var(--mute);margin-top:6px}
+input,select{font:inherit;width:100%;padding:12px;border-radius:14px;border:1px solid var(--edge);background:rgba(0,0,0,.25);color:var(--ink);margin:4px 0 8px;color-scheme:dark}
+button{font:inherit;padding:12px 10px;border-radius:14px;border:1px solid var(--edge);background:var(--card2);color:var(--ink);cursor:pointer}
+button.prim{background:var(--mint);border-color:var(--mint);color:#13261f;font-weight:800}button.danger{background:var(--coral);border-color:var(--coral);color:#2a0d12;font-weight:800}
+button:disabled{opacity:.45}button.link{border:0;background:none;color:var(--mute);padding:4px 6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.banner{background:rgba(255,123,134,.14);color:#ffc1c7;border:1px solid rgba(255,123,134,.25);border-radius:16px;padding:10px 14px;margin-bottom:14px;text-align:center}
+.toast{min-height:20px;font-size:13px;color:var(--mute);margin:10px 0 0;text-align:center}
+.foot{text-align:center;font-size:12px;color:var(--mute)}
+@media (max-width:370px){.two{grid-template-columns:1fr}.cmds{grid-template-columns:repeat(4,1fr)}}
+</style></head><body><main>
+<div class="top"><span class="logo">Alma <span>♥</span></span><span class="live" id="dot"><i></i><span id="livet">—</span></span><span class="sp"></span>
+<button class="ib" id="bell" hidden aria-label="Avisos">🔔<span class="nd" id="bellnew" hidden></span></button><button class="ib" id="gear" hidden aria-label="Ajustes">⚙︎</button></div>
+
+<div class="card" id="setup" hidden><h2>Primera vez</h2>
+<p class="mute">Escribe el código de instalación que aparece en la consola del servidor y elige tu contraseña (mínimo 8 caracteres).</p>
+<label>Código de instalación</label><input id="code" autocomplete="off">
+<label>Contraseña nueva</label><input id="pw1" type="password" autocomplete="new-password">
+<button class="prim" id="dosetup" style="width:100%">Crear</button><p class="err" id="setuperr"></p></div>
+
+<div class="card hero" id="login" hidden><h2 style="justify-content:center">Hola de nuevo 👋</h2>
+<label>Contraseña</label><input id="pw" type="password" autocomplete="current-password">
+<button class="prim" id="dologin" style="width:100%">Entrar</button><p class="err" id="loginerr"></p></div>
+
+<div id="app" hidden>
+<div class="banner" id="offline" hidden>Alma no está conectada ahora. Te muestro lo último que supe de ella.</div>
+<div class="card hero">
+<svg class="face" id="face" viewBox="0 0 200 210" aria-hidden="true">
+ <defs>
+  <linearGradient id="casco" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4d57"/><stop offset=".45" stop-color="#2a2c33"/><stop offset="1" stop-color="#141519"/></linearGradient>
+  <linearGradient id="pata" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c2e35"/><stop offset=".5" stop-color="#454852"/><stop offset="1" stop-color="#25272d"/></linearGradient>
+  <linearGradient id="pie" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4d57"/><stop offset=".45" stop-color="#2b2d34"/><stop offset="1" stop-color="#16171b"/></linearGradient>
+  <linearGradient id="reflejo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <radialGradient id="ojoAzul" cx=".5" cy=".45" r=".7"><stop offset="0" stop-color="#f4feff"/><stop offset=".55" stop-color="#c4f6ff"/><stop offset="1" stop-color="#5fd8f5"/></radialGradient>
+  <radialGradient id="ojoVerde" cx=".5" cy=".45" r=".7"><stop offset="0" stop-color="#f1ffe9"/><stop offset=".55" stop-color="#c3f7a6"/><stop offset="1" stop-color="#6fcf5a"/></radialGradient>
+  <radialGradient id="halo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7fe6ff" stop-opacity=".16"/><stop offset="1" stop-color="#7fe6ff" stop-opacity="0"/></radialGradient>
+  <filter id="brillo" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <!-- párpados: máscaras (blanco = se ve el ojo); las clases de la cara las mueven -->
+  <mask id="mOi" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="210"><rect width="200" height="210" fill="#fff"/>
+   <rect class="psup" x="62" y="6" width="36" height="44" fill="#000"/><ellipse class="pinf" cx="80" cy="115" rx="15" ry="24" fill="#000"/></mask>
+  <mask id="mOd" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="210"><rect width="200" height="210" fill="#fff"/>
+   <rect class="psup" x="102" y="6" width="36" height="44" fill="#000"/><ellipse class="pinf" cx="120" cy="115" rx="15" ry="24" fill="#000"/></mask>
+  <clipPath id="recorte"><rect x="41" y="22" width="118" height="95" rx="26"/></clipPath>
+ </defs>
+ <ellipse cx="100" cy="199" rx="84" ry="6" fill="#000" opacity=".4"/>
+ <g class="emo">
+  <!-- patas y pies (no respiran con la cabeza) -->
+  <rect x="80" y="116" width="40" height="18" rx="6" fill="#18191d"/>
+  <rect x="66" y="114" width="16" height="62" rx="5" fill="url(#pata)" stroke="#5b5f6b" stroke-opacity=".35"/><rect x="118" y="114" width="16" height="62" rx="5" fill="url(#pata)" stroke="#5b5f6b" stroke-opacity=".35"/>
+  <rect x="67" y="145" width="14" height="2" fill="#141519"/><rect x="119" y="145" width="14" height="2" fill="#141519"/>
+  <!-- pies: negros y delgados, con un filo de luz arriba -->
+  <rect x="50" y="172" width="46" height="20" rx="8" fill="url(#pie)" stroke="#5b5f6b" stroke-opacity=".4"/><rect x="104" y="172" width="46" height="20" rx="8" fill="url(#pie)" stroke="#5b5f6b" stroke-opacity=".4"/>
+  <rect x="55" y="173.5" width="36" height="1.6" rx=".8" fill="#8b90a0" opacity=".55"/><rect x="109" y="173.5" width="36" height="1.6" rx=".8" fill="#8b90a0" opacity=".55"/>
+  <rect x="52" y="190" width="42" height="4" rx="2" fill="#0d0e11"/><rect x="106" y="190" width="42" height="4" rx="2" fill="#0d0e11"/>
+  <circle cx="73" cy="184" r="3.6" fill="#7dffa8" opacity=".22"/><circle cx="127" cy="184" r="3.6" fill="#7dffa8" opacity=".22"/>
+  <circle cx="73" cy="184" r="1.4" fill="#9dffbf"/><circle cx="127" cy="184" r="1.4" fill="#9dffbf"/>
+  <g class="bob"><g class="cabeza">
+   <!-- cabeza: caja redondeada oscura con "orejas" laterales -->
+   <rect x="23" y="44" width="12" height="52" rx="6" fill="#1d1e23"/><rect x="165" y="44" width="12" height="52" rx="6" fill="#1d1e23"/>
+   <rect x="28" y="7" width="144" height="124" rx="38" fill="url(#casco)"/>
+   <rect x="28.5" y="7.5" width="143" height="123" rx="37.5" fill="none" stroke="#fff" stroke-opacity=".1"/>
+   <path d="M52 11.5 Q100 5 148 11.5" stroke="#fff" stroke-opacity=".28" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+   <!-- pantalla -->
+   <rect class="pantalla" x="41" y="22" width="118" height="95" rx="26" fill="#05070b" stroke="#000" stroke-width="2"/>
+   <circle cx="100" cy="15" r="2.3" fill="#08090c" stroke="#5a5e69" stroke-width=".8"/>
+   <g clip-path="url(#recorte)">
+    <g class="mirada" id="mirada">
+     <g class="ojo oi" filter="url(#brillo)"><g mask="url(#mOi)"><g class="tam"><g class="parpadeo"><rect class="iris" x="66" y="50" width="28" height="40" rx="10"/></g></g></g></g>
+     <g class="ojo od" filter="url(#brillo)"><g mask="url(#mOd)"><g class="tam"><g class="parpadeo"><rect class="iris" x="106" y="50" width="28" height="40" rx="10"/></g></g></g></g>
+    </g>
+    <ellipse class="halo" cx="100" cy="70" rx="56" ry="38" fill="url(#halo)"/>
+   </g>
+   <!-- brillo del vidrio -->
+   <path d="M52 29 Q60 24 78 24 L64 47 Q52 53 48 47 Q47 36 52 29 Z" fill="url(#reflejo)"/>
+   <text class="zz" x="168" y="30">z</text><text class="zz zz2" x="178" y="40" style="font-size:12px">z</text><text class="zz zz3" x="174" y="20" style="font-size:10px">z</text>
+  </g></g>
+ </g></svg>
+<div class="hello" id="hello">Hola, soy Alma ✨</div><p class="sub" id="state">—</p>
+<div class="pill do" id="doing">—</div><div class="pill md" id="mood">—</div>
+<div class="moods" id="moods"></div></div>
+
+<div class="card wb"><div class="wbt" id="wbl">Bienestar</div><div><div class="track"><span class="knob" id="knob" style="left:50%"></span></div>
+<div class="mute" style="font-size:12px;display:flex;justify-content:space-between;margin-top:6px"><span>triste</span><span id="wbn"></span><span>radiante</span></div></div></div>
+
+<div class="card strip"><span class="bat"><span class="batI"><i id="bati"></i></span><span id="bat">—</span></span><span class="mute" id="pow"></span>
+<span class="sp"></span><span class="mute" id="ppl" style="font-size:13px;text-align:right">—</span><span class="av" id="avs"></span></div>
+
+<div class="card"><h2>🍽️ Comida <span class="sp"></span><span id="sickb" class="badge" hidden>🤢 empachada</span></h2>
+<div class="hb"><span id="hungl" class="mute">—</span><div class="htrack full"><i id="hungb"></i></div></div>
+<div id="carex" hidden><div class="hb"><span id="weightl" class="mute">—</span><div style="flex:1"><div class="wtrack"><span class="knob" id="wknob" style="left:50%"></span></div>
+<div class="mute wlegend" style="font-size:11px;display:flex;justify-content:space-between;margin-top:5px"><span>muy flaca</span><span>sana</span><span>gordita</span></div></div></div>
+<p class="mute" id="carel" style="font-size:13px;margin:-4px 0 12px"></p></div>
+<div class="foods" id="foods"></div><p class="toast" id="feedmsg">Ella decide si se lo come.</p></div>
+
+<div class="card playg" id="playcard"><h2 style="margin:0">🎲 Jugar con Alma</h2><div class="mute" id="playst" style="margin:4px 0 10px">Juegos dentro de la app</div>
+<div class="pgames" id="pgames"></div>
+<div class="grid" style="margin-top:8px"><button id="g_bg">🎲 Backgammon</button><button id="g_ps">♟️ PlayStrategy</button></div>
+<button id="g_qz" class="prim" style="width:100%;margin-top:8px">🧠 Preguntas contra Alma</button></div>
+
+<div class="two">
+<div class="card"><h2>⚡ Personalidad</h2><div id="traits"></div><div class="mute" style="font-size:12px" id="age"></div></div>
+<div class="card diary"><h2>🌙 Su diario</h2><div id="journal" class="mute">Todavía no escribe: su primer diario sale después de su primera noche.</div>
+<div class="evs" id="events"></div></div>
+</div>
+<div style="height:14px"></div>
+
+<div class="card" id="pedcard" hidden><h2>📸 Alma te pide</h2><div id="pedlist"></div></div>
+
+<div class="card"><h2>🌱 Su vida</h2><div id="lifenext" class="mute">—</div><div class="htrack" style="margin:8px 0 4px"><i id="lifebar" style="width:0;background:var(--mint)"></i></div>
+<div id="lifelist"></div><details id="lifemore" hidden><summary class="mute" style="font-size:13px">Ver todos</summary><div id="lifeall"></div></details></div>
+
+<div class="card"><h2>🎓 Sus trucos</h2><div id="trlist"></div>
+<div id="trles" hidden><p style="margin:6px 0"><b id="trlname"></b>: <span id="trltried" class="mute">—</span></p>
+<div class="grid" style="grid-template-columns:repeat(3,1fr)"><button class="prim" data-ans="si">👍 ¡Eso!</button><button data-ans="no">👎 Otro</button><button data-ans="premio">🍪 Premio</button></div>
+<button class="link" id="trlend" style="margin-top:6px">Terminar la clase</button></div>
+<details id="trnew"><summary>＋ Enseñarle un truco</summary><label>¿Cómo se llama? <span class="mute">(lo que le vas a decir)</span></label>
+<input id="trname" maxlength="40" placeholder="gatito, saluda, baila…"><button class="prim" id="trstart" style="width:100%">Empezar la clase</button></details>
+<p class="toast" id="trmsg">Ella intenta algo; tú le dices si es eso. Si no los practican, se le olvidan.</p></div>
+
+<div class="card"><h2>⌚ Reloj</h2><p id="rlwhere" class="mute">—</p>
+<div class="grid" id="rlbtns"><button class="prim" id="rlgo" hidden>⌚ Llévatela</button><button class="prim" id="rlback" hidden>🤖 Regresa al robot</button><button id="rlres" hidden>🆘 Rescatar</button></div>
+<details id="rlpair"><summary>Vincular reloj y celular</summary><p class="mute" style="font-size:13px">Genera un código y escríbelo en la app de Alma del celular (vale 10 min). El celular le pasa la llave al reloj.</p>
+<button id="rlcode" style="width:100%">Generar código</button><p id="rlcodev" style="font-size:26px;letter-spacing:4px;text-align:center" hidden></p>
+<p class="mute" id="rldevs" style="font-size:13px"></p><a id="rlapk" href="/app/apk" hidden>⬇️ Descargar la app del celular (APK)</a></details>
+<p class="toast" id="rlmsg"></p></div>
+
+<div class="card"><h2>📷 Recuerdos <span class="sp"></span><button class="link" id="albmore" hidden>Ver álbum</button></h2><div class="ag" id="albthumbs"></div>
+<button class="prim" id="albup" style="width:100%;margin-top:10px">Enseñarle una foto</button><p class="toast" id="albmsg">Un disfraz, un adorno, algo que le hiciste… ella te dice si le gusta.</p>
+<input type="file" id="albfile" accept="image/*" hidden></div>
+
+<div class="card"><h2>⏰ Alarmas</h2><div id="alarms" class="mute">—</div><div id="calnext" class="evs"></div>
+<details id="alnew"><summary>＋ Nueva alarma</summary>
+<label>Hora</label><input id="al_time" type="time" value="07:30">
+<label>Días <span class="mute">(ninguno = solo una vez)</span></label><div class="days" id="al_days"></div>
+<label>Nombre</label><input id="al_label" maxlength="60" placeholder="Despertar, pastilla, junta…">
+<div class="grid"><button class="prim" id="al_add">Guardar alarma</button><button id="al_test">Probar ahora</button></div></details>
+<p id="almsg" class="toast" style="text-align:left"></p></div>
+
+<div class="card"><h2>💬 Pídele algo</h2><div class="cmds" id="cmds"></div><p class="toast" id="cmdmsg">Ella decide si te hace caso.</p></div>
+<p class="foot" id="upd"></p></div>
+
+<div id="notifs" hidden>
+<div class="card"><h2>🔔 Avisos</h2><p class="mute" style="margin-top:-4px;font-size:13px">Todo lo que Alma te ha mandado al teléfono, aunque ya lo hayas cerrado.</p><div id="nflist" class="mute">—</div></div>
+<p><button id="nfback">← Volver</button></p></div>
+
+<div id="preguntas" hidden>
+<div class="card"><h2>🧠 Preguntas <span class="sp"></span><span class="mute" id="qzscore" style="font-size:14px"></span></h2>
+<div id="qzbody" class="mute">—</div></div>
+<p><button id="qzback">← Volver</button></p></div>
+
+<div id="album" hidden>
+<div class="card"><h2>📷 Su álbum</h2><div class="ag" id="alball"></div></div>
+<p><button id="albback">← Volver</button></p></div>
+
+<div id="photo" hidden>
+<div class="card"><img id="phimg" alt="" style="width:100%;border-radius:16px;display:block">
+<h2 id="phtitle" style="margin:12px 0 4px"></h2><p id="phcom" style="font-style:italic;margin:0 0 6px"></p><p class="mute" id="phmeta" style="font-size:13px;margin:0"></p></div>
+<p style="display:flex;justify-content:space-between"><button id="phback">← Volver</button><button class="danger" id="phdel">Borrar</button></p></div>
+
+<div id="settings" hidden>
+<div class="card"><h2>🔔 Notificaciones</h2><p class="mute" id="pushst"></p><div class="grid"><button id="pushon">Activar</button><button id="pushtest">Probar</button></div></div>
+<div class="card"><h2>📅 Calendario de Google</h2><p class="mute" id="calst">—</p>
+<label>Dirección secreta en formato iCal <span id="k_cal"></span></label><input id="calendar_ics" type="password" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
+<p class="mute" style="font-size:13px">En Google Calendar desde la computadora: ⚙︎ Configuración → tu calendario → Integrar el calendario → "Dirección secreta en formato iCal". Es solo lectura; no la compartas.</p>
+<label>Avisar antes (si el evento no trae su propio aviso)</label><select id="calendar_lead_min"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hora</option></select>
+<div class="grid"><button class="prim" id="calsave">Guardar</button><button id="caloff">Quitar</button></div><p id="calmsg" class="toast"></p></div>
+<div class="card"><h2>♟️ PlayStrategy</h2><p class="mute" id="psst">—</p>
+<label>Tu usuario en PlayStrategy (Alma solo acepta tus retos)</label><input id="ps_owner" autocomplete="off" autocapitalize="off" placeholder="tu_usuario">
+<label>Token de la cuenta de Alma <span id="k_ps"></span></label><input id="ps_token" type="password" autocomplete="off">
+<p class="mute" style="font-size:13px">En playstrategy.org con la sesión de <b>la cuenta de Alma</b> (no la tuya): Preferencias → Acceso a la API → nuevo token con el permiso "Jugar con la API de bots" (bot:play).</p>
+<div class="grid"><button class="prim" id="pssave">Guardar</button><button id="psbot" class="danger" hidden>Convertir en bot</button></div><p id="psmsg" class="toast"></p></div>
+<div class="card"><h2>🎮 Juegos con Alma</h2><p class="mute" id="pbst">—</p>
+<label>Tope diario para que Alma piense sus jugadas (tokens de Claude; ~1 300 por jugada)</label><input id="play_budget" type="number" min="20000" max="5000000" step="10000">
+<button class="prim" id="pbsave" style="width:100%">Guardar</button><p id="pbmsg" class="toast"></p></div>
+<div class="card"><h2>💾 Respaldo de Alma</h2><p class="mute" id="membk">—</p><p class="mute">Si la reprogramas y su memoria queda en blanco, al conectarse recupera la copia más reciente.</p></div>
+<div class="card"><h2>🔑 Llaves</h2><p class="mute">Se guardan solo en el servidor; nunca se muestran de vuelta.</p>
+<label>Llave de Claude (Anthropic) <span id="k_anthropic"></span></label><input id="anthropic_key" type="password" autocomplete="off" placeholder="sk-ant-…">
+<label>Llave de Groq (voz) <span id="k_groq"></span></label><input id="groq_key" type="password" autocomplete="off" placeholder="gsk_…">
+<label>Llave del enlace con el robot (64 hex, de alma_dev_creds.h) <span id="k_link"></span></label><input id="link_key" type="password" autocomplete="off">
+<button class="prim" id="savekeys" style="width:100%">Guardar</button><p id="keysmsg" class="toast"></p></div>
+<p style="display:flex;justify-content:space-between"><button id="back">← Volver</button><button class="link" id="logout">Cerrar sesión</button></p></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const DOING={bhv_blink_idle:"Parpadea",bhv_look_around:"Mira alrededor",bhv_doze:"Dormita",bhv_sleep_cycle:"Duerme",bhv_stretch:"Se estira",bhv_go_rest:"Va a descansar",bhv_go_home:"Vuelve a casa",bhv_greet:"Te saluda",bhv_follow_face:"Te sigue con la mirada",bhv_enjoy_pet:"Disfruta tus caricias",bhv_seek_person:"Te busca",bhv_ask_attention:"Pide atención",bhv_investigate_face:"Investiga una cara",bhv_shy_retreat:"Se aleja tímida",bhv_play_bow:"Invita a jugar",bhv_play_solo:"Juega sola",bhv_dance:"Baila",bhv_chase_turn:"Persigue",bhv_happy_wiggle:"Se menea contenta",bhv_routine:"Hace sus cosas",bhv_explore:"Explora",bhv_inspect_obstacle:"Examina algo",bhv_startle:"Se asusta",bhv_sulk:"Está enfurruñada",bhv_yawn_bored:"Bosteza",bhv_confused:"No entiende",bhv_refuse:"No quiere",bhv_listen:"Te escucha",bhv_come_here:"Viene",bhv_turn_around:"Gira",bhv_stop:"Se detiene",bhv_reflex_freeze:"¡Cuidado, un borde!",bhv_reflex_struggle:"Forcejea",bhv_ask_help:"Pide ayuda",bhv_reminder:"Te recuerda algo",bhv_goodbye:"Se despide",bhv_sing:"Canta",bhv_babble:"Balbucea",bhv_imitate:"Imita",bhv_activity:"Está ocupada en lo suyo",bhv_dizzy:"Está mareada",bhv_eat:"Está comiendo",bhv_drink:"Está tomando algo",bhv_ask_food:"Te pide comida",bhv_sick:"Le duele la panza"};
+const DOICON={bhv_eat:"😋",bhv_drink:"🍵",bhv_ask_food:"🍽️",bhv_sick:"🤢",bhv_dance:"💃",bhv_play_solo:"🤸",bhv_sleep_cycle:"😴",bhv_doze:"😪",bhv_greet:"👋",bhv_enjoy_pet:"🥰",bhv_explore:"🧭",bhv_go_home:"🏠",bhv_listen:"👂",bhv_reminder:"⏰",bhv_routine:"🍹",bhv_sing:"🎵",bhv_dizzy:"😵‍💫"};
+const ST={ST_BOOT:"arrancando",ST_AWAKE:"despierta",ST_PERFORMING:"activa",ST_RESTING:"descansando",ST_SLEEPING:"dormida",ST_LISTENING:"escuchando",ST_REFLEX:"en un reflejo"};
+const SM={SM_SCARED:["😨","Asustada"],SM_SLEEPY:["😴","Con sueño"],SM_GRUMPY:["😠","Gruñona"],SM_BORED:["😐","Aburrida"],SM_CALM:["🙂","Tranquila"],SM_HAPPY:["😊","Contenta"],SM_PLAYFUL:["😜","Juguetona"]};
+const POW={battery:"con batería",usb:"cargando por USB",home_station:"en su base"};
+const HOME={searching:"buscando su base",approaching:"yendo a su base",turning:"dando la vuelta",docking:"subiendo a la base",docked:"llegó a su base",failed:"no encontró su base"};
+const TR=[["trait_boldness","Valentía","🦁"],["trait_energy","Energía","⚡"],["trait_sociability","Sociabilidad","💬"],["trait_playfulness","Juego","🎾"],["trait_impulsivity","Impulsividad","🔥"]];
+const CMDS=[["dance","💃","Baila","#ffb4a2"],["come","👋","Ven","#9ee6cf"],["look_at_me","👀","Mírame","#c8b8ff"],["play","🎾","Juega","#ff9aa5"],["greet","🙋","Saluda","#ffd27f"],["turn_around","🔄","Gira","#a9d4ff"],["go_home","🔋","A cargar","#b5f0a8"],["sleep","🌙","A dormir","#b8b0ff"],["wake_up","☀️","Despierta","#ffe08a"],["stop","✋","Para","#ffb3c8"]];
+const show=v=>{for(const id of["setup","login","app","settings","notifs","album","photo","preguntas"])$(id).hidden=id!=v;$("gear").hidden=$("bell").hidden=!(v=="app")};
+async function j(path,opt){const r=await fetch(path,Object.assign({headers:{"Content-Type":"application/json"},credentials:"same-origin"},opt||{}));
+ const b=await r.json().catch(()=>({}));if(r.status==401){show("login");throw new Error("login")}if(!r.ok)throw new Error(b.error||r.status);return b}
+const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const EV={new_face:e=>["👤","Conoció a alguien ("+esc(e.name)+")"],home_failed:e=>["🔋","No encontró su base"+(e.battery_pct!=null?" ("+Math.round(e.battery_pct)+" %)":"")],
+ falls:()=>["😬","Varios sustos seguidos"],feed:e=>[e.emoji||"🍽️",esc(e.food)+(e.accepted?": se lo comió":": no lo quiso")],
+ hungry:()=>["🍽️","Tuvo hambre"],sick:()=>["🤢","Se empachó"],reminder:e=>["⏰","Alarma: "+esc(e.title)],forgot_face:e=>["🍂","Olvidó a la persona "+esc(e.person_id)],
+ voice:e=>["👂",e.error?"No te entendió":"Te oyó: “"+esc(e.transcript)+"”"],
+ mem_restored:e=>["💾","Recuperó su memoria del respaldo"+(e.age_days!=null?" (día "+e.age_days+")":"")],mem_restore_failed:()=>["⚠️","No pudo recuperar su memoria"],
+ seen:e=>["👀",e.error?"No pudo ver qué era":'Vio de cerca: '+esc(e.objeto)+(e.comentario?" — “"+esc(e.comentario)+"”":"")+' <a href="/app/vision/last.jpg" target="_blank">foto</a> · <a href="#" data-keep="1">guardar</a>'],
+ foto:e=>["📷","Le enseñaste una foto: "+esc(e.titulo)+(e.le_gusta?" ("+esc(e.le_gusta)+")":"")],
+ trick:e=>["🎓","Le pediste «"+esc(e.name)+"»: "+({bien:"lo hizo",equivocada:"se equivocó",no_quiere:"no quiso"}[e.outcome]||esc(e.outcome))]};
+const wbLabel=w=>w<-600?["Muy triste","🌧️"]:w<-200?["Triste","☁️"]:w<200?["Normal","🌤️"]:w<600?["Contenta","☀️"]:["Radiante","🌈"];
+$("moods").innerHTML=Object.entries(SM).map(([k,[e,n]])=>'<span data-m="'+k+'" title="'+n+'">'+e+"</span>").join("");
+// cara de EMO: la forma de los ojos sale del ánimo; lo que está haciendo (comer, bailar, enferma) se suma encima; mira a los lados sola
+const OJOS={SM_HAPPY:"happy",SM_PLAYFUL:"playful",SM_GRUMPY:"grumpy",SM_BORED:"bored",SM_SLEEPY:"sleepy",SM_SCARED:"scared"};
+function face(s,online){const f=$("face"),d=s.doing||"",c=["face"];
+ if(s.state=="ST_SLEEPING")c.push("sleep");
+ else{c.push(OJOS[s.simple_mood]||((s.valence||0)<-0.15?"sad":"calm"));
+  if(s.sick||d=="bhv_sick")c.push("sick");if(d=="bhv_eat"||d=="bhv_drink")c.push("eat");if(d=="bhv_dance")c.push("dance")}
+ if(!online)c.push("off");f.setAttribute("class",c.join(" "))}
+const quieto=matchMedia("(prefers-reduced-motion: reduce)");
+setInterval(()=>{if(quieto.matches)return;const m=$("mirada"),x=(Math.random()*2-1)*7,y=(Math.random()*2-1)*4;
+ m.style.setProperty("--mx",x.toFixed(1)+"px");m.style.setProperty("--my",y.toFixed(1)+"px")},2600);
+const ago=s=>s<60?"ahora":s<3600?"hace "+Math.round(s/60)+" min":s<86400?"hace "+Math.round(s/3600)+" h":"hace "+Math.round(s/86400)+" d";
+function render(d){const s=d.state||{};$("offline").hidden=d.online||!s.state;$("dot").className="live"+(d.online?" on":"");
+ $("livet").textContent=d.online?"conectada":d.seconds_since!=null?"desconectada · "+ago(d.seconds_since):"sin conectar";
+ if(!s.state){$("doing").textContent="Esperando a Alma…";$("mood").hidden=true;return}
+ $("mood").hidden=false;face(s,d.online);hungerUi(s,d.online);
+ const dn=DOING[s.doing]||"Nada en particular";$("doing").textContent=(DOICON[s.doing]||"✨")+" "+dn;
+ const sm=SM[s.simple_mood]||["🙂",s.simple_mood];$("mood").textContent=sm[0]+" "+sm[1]+" · ánimo "+((s.valence||0)>=0?"+":"")+(s.valence||0).toFixed(2);
+ for(const e of $("moods").children)e.classList.toggle("on",e.dataset.m==s.simple_mood);
+ $("state").textContent=(ST[s.state]||s.state)+" · "+s.age_days+(s.age_days==1?" día":" días")+" de vida";
+ const w=s.wellbeing||0,wl=wbLabel(w);$("wbl").textContent=wl[1]+" "+wl[0];$("knob").style.left=((w+1023)/2046*100)+"%";$("wbn").textContent=Math.round(w);
+ const bp=Math.max(0,Math.min(100,Math.round(s.battery_pct||0)));$("bat").textContent=bp+" %";$("bati").style.width=(bp*0.9)+"%";$("bati").style.background=bp<20?"var(--coral)":bp<40?"var(--sun)":"var(--mint)";
+ $("pow").textContent=(POW[s.power]||"")+(HOME[s.going_home]?" · "+HOME[s.going_home]:"");
+ const names=[];for(const p of s.people_present||[])names.push(p.person_id==0?"tú":"persona "+p.person_id);
+ const lf=s.last_face;if(!names.length&&lf&&lf.seconds_ago<120)names.push(lf.person_id==255?"alguien":(lf.name||"id "+lf.person_id));
+ $("ppl").innerHTML=names.length?"Te ve: <b style=\"color:var(--ink)\">"+esc(names.join(", "))+"</b>":"No ve a nadie";
+ const COL=["#ffb4a2","#9ee6cf","#c8b8ff","#ffd27f"];$("avs").innerHTML=names.slice(0,3).map((n,i)=>'<span style="background:'+COL[i]+'">'+esc(n[0].toUpperCase())+"</span>").join("");
+ $("traits").innerHTML=TR.map(([k,n,ic])=>{const v=(s.traits||{})[k]||0;return '<div class="tr"><div class="l"><span>'+ic+" "+n+'</span><span class="mute">'+v.toFixed(2)+'</span></div><div class="b"><i style="width:'+(v*100)+'%"></i></div></div>'}).join("");
+ $("age").textContent="";
+ if((d.journal||[]).length){const x=d.journal[0];$("journal").innerHTML='<p>'+(esc(x.journal_es)||"Esa noche no escribió.")+'</p><div class="mute" style="font-size:12px">'+esc(x.date||("día "+x.age_days))+(x.wellbeing_adjust?" · bienestar "+(x.wellbeing_adjust>0?"+":"")+x.wellbeing_adjust:"")+"</div>"}
+ $("events").innerHTML=(d.events||[]).slice(-4).reverse().map(e=>{const v=EV[e.ev]?EV[e.ev](e):["•",esc(e.ev)];return "<div><span>"+v[0]+"</span><span><b>"+v[1]+"</b> · "+ago(Date.now()/1000-e.at)+"</span></div>"}).join("");
+ $("upd").textContent="Actualizado "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+async function tick(){if($("app").hidden)return;try{render(await j("/app/state"))}catch(e){if(e.message!="login")$("upd").innerHTML='<span class="err">Sin conexión con el servidor</span>'}}
+async function start(){const st=await j("/app/status");if(st.setup_needed)return show("setup");if(!st.logged_in)return show("login");if(/[?&]avisos(&|=|$)/.test(location.search)){history.replaceState(null,"","/");nfOpen()}else show("app");tick();nfBadge();lifeRefresh();albumRefresh();trRefresh();rlRefresh();if(!window.nfT)window.nfT=setInterval(()=>{nfBadge();lifeRefresh();albumRefresh();rlRefresh()},60000);alRefresh();calRefresh();foodsLoad();playRefresh();if(!window.playT)window.playT=setInterval(playRefresh,15000);if(!window.calT)window.calT=setInterval(calRefresh,60000)}
+$("dosetup").onclick=async()=>{try{await j("/app/setup",{method:"POST",body:JSON.stringify({code:$("code").value.trim(),password:$("pw1").value})});start()}catch(e){$("setuperr").textContent=e.message}};
+$("dologin").onclick=async()=>{try{await j("/app/login",{method:"POST",body:JSON.stringify({password:$("pw").value})});$("pw").value="";start()}catch(e){$("loginerr").textContent=e.message=="login"?"Contraseña incorrecta":e.message}};
+$("pw").onkeydown=e=>{if(e.key=="Enter")$("dologin").click()};
+$("cmds").innerHTML=CMDS.map(([a,ic,n,c])=>'<button data-a="'+a+'" data-n="'+n+'" style="background:'+c+'"><i>'+ic+"</i>"+n+"</button>").join("");
+$("cmds").onclick=async e=>{const b=e.target.closest("button");if(!b)return;try{await j("/app/command",{method:"POST",body:JSON.stringify({action_id:b.dataset.a})});$("cmdmsg").innerHTML='<span class="ok">Se lo pediste: '+esc(b.dataset.n)+".</span> Ella decide si te hace caso."}catch(err){$("cmdmsg").innerHTML='<span class="err">'+esc(err.message)+"</span>"}};
+async function loadSettings(){const s=await j("/app/settings");const m=b=>b?'<span class="ok">✓ configurada</span>':'<span class="err">falta</span>';
+ $("k_anthropic").innerHTML=m(s.anthropic_key);$("k_groq").innerHTML=m(s.groq_key);$("k_link").innerHTML=m(s.link_key);
+ pushRefresh();calRefresh();psRefresh();pbRefresh();mbRefresh();return s}
+async function calRefresh(){try{const c=await j("/app/calendar");$("k_cal").innerHTML=c.configured?'<span class="ok">✓ configurado</span>':'<span class="err">falta</span>';
+ $("calendar_lead_min").value=String(c.lead_min);$("caloff").hidden=!c.configured;
+ $("calst").innerHTML=c.error?'<span class="err">'+esc(c.error)+"</span>":c.configured?"Alma te avisa antes de tus eventos, con su alarma y una notificación.":"Sin calendario.";
+ $("calnext").innerHTML=(c.next||[]).slice(0,3).map(x=>"<div><span>📅</span><span><b>"+esc(x.at)+" · "+esc(x.title)+"</b>"+(x.in_min<180?" · en "+x.in_min+" min":"")+"</span></div>").join("")}catch(e){}}
+$("calsave").onclick=async()=>{const b={calendar_lead_min:parseInt($("calendar_lead_min").value,10)};const u=$("calendar_ics").value.trim();if(u)b.calendar_ics=u;
+ try{await j("/app/settings",{method:"POST",body:JSON.stringify(b)});$("calendar_ics").value="";$("calmsg").textContent="Guardado. Lo leo en unos segundos…";setTimeout(calRefresh,35000);calRefresh()}catch(e){$("calmsg").textContent=e.message}};
+$("caloff").onclick=async()=>{if(!confirm("¿Quitar el calendario?"))return;try{await j("/app/settings",{method:"POST",body:JSON.stringify({calendar_off:true})});calRefresh()}catch(e){$("calmsg").textContent=e.message}};
+$("gear").onclick=async()=>{show("settings");scrollTo(0,0);try{await loadSettings()}catch(e){}};
+// Avisos (dueño, 2026-11-01): la lista de todo lo que llegó al teléfono, por si se cerró sin leerlo; el puntito cuenta los nuevos
+const NFI={home_failed:"🔋",battery_critical:"🪫",sad:"🌧️",falls:"😬",new_face:"👤",offline:"📡",reminder:"⏰",forgot_face:"🍂",hungry:"🍽️",sick:"🤒",game:"🎲",milestone:"🎉",photo_ask:"📸"};
+const seenGet=()=>{try{return +localStorage.getItem("alma_nf_seen")||0}catch(e){return 0}},seenSet=t=>{try{localStorage.setItem("alma_nf_seen",t)}catch(e){}};
+const when=t=>new Date(t*1000).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+async function nfBadge(){try{const n=(await j("/app/notifications")).notifications,k=n.filter(x=>x.at>seenGet()).length;$("bellnew").hidden=!k;$("bellnew").textContent=k>99?"99+":k}catch(e){}}
+async function nfOpen(){show("notifs");scrollTo(0,0);try{const n=(await j("/app/notifications")).notifications,seen=seenGet();
+ $("nflist").innerHTML=n.map(x=>'<div class="nf'+(x.at>seen?" new":"")+'"><i>'+(NFI[x.kind]||"🔔")+"</i><div><b>"+esc(x.title)+"</b><p>"+esc(x.body)+"</p><small>"+ago(Date.now()/1000-x.at)+" · "+esc(when(x.at))+(x.sent?"":" · no llegó al teléfono")+(x.url?' · <a href="'+esc(x.url)+'">abrir</a>':"")+"</small></div></div>").join("")||"Todavía no hay avisos.";
+ if(n.length)seenSet(n[0].at);$("bellnew").hidden=true}catch(e){if(e.message!="login")$("nflist").innerHTML='<span class="err">'+esc(e.message)+"</span>"}}
+$("bell").onclick=nfOpen;
+// Hitos (dueño, 2026-11-01: "no se nota que crezca"): cumpleaños por noches vividas y lo que aprende
+async function lifeRefresh(){try{const r=await j("/app/milestones"),n=r.next,ms=r.milestones||[];
+ const prev=ms.filter(x=>x.kind=="edad").reduce((a,x)=>Math.max(a,x.age_days||0),0);
+ $("lifenext").innerHTML=r.age_days==null?"Esperando a Alma…":n?"Próximo: <b style=\"color:var(--ink)\">"+esc(n.name)+"</b> · "+(n.left==1?"falta 1 noche":"faltan "+n.left+" noches"):"";
+ $("lifebar").style.width=n&&r.age_days!=null?Math.min(100,(r.age_days-prev)/(n.days-prev)*100)+"%":"0";
+ const row=x=>'<div class="nf"><i>'+esc(x.emoji)+"</i><div><b>"+esc(x.title)+"</b><p class=\"mute\">"+esc(x.body)+"</p><small>"+esc(when(x.at))+(x.age_days!=null?" · día "+x.age_days:"")+"</small></div></div>";
+ $("lifelist").innerHTML=ms.slice(0,4).map(row).join("")||'<p class="mute" style="font-size:13px">Aquí van sus hitos: cuando cumpla 1 semana, 1 mes, 6 meses y 1 año, y cada cosa nueva que aprenda.</p>';
+ $("lifemore").hidden=ms.length<=4;$("lifeall").innerHTML=ms.slice(4).map(row).join("")}catch(e){}}$("nfback").onclick=()=>{show("app");tick()};
+// Álbum (dueño, 2026-11-01): ella pide fotos (fechas, cumpleaños, antojos), tú se las enseñas y te dice si le gustan
+let albPhotos=[],albPed=null,albCur=null;
+const thumb=x=>'<img src="/app/album/'+esc(x.id)+'_t.jpg" data-ph="'+esc(x.id)+'" alt="'+esc(x.titulo)+'" loading="lazy">';
+async function albumRefresh(){try{const r=await j("/app/album");albPhotos=r.photos;
+ $("albthumbs").innerHTML=albPhotos.slice(0,6).map(thumb).join("");$("albmore").hidden=albPhotos.length<=6;
+ $("pedcard").hidden=!r.pedidos.length;
+ $("pedlist").innerHTML=r.pedidos.map(p=>'<div class="ped"><i>'+esc(p.emoji)+'</i><div style="flex:1"><p><b>'+esc(p.ask)+'</b></p><div class="grid"><button class="prim" data-up="'+esc(p.id)+'">📷 Subir foto</button><button data-no="'+esc(p.id)+'">Ahora no</button></div></div></div>').join("")}catch(e){}}
+function albPick(pid){albPed=pid;$("albfile").value="";$("albfile").click()}
+$("albup").onclick=()=>albPick(null);
+$("pedlist").onclick=async e=>{const t=e.target;if(t.dataset.up!=null)albPick(t.dataset.up);
+ else if(t.dataset.no){try{await j("/app/album/pedido/"+encodeURIComponent(t.dataset.no)+"/close",{method:"POST"});albumRefresh()}catch(err){}}};
+$("albfile").onchange=async()=>{const f=$("albfile").files[0];if(!f)return;const fd=new FormData();fd.append("foto",f);if(albPed)fd.append("pedido",albPed);
+ $("albup").disabled=true;$("albmsg").textContent="Alma está mirando la foto…";
+ try{const r=await fetch("/app/album",{method:"POST",body:fd,credentials:"same-origin"}),b=await r.json().catch(()=>({}));
+  if(r.status==401){show("login");return}if(!r.ok)throw new Error(b.error||r.status);
+  $("albmsg").innerHTML="<b style=\"color:var(--ink)\">"+esc(b.le_gusta[0].toUpperCase()+b.le_gusta.slice(1))+"</b> — «"+esc(b.comentario)+"»";albumRefresh();lifeRefresh();tick()}
+ catch(err){$("albmsg").innerHTML='<span class="err">'+esc(err.message)+"</span>"}$("albup").disabled=false};
+function phOpen(id){const x=albPhotos.find(p=>p.id==id);if(!x)return;albCur=x;show("photo");scrollTo(0,0);$("phimg").src="/app/album/"+x.id+".jpg";$("phtitle").textContent=x.titulo;
+ $("phcom").textContent=x.comentario?"«"+x.comentario+"»":"";
+ $("phmeta").textContent=when(x.at)+(x.age_days!=null?" · día "+x.age_days:"")+(x.occasion_name?" · "+x.occasion_name:"")+(x.le_gusta?" · "+x.le_gusta:"")+(x.source=="robot"?" · la tomó ella":"")}
+$("albthumbs").onclick=$("alball").onclick=e=>{if(e.target.dataset.ph)phOpen(e.target.dataset.ph)};
+$("albmore").onclick=()=>{show("album");scrollTo(0,0);$("alball").innerHTML=albPhotos.map(thumb).join("")};
+$("albback").onclick=$("phback").onclick=()=>{show("app");tick()};
+$("phdel").onclick=async()=>{if(!albCur||!confirm("¿Borrar esta foto del álbum?"))return;try{await j("/app/album/"+albCur.id,{method:"DELETE"});await albumRefresh();show("app")}catch(e){}};
+// Trucos (dueño, 2026-11-01): como aibo, sin tope; el servidor decide si aprende, si obedece y cuándo olvida
+const TRST={"aprendiendo":"aprendiendo","aprendido":"lo sabe","dominado":"🏅 dominado","se le está olvidando":"🍂 se le está olvidando"};
+const TROUT={bien:"¡Lo hizo!",equivocada:"Se equivocó",no_quiere:"No quiso"};
+function trUi(r){const ts=r.tricks||[],les=r.lesson;
+ $("trlist").innerHTML=ts.map(t=>'<div class="nf"><i>'+esc(t.move.split(" ")[0])+'</i><div style="flex:1"><b>'+esc(t.label)+'</b><p class="mute" style="font-size:13px">'+esc(t.move.split(" ").slice(1).join(" "))+" · "+esc(TRST[t.status]||t.status)+'</p><div class="htrack"><i style="width:'+Math.round(t.strength*100)+'%;background:var(--mint)"></i></div></div>'+(t.status=="aprendiendo"?"":'<button data-do="'+esc(t.name)+'">Hazlo</button>')+"</div>").join("")||'<p class="mute" style="font-size:13px">Todavía no sabe trucos.</p>';
+ $("trles").hidden=!les;$("trnew").hidden=!!les;if(les){$("trlname").textContent="Clase de «"+les.label+"»";$("trltried").textContent=les.current_label?"intentó "+les.current_label:"pensando…"}}
+const rlMid=()=>"m"+Math.random().toString(16).slice(2,14);
+function rlUi(r){const w=r.where||{};const t={robot:"Alma está en el robot 🤖",reloj:"Alma está en tu reloj ⌚",transito:"Alma se está mudando…"}[w.cuerpo]||"—";
+$("rlwhere").textContent=w.robot_listo?t:t+" · el robot todavía no sabe mudarse (falta su firmware nuevo)";
+$("rlgo").hidden=!(w.robot_listo&&w.cuerpo==="robot");$("rlback").hidden=!(w.robot_listo&&w.cuerpo==="reloj");$("rlres").hidden=!(w.robot_listo&&w.cuerpo==="reloj");
+$("rldevs").textContent=(r.devices||[]).length?"Vinculados: "+r.devices.join(" y "):"Nada vinculado todavía.";$("rlapk").hidden=!r.apk}
+async function rlRefresh(){try{rlUi(await j("/app/reloj"))}catch(e){}}
+async function rlMove(to,reason){try{const r=await j("/app/mudanza",{method:"POST",body:JSON.stringify({mid:rlMid(),to,reason})});
+$("rlmsg").textContent=r.ok?"Listo: en cuanto el "+(to==="reloj"?"robot":"reloj")+" conteste, se muda.":"No se pudo: "+r.why}catch(e){$("rlmsg").innerHTML='<span class="err">'+esc(e.message)+"</span>"}rlRefresh()}
+$("rlgo").onclick=()=>rlMove("reloj","manual");$("rlback").onclick=()=>rlMove("robot","manual");
+$("rlres").onclick=()=>{if(confirm("Rescatar a Alma: si el reloj no contesta, regresa al robot con su última copia y se pierde lo vivido después. ¿Seguir?"))rlMove("robot","rescate")};
+$("rlcode").onclick=async()=>{try{const r=await j("/app/reloj/vincular",{method:"POST"});$("rlcodev").textContent=r.code;$("rlcodev").hidden=false}catch(e){$("rlmsg").innerHTML='<span class="err">'+esc(e.message)+"</span>"}};
+// ---- Preguntas contra Alma (juegos_reloj.py: el mismo banco, nivel y registro que en el reloj; sin Haiku) ----
+const QZ={};
+const qzEsc=t=>esc(String(t==null?"":t));
+async function qzOpen(){show("preguntas");$("qzscore").textContent="";$("qzbody").textContent="…";
+try{const ini=await j("/app/juegos/preguntas/empezar",{method:"POST"});
+if(!ini.ok){$("qzbody").innerHTML='<p>'+qzEsc(ini.razon||"Alma no quiere jugar ahorita.")+"</p>";return}
+const r=await j("/app/juegos/preguntas?n=10");Object.assign(QZ,{l:r.preguntas,i:0,tu:0,alma:0,t0:Date.now(),nivel:ini.nivel});qzShow()}
+catch(e){$("qzbody").innerHTML='<span class="err">'+qzEsc(e.message)+"</span>"}}
+function qzShow(){const q=QZ.l[QZ.i];QZ.sel=-1;$("qzscore").textContent="Tú "+QZ.tu+" · Alma "+QZ.alma;
+$("qzbody").innerHTML='<p class="mute" style="margin:0 0 6px">'+qzEsc(q.categoria)+" · "+(QZ.i+1)+" de "+QZ.l.length+" · Alma: "+qzEsc(QZ.nivel)+'</p>'+
+'<div class="htrack" style="margin:0 0 10px"><i id="qzt" style="width:100%;background:var(--mint)"></i></div>'+
+'<p style="font-size:18px;margin:0 0 12px;color:var(--ink,inherit)">'+qzEsc(q.q)+'</p><div class="grid" id="qzops">'+
+q.ops.map((o,k)=>'<button data-k="'+k+'">'+qzEsc(o)+"</button>").join("")+'</div><p class="toast" id="qzmsg"></p>';
+$("qzops").onclick=e=>{const b=e.target.closest("button");if(b&&QZ.sel<0)qzAnswer(+b.dataset.k)};
+clearInterval(QZ.tim);const t0=Date.now();QZ.tim=setInterval(()=>{const r=1-(Date.now()-t0)/20000;const t=$("qzt");if(t)t.style.width=Math.max(0,r*100)+"%";if(r<=0)qzAnswer(4)},100)}
+function qzAnswer(k){if(QZ.sel>=0)return;QZ.sel=k;clearInterval(QZ.tim);const q=QZ.l[QZ.i];const bien=k===q.ok;if(bien)QZ.tu++;if(q.alma.acierta)QZ.alma++;
+[...$("qzops").children].forEach((b,i)=>{b.disabled=true;if(i===q.ok)b.className="prim";else if(i===k)b.style.borderColor="#ff9a2e"});
+$("qzmsg").innerHTML=(k===4?"Se acabó el tiempo. ":bien?"¡Bien! ":"No era. ")+(q.alma.acierta?"Alma también acertó.":"Alma falló.")+(q.dato?'<br><span class="mute">'+qzEsc(q.dato)+"</span>":"");
+$("qzscore").textContent="Tú "+QZ.tu+" · Alma "+QZ.alma;
+j("/app/juegos/preguntas/respuesta",{method:"POST",body:JSON.stringify({id:q.id,acerto:bien})}).catch(()=>{});
+setTimeout(()=>{if(QZ.i+1<QZ.l.length){QZ.i++;qzShow()}else qzEnd()},3200)}
+async function qzEnd(){const g=QZ.tu>QZ.alma?"owner":QZ.alma>QZ.tu?"alma":"draw";
+$("qzbody").innerHTML='<p style="font-size:22px;margin:0 0 6px">'+(g==="owner"?"🏆 ¡Ganaste!":g==="alma"?"🏆 ¡Ganó Alma!":"Empate")+'</p><p class="mute">Tú '+QZ.tu+" · Alma "+QZ.alma+'</p><button class="prim" id="qzotra" style="width:100%">Otra partida</button>';
+$("qzotra").onclick=qzOpen;
+try{await j("/app/juegos/preguntas/evento",{method:"POST",body:JSON.stringify({ganador:g,segundos:Math.round((Date.now()-QZ.t0)/1000),puntos:{tu:QZ.tu,alma:QZ.alma}})})}catch(e){}}
+$("g_qz").onclick=qzOpen;$("qzback").onclick=()=>{clearInterval(QZ.tim);show("app")};
+async function trRefresh(){try{trUi(await j("/app/tricks"))}catch(e){}}
+const trErr=e=>{$("trmsg").innerHTML='<span class="err">'+esc(e.message)+"</span>";trRefresh()};
+$("trstart").onclick=async()=>{const n=$("trname").value.trim();if(!n)return;$("trmsg").textContent="Alma lo intenta…";
+ try{const r=await j("/app/tricks/lesson",{method:"POST",body:JSON.stringify({name:n})});$("trname").value="";$("trnew").open=false;trUi(r);$("trmsg").textContent="Intentó: "+r.tried+". ¿Es eso?"}catch(e){trErr(e)}};
+$("trles").onclick=async e=>{const a=e.target.dataset.ans;if(!a)return;$("trmsg").textContent=a=="no"?"Prueba otra cosa…":"…";
+ try{const r=await j("/app/tricks/answer",{method:"POST",body:JSON.stringify({answer:a})});let m="";
+  if(r.treat)m+=r.treat.accepted?"🍪 Se comió el premio. ":"🍪 No quiso el premio. ";
+  if(r.learned)m+="🎓 ¡Aprendió «"+r.trick.label+"»!";else if(r.trick&&a!="no")m+="Va aprendiendo ("+Math.round(r.trick.strength*100)+" %). ";
+  if(r.next)m+=r.next.error?" "+r.next.error:"Ahora intentó: "+r.next.tried+". ¿Es eso?";
+  $("trmsg").textContent=m;trRefresh();if(r.learned)lifeRefresh()}catch(err){trErr(err)}};
+$("trlend").onclick=async()=>{try{await j("/app/tricks/end",{method:"POST"})}catch(e){}trRefresh();$("trmsg").textContent="Clase terminada."};
+$("trlist").onclick=async e=>{const n=e.target.dataset.do;if(!n)return;$("trmsg").textContent="Se lo pides…";
+ try{const r=await j("/app/tricks/"+encodeURIComponent(n)+"/do",{method:"POST"});
+  $("trmsg").innerHTML=esc(TROUT[r.outcome]||r.outcome)+(r.label?" ("+esc(r.label)+")":"")+(r.outcome=="bien"?' <button class="link" data-praise="'+esc(n)+'">👍 ¡Muy bien!</button>':"")}catch(err){trErr(err)}};
+$("trmsg").onclick=async e=>{const n=e.target.dataset.praise;if(!n)return;try{await j("/app/tricks/"+encodeURIComponent(n)+"/praise",{method:"POST"});$("trmsg").textContent="Le gustó que la felicitaras.";trRefresh();lifeRefresh()}catch(err){trErr(err)}};
+$("events").onclick=async e=>{if(!e.target.dataset.keep)return;e.preventDefault();try{await j("/app/album/keep",{method:"POST"});e.target.textContent="guardada ✓";albumRefresh()}catch(err){e.target.textContent=err.message}};
+$("back").onclick=()=>{show("app");tick()};
+$("logout").onclick=async()=>{await j("/app/logout",{method:"POST"}).catch(()=>{});show("login")};
+$("savekeys").onclick=async()=>{const b={};for(const k of["anthropic_key","groq_key","link_key"]){const v=$(k).value.trim();if(v)b[k]=v}
+ try{await j("/app/settings",{method:"POST",body:JSON.stringify(b)});for(const k in b)$(k).value="";$("keysmsg").textContent="Guardado.";loadSettings()}catch(e){$("keysmsg").textContent=e.message}};
+const b64u=s=>{const p="=".repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+// Notificaciones: el botón muestra si este teléfono ya está suscrito (confirmado con el servidor)
+async function browserSub(){if(!("serviceWorker" in navigator)||!("PushManager" in window))return null;const r=await navigator.serviceWorker.getRegistration();return r?r.pushManager.getSubscription():null}
+function pushUi(on,msg){const b=$("pushon");b.disabled=false;b.textContent=on?"Desactivar":"Activar";b.className=on?"danger":"prim";$("pushtest").disabled=!on;
+ $("pushst").innerHTML=msg||(on?'<span class="ok">✓ Activadas en este teléfono</span>':"No activadas en este teléfono.");$("pushon").dataset.on=on?"1":""}
+async function pushRefresh(){try{if(!("PushManager" in window))return pushUi(false,"Este navegador no tiene notificaciones.");
+ if(Notification.permission=="denied")return pushUi(false,'<span class="err">Bloqueadas en el navegador.</span> Permítelas en los ajustes del sitio y vuelve aquí.');
+ const sub=await browserSub();if(!sub)return pushUi(false);
+ const r=await j("/app/push/check",{method:"POST",body:JSON.stringify({endpoint:sub.endpoint})});
+ if(!r.subscribed)await j("/app/push/subscribe",{method:"POST",body:JSON.stringify(sub)});   // el servidor la había perdido: se vuelve a guardar
+ pushUi(true)}catch(e){pushUi(false,e.message)}}
+// Tamagotchi (dueño, 2026-10-30): comida real. Plan v2 (2026-10-31): con el firmware nuevo decide el servidor
+// (care.py) y aquí se ven también el peso, la energía, las calorías y el ejercicio
+let feeding=false,canEat=false;
+async function foodsLoad(){try{const r=await j("/app/foods");$("foods").innerHTML=r.foods.map(f=>'<button data-f="'+f.id+'"><i>'+f.emoji+"</i>"+esc(f.name)+"<small>"+esc((f.kind||"").split(" ").slice(1).join(" "))+"</small></button>").join("");foodsUi()}catch(e){}}
+const SICK={empacho:"🤢 empachada",sobrepeso:"🤒 enferma",debil:"😵 débil de hambre",resfriado:"🤧 enferma"},BAND={bajo:"bajo de peso",sano:"peso sano",sobrepeso:"sobrepeso",obesidad:"obesidad"};
+async function careRefresh(){try{const c=await j("/app/care");$("carex").hidden=!c.enabled;if(!c.enabled)return;
+ if(c.sick){$("sickb").hidden=false;$("sickb").textContent=(SICK[c.cause]||"🤒 enferma")+(c.what?": "+c.what:"")+(c.sick_hours_left!=null?" · "+(c.sick_hours_left>=24?Math.round(c.sick_hours_left/24)+" días":c.sick_hours_left+" h"):"")}
+ $("weightl").textContent=BAND[c.band]||c.band;const wk=$("wknob");wk.style.left=Math.max(0,Math.min(100,(c.weight-3)/4*100))+"%";wk.style.borderColor=c.band=="sano"?"var(--mint)":"var(--coral)";
+ const ex=Object.entries(c.exercise||{}).map(([k,v])=>k+" "+v+" min").join(", ");
+ $("carel").innerHTML="⚡ energía "+Math.round(c.energy*100)+" % · 🔥 hoy comió "+c.kcal_in+" kcal y gastó "+c.kcal_out+(c.exercise_min?" · 💪 "+c.exercise_min+" min de ejercicio"+(ex?" ("+esc(ex)+")":""):"")}catch(e){}}
+function foodsUi(){for(const b of $("foods").children)b.disabled=feeding||!canEat}
+function hungerUi(s,online){const h=s.hunger;canEat=online&&h!=null&&h>=0;$("sickb").hidden=!s.sick;
+ if(!canEat){$("hungl").textContent=online?"—":"sin conexión";$("hungb").style.width="0";foodsUi();return}
+ $("hungl").textContent=h>=0.95?"¡muerta de hambre!":h>=0.7?"tiene hambre":h>=0.4?"se le antoja algo":h>=0.12?"bien comida":"llena";
+ $("hungb").style.width=((1-h)*100)+"%";foodsUi();careRefresh()}   // llena = barra completa
+$("foods").onclick=async e=>{const b=e.target.closest("button");if(!b||b.disabled)return;feeding=true;foodsUi();$("feedmsg").textContent="Se lo ofreces…";
+ try{const r=await j("/app/feed",{method:"POST",body:JSON.stringify({food:b.dataset.f})});$("feedmsg").innerHTML=r.emoji+" "+esc(r.food)+": <b style=\"color:var(--ink)\">"+esc(r.text)+"</b>"+(r.comment?" — «"+esc(r.comment)+"»":"");tick()}
+ catch(err){$("feedmsg").innerHTML='<span class="err">'+esc(err.message)+"</span>"}feeding=false;foodsUi()};
+// Juegos (OpenSpiel + Haiku): en la tarjeta, si te toca en alguna partida
+// Jugar (dueño, 2026-10-31): dentro de la app con tableros abiertos de otros (backgammon: Boxcars, /bg/);
+// PlayStrategy sigue disponible aparte (Alma es bot allí y acepta tus retos)
+const GT={backgammon:"🎲 Backgammon",oware:"🌰 Oware"};let bgUrl=null,psUrl=null;
+$("g_bg").onclick=()=>{if(bgUrl)location.href=bgUrl};
+$("g_ps").onclick=()=>{if(psUrl)window.open(psUrl,"_blank","noopener");else $("gear").click()};
+// Juegos nuevos (PLAN-JUEGOS, 2026-10-31): /play/<juego>/ con Alma de rival (Haiku), récord y partidas abiertas
+const MOODTXT={SM_PLAYFUL:"juguetona",SM_HAPPY:"contenta",SM_CALM:"tranquila",SM_BORED:"aburrida",SM_GRUMPY:"gruñona",SM_SLEEPY:"con sueño",SM_SCARED:"asustada"};
+async function playRefresh(){try{const [b,p,pl]=await Promise.all([j("/app/bg"),j("/app/playstrategy"),j("/app/play")]);const mins=Math.round((pl.seconds_today||0)/60);
+ $("pgames").innerHTML=pl.games.map(g=>'<a href="/play/'+g.id+'/"'+(g.open?' class="open"':"")+"><i>"+g.emoji+"</i>"+esc(g.title)+"<small>"+(g.open?"partida abierta":"Alma "+g.record.alma+" · Tú "+g.record.owner)+"<br>nivel "+esc(g.level||"principiante")+(g.realtime?" · ⚡":g.async?" · 🐢":"")+"</small></a>").join("");
+ bgUrl=b.state=="en línea"?b.url:null;$("g_bg").disabled=!bgUrl;
+ const g=(p.games||[]).filter(x=>x.status=="started"||x.status=="created");
+ psUrl=p.configured&&p.user&&p.bot?(g.length?g[0].url:p.challenge_url):null;
+ let t=(pl.tired?"Alma ya está cansada de jugar por hoy · ":pl.mood&&MOODTXT[pl.mood]?"Alma está "+MOODTXT[pl.mood]+" · ":"")+(!bgUrl?"Backgammon: Alma se está conectando…":b.playing?"Backgammon: partida en curso":"Backgammon: Alma te espera");
+ if(g.length)t+=" · PlayStrategy: "+g.map(x=>esc(GT[x.game]||x.game)).join(", ");
+ $("playst").innerHTML=t+(mins?' <span class="mute">· hoy '+mins+" min</span>":"")}catch(e){}}
+// Tope diario de juegos (PLAN-JUEGOS): play_budget_tokens en el servidor
+async function mbRefresh(){try{const b=(await j("/app/memory")).backups||[];$("membk").textContent=b.length?b.length+" copias en el servidor · la última "+ago(Date.now()/1000-b[0].at)+(b[0].age_days!=null?" (día "+b[0].age_days+")":""):"Todavía no hay copias: la primera llega a los 2 min de conectarse."}catch(e){}}
+async function pbRefresh(){try{const pl=await j("/app/play");$("play_budget").value=pl.budget;
+ $("pbst").textContent="Hoy lleva "+Math.round(pl.used_today/1000)+" mil de "+Math.round(pl.budget/1000)+" mil tokens"+(pl.tired?" · ya está cansada de jugar":"")}catch(e){}}
+$("pbsave").onclick=async()=>{const v=parseInt($("play_budget").value,10);
+ try{await j("/app/settings",{method:"POST",body:JSON.stringify({play_budget_tokens:v})});$("pbmsg").textContent="Guardado.";pbRefresh()}catch(e){$("pbmsg").textContent=e.message}};
+async function psRefresh(){try{const p=await j("/app/playstrategy");$("k_ps").innerHTML=p.configured?'<span class="ok">✓ configurado</span>':'<span class="err">falta</span>';
+ if(p.owner&&!$("ps_owner").value)$("ps_owner").value=p.owner;$("psbot").hidden=!(p.configured&&p.user&&p.bot===false);
+ $("psst").innerHTML=!p.configured?"Sin cuenta de Alma.":(p.user?"Cuenta de Alma: <b>"+esc(p.user)+"</b> · ":"")+(p.state=="en línea"?'<span class="ok">en línea</span>':'<span class="err">'+esc(p.state)+"</span>")+(p.error?" · "+esc(p.error):"")}catch(e){}}
+$("pssave").onclick=async()=>{const b={};const o=$("ps_owner").value.trim(),t=$("ps_token").value.trim();if(o)b.ps_owner=o;if(t)b.ps_token=t;
+ try{await j("/app/settings",{method:"POST",body:JSON.stringify(b)});$("ps_token").value="";$("psmsg").textContent="Guardado. Conectando…";setTimeout(psRefresh,3000);setTimeout(psRefresh,10000)}catch(e){$("psmsg").textContent=e.message}};
+$("psbot").onclick=async()=>{if(!confirm("Convertir la cuenta de Alma en bot NO se puede deshacer, y la cuenta no debe haber jugado ninguna partida. ¿Seguro que es la cuenta nueva de Alma?"))return;
+ try{await j("/app/playstrategy/upgrade",{method:"POST",body:JSON.stringify({confirm:true})});$("psmsg").textContent="Listo: Alma ya es bot.";setTimeout(psRefresh,3000)}catch(e){$("psmsg").textContent=e.message}};
+// Alarmas (dueño, 2026-10-30): el servidor se las manda a Alma a su hora
+const DN=["L","M","M","J","V","S","D"],DL=["lun","mar","mié","jue","vie","sáb","dom"];let alDays=[];
+$("al_days").innerHTML=DN.map((d,i)=>'<button type="button" data-d="'+i+'">'+d+"</button>").join("");
+$("al_days").onclick=e=>{const d=e.target.dataset.d;if(d==null)return;const n=+d;alDays=alDays.includes(n)?alDays.filter(x=>x!=n):[...alDays,n];e.target.classList.toggle("on")};
+const daysTxt=d=>!d.length?"una vez":d.length==7?"todos los días":d.join()=="0,1,2,3,4"?"entre semana":d.join()=="5,6"?"fines de semana":d.map(x=>DL[x]).join(" ");
+async function alRefresh(){try{const r=await j("/app/alarms");
+ $("alarms").innerHTML=r.alarms.map(a=>'<div class="al'+(a.enabled?"":" offa")+'"><span class="t">'+esc(a.time)+'</span><div class="sp n"><div style="font-weight:700">'+(esc(a.label)||"Alarma")+'</div><div class="mute" style="font-size:13px">'+daysTxt(a.days)+'</div></div><button class="sw'+(a.enabled?" on":"")+'" data-id="'+a.id+'" data-on="'+(a.enabled?1:0)+'" aria-label="encender o apagar"></button><button class="link" data-del="'+a.id+'" aria-label="borrar">✕</button></div>').join("")||'<span class="mute">Sin alarmas. Crea una y Alma te avisa con su alarma y una notificación.</span>'}catch(e){}}
+$("alarms").onclick=async e=>{const t=e.target;try{if(t.dataset.id){await j("/app/alarms/"+t.dataset.id,{method:"POST",body:JSON.stringify({enabled:t.dataset.on!="1"})});alRefresh()}
+ else if(t.dataset.del&&confirm("¿Borrar esta alarma?")){await j("/app/alarms/"+t.dataset.del,{method:"DELETE"});alRefresh()}}catch(err){$("almsg").textContent=err.message}};
+$("al_add").onclick=async()=>{try{await j("/app/alarms",{method:"POST",body:JSON.stringify({time:$("al_time").value,days:alDays.sort(),label:$("al_label").value})});
+ $("al_label").value="";alDays=[];for(const b of $("al_days").children)b.classList.remove("on");$("alnew").open=false;$("almsg").textContent="";alRefresh()}catch(e){$("almsg").textContent=e.message}};
+$("al_test").onclick=async()=>{try{const r=await j("/app/alarm-test",{method:"POST"});$("almsg").innerHTML=(r.pushed?'<span class="ok">✓ Notificación enviada</span>':"Sin notificación (actívalas con 🔔)")+" · "+(r.robot?"Alma hace su alarma":"Alma no está conectada")}catch(e){$("almsg").textContent=e.message}};
+$("pushon").onclick=async()=>{const b=$("pushon"),on=!!b.dataset.on;b.disabled=true;b.textContent=on?"Desactivando…":"Activando…";
+ try{if(on){const sub=await browserSub();if(sub){await j("/app/push/unsubscribe",{method:"POST",body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe()}return pushUi(false)}
+ if(!("serviceWorker" in navigator)||!("PushManager" in window))throw new Error("Este navegador no tiene notificaciones; en iPhone, agrega la app a la pantalla de inicio.");
+ const reg=await navigator.serviceWorker.register("/sw.js");await navigator.serviceWorker.ready;if(await Notification.requestPermission()!="granted")throw new Error("Permiso denegado");
+ const s=await j("/app/settings");const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(s.vapid_public)});
+ await j("/app/push/subscribe",{method:"POST",body:JSON.stringify(sub)});pushUi(true)}catch(e){pushRefresh().then(()=>{$("pushst").textContent=e.message})}};
+$("pushtest").onclick=async()=>{const b=$("pushtest");b.disabled=true;try{const r=await j("/app/push/test",{method:"POST"});
+ $("pushst").innerHTML=r.sent?'<span class="ok">✓ Enviada. Debe llegarte en unos segundos.</span>':'<span class="err">No se pudo enviar.</span> Desactiva y vuelve a activar.'}catch(e){$("pushst").textContent=e.message}b.disabled=false};
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+start().catch(()=>show("login"));setInterval(tick,3000);
+</script></main></body></html>

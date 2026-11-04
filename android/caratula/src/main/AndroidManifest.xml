@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carátula de Alma en Watch Face Format: solo recursos, sin código (Wear OS 6 solo acepta este formato). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.type.watch" />
+    <application
+        android:hasCode="false"
+        android:icon="@drawable/vista_previa"
+        android:label="@string/nombre">
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
+        <property android:name="com.google.wear.watchface.format.version" android:value="1" />
+        <property android:name="com.google.wear.watchface.format.publisher" android:value="alma" />
+    </application>
+</manifest>

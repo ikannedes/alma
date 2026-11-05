@@ -1,0 +1,74 @@
+{
+  "id": "fin_de_semana_fuera",
+  "descripcion": "Trabaja de 8 a 16 y entre semana llega temprano y es atento; el sábado sale desde temprano hasta casi medianoche y algunos domingos se va a ver a su familia a Puebla todo el día.",
+  "peso": 1.0,
+  "dias": [
+    {
+      "nombre": "entre semana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "despierta": "06:00",
+      "duerme": "22:45",
+      "variacion_min": 15,
+      "bloques": [
+        {"desde": "06:00", "hasta": "06:40", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "06:40", "hasta": "07:10", "dueno": "cerca", "en_base": false, "caricias_h": 5, "felicita_h": 2, "regana_h": 0.1, "ordenes_h": 1.5, "levanta_h": 0.3, "de_frente_p": 0.6, "responde_p": 0.7},
+        {"desde": "07:10", "hasta": "16:40", "dueno": "fuera", "en_base": true},
+        {"desde": "16:40", "hasta": "17:20", "dueno": "cerca", "en_base": false, "caricias_h": 7, "felicita_h": 2.5, "regana_h": 0.05, "ordenes_h": 1.5, "levanta_h": 0.6, "de_frente_p": 0.7, "responde_p": 0.8},
+        {"desde": "17:20", "hasta": "17:50", "dueno": "juego", "en_base": false, "caricias_h": 13, "felicita_h": 5, "regana_h": 0.1, "ordenes_h": 4, "levanta_h": 1, "de_frente_p": 0.85, "responde_p": 0.85},
+        {"desde": "17:50", "hasta": "19:30", "dueno": "casa", "en_base": false, "pasa_h": 3},
+        {"desde": "19:30", "hasta": "21:30", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.1, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.5, "responde_p": 0.6},
+        {"desde": "21:30", "hasta": "22:45", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "ruidos_dia": 0.8,
+      "musica_dia": 0.5
+    },
+    {
+      "nombre": "sábado fuera todo el día",
+      "dias_semana": [5],
+      "despierta": "06:30",
+      "duerme": "23:50",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "06:30", "hasta": "07:15", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "07:15", "hasta": "23:20", "dueno": "fuera", "en_base": true},
+        {"desde": "23:20", "hasta": "23:50", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "ruidos_dia": 0.3,
+      "musica_dia": 0.0
+    },
+    {
+      "nombre": "domingo en casa",
+      "dias_semana": [6],
+      "p": 0.6,
+      "despierta": "10:30",
+      "duerme": "22:30",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "10:30", "hasta": "12:30", "dueno": "cerca", "en_base": false, "caricias_h": 7, "felicita_h": 3, "regana_h": 0.05, "ordenes_h": 1.5, "levanta_h": 0.6, "de_frente_p": 0.7, "responde_p": 0.8},
+        {"desde": "12:30", "hasta": "13:00", "dueno": "juego", "en_base": false, "caricias_h": 13, "felicita_h": 5, "regana_h": 0.1, "ordenes_h": 4, "levanta_h": 1, "de_frente_p": 0.85, "responde_p": 0.85},
+        {"desde": "13:00", "hasta": "16:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "16:00", "hasta": "16:20", "dueno": "juego", "en_base": false, "caricias_h": 10, "felicita_h": 4, "regana_h": 0.1, "ordenes_h": 3, "levanta_h": 0.8, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "16:20", "hasta": "20:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.5, "responde_p": 0.6},
+        {"desde": "20:00", "hasta": "22:30", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "visita": {"desde": "14:00", "hasta": "18:00", "p": 0.3},
+      "ruidos_dia": 1.0,
+      "musica_dia": 1.0
+    },
+    {
+      "nombre": "domingo de visita a la familia",
+      "dias_semana": [6],
+      "p": 0.4,
+      "despierta": "08:00",
+      "duerme": "22:30",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "08:00", "hasta": "08:45", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "08:45", "hasta": "21:00", "dueno": "fuera", "en_base": true},
+        {"desde": "21:00", "hasta": "21:40", "dueno": "cerca", "en_base": false, "caricias_h": 6, "felicita_h": 2, "regana_h": 0.05, "ordenes_h": 1, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.7},
+        {"desde": "21:40", "hasta": "22:30", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "ruidos_dia": 0.3
+    }
+  ]
+}

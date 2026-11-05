@@ -41,7 +41,7 @@ idf_component_register(
          ${CORE_SRCS} ${A}/memory_store/alma_mem.c ${A}/memory_store/alma_mem_flash_esp32.c ${A}/sim/catalog_load.c ${CJSON}
     INCLUDE_DIRS ${incs}
     EMBED_TXTFILES ${A}/catalog/catalog.json
-    EMBED_FILES alma_test.avi sticker_test.png
+    EMBED_FILES alma_test.avi sticker_test.png alma_brain.almb
     REQUIRES ${reqs}
 )
 # memory_store lee y valida pero no escribe (06): la primera escritura tendrá su propio plan de sesión.

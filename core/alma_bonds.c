@@ -80,7 +80,8 @@ void alma_face_seen(alma_t *a, const alma_ev *ev, double now_s)
         alma_add_social(a, ARRIVAL_SOCIAL);
         alma_attach(a, s, ARRIVAL_W);
     }
-    if (gap >= VISIT_END_S) p->greeted_this_visit = 0;
+    if (gap >= VISIT_END_S) { p->greeted_this_visit = 0; a->visit_start_s[s] = now_s; }
+    if (a->bye_slot == s) a->bye_slot = -1;   /* volvió a verlo: no se fue */
     p->present = 1;
     p->last_seen_s = now_s;
     p->face_w = ev->w;

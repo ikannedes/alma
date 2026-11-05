@@ -1,0 +1,15 @@
+{
+ "ejemplos": 5246154,
+ "h1": 64,
+ "h2": 32,
+ "prueba_perdida": 0.05811728909611702,
+ "prueba_KL": 0.0007526831468567252,
+ "acuerdo_top1": 0.9997755289077759,
+ "p_seguir_maestra": 0.9894053936004639,
+ "p_seguir_red": 0.9894169569015503,
+ "momentos_de_cambio": 10666,
+ "acuerdo_top1_en_cambios": 0.9070879429964372,
+ "distancia_total_en_cambios": 0.089106485247612,
+ "bytes": 32540,
+ "version": 20261105
+}

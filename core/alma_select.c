@@ -79,10 +79,10 @@ static int command_reqs_ok(const alma_t *a, int b, int P, double now_s)
 }
 
 /* score(b) de 04, "Selección de conducta" */
-float alma_score(alma_t *a, int b, int use_pref)
+/* ¿se puede hacer ahora? (la misma puerta para la fórmula y para la red) */
+int alma_eligible(const alma_t *a, int b, double now_s)
 {
     const alma_behavior *x = &a->cat->b[b];
-    double now_s = a->t_now;
     if (a->age_days < x->unlock_day || now_s - a->last_exec_t[b] < x->cooldown_s) return 0;
     int P = alma_P(a);
     for (int i = 0; i < x->n_req; i++)
@@ -90,6 +90,15 @@ float alma_score(alma_t *a, int b, int use_pref)
     if ((x->tags & TAG_PLAY) && !alma_relaxed_field(a, now_s)) return 0;               /* regla 4 */
     if (a->sick && x->category == CAT_PLAY) return 0;   /* enferma no baila, no juega ni pide jugar (plan v2) */
     if ((x->tags & TAG_ATTENTION) && now_s < a->attention_suppressed_until) return 0;  /* regla 3 */
+    return 1;
+}
+
+float alma_score(alma_t *a, int b, int use_pref)
+{
+    const alma_behavior *x = &a->cat->b[b];
+    double now_s = a->t_now;
+    if (!alma_eligible(a, b, now_s)) return 0;
+    int P = alma_P(a);
 
     float s = x->base, n = 1, t = 1;
     for (int d = 0; d < NEED_COUNT; d++) n += x->need_w[d] * alma_need(a, d);
@@ -226,6 +235,7 @@ void alma_start_opt(alma_t *a, int b, alma_run_kind kind, double now_s, float re
     a->cur.motion_played = opt >= 0;
     if (b == a->ix_greet && a->cur.person >= 0) a->person[a->cur.person].greeted_this_visit = 1;
     if (kind != RUN_REFLEX) a->state = ST_PERFORMING;
+    alma_brain_on_start(a, b, now_s);
 
     if (a->hooks.on_exec) {
         alma_exec_info e = {b, kind, opt, reason, now_s, dur, a->cur.person, tempo};
@@ -240,6 +250,7 @@ void alma_finish(alma_t *a, double now_s, int interrupted)
     a->cur.active = 0;
     const alma_behavior *x = &a->cat->b[c.behavior];
     if (c.motion_played) a->servo_active_s_today += (float)(now_s - c.t_start);   /* duración real (04) */
+    alma_brain_on_finish(a, &c, now_s);
 
     if (interrupted) {
         alma_add_frust(a, INTERRUPTED_FRUST * (1.0f - INTERRUPTED_IMP_W * a->trait[TRAIT_IMPULSIVITY]), now_s);
@@ -379,11 +390,11 @@ static void pend_resolve(alma_t *a, alma_pending *p, int responded, double now_s
     }
     case PEND_PLAY:
         if (responded) play_done(a, p->person, now_s);
-        else a->counts.play_ignored++;
+        else a->counts.play_ignored++, alma_brain_ignored(a, now_s);
         break;
     case PEND_ATTN:
         if (responded) a->attention_fails = 0;
-        else if (++a->attention_fails >= NO_BOTHER_FAILS) {
+        else if (alma_brain_ignored(a, now_s), ++a->attention_fails >= NO_BOTHER_FAILS) {
             a->attention_suppressed_until = now_s + NO_BOTHER_SUPPRESS_S;
             a->stim = alma_clampf(a->stim - NO_BOTHER_STIM_DROP, 0, 1);
             a->attention_fails = 0;

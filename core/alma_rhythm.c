@@ -196,16 +196,19 @@ void alma_state_tick(alma_t *a, double now_s)
         /* de noche, tenerla enfrente no la mantiene despierta: solo jugar con ella (3 min tras el último estímulo) */
         int night = alma_in_night_window(a, now_s);
         int sticky = (!night && P >= 0 && a->person[P].facing) || now_s - a->last_stimulus_s < STIMULUS_STICKY_S;
-        if (!sticky && (night || need_rest > REST_ENTER || house_inactive(a, now_s))) {
+        /* con la red, descansar sin nadie en casa lo decide ella (siesta); quedan la noche y el cansancio fuerte */
+        if (!sticky && (night || need_rest > REST_ENTER || (!a->policy && house_inactive(a, now_s)))) {
             a->state = ST_RESTING;
             a->resting_for_rest = need_rest > REST_ENTER;
             break;
         }
-        if (now_s >= a->pause_until_s) alma_select(a, now_s, RUN_SELECTOR);
+        if (a->policy) alma_brain_poke(a, now_s, 0);   /* la red: cada segundo, sin pausa fija */
+        else if (now_s >= a->pause_until_s) alma_select(a, now_s, RUN_SELECTOR);
         break;
     }
     case ST_PERFORMING:
-        if (now_s >= a->next_hyst_s) {
+        if (a->policy) alma_brain_poke(a, now_s, 0);   /* solo si lo que hace se puede cambiar; sin regla 2 */
+        else if (now_s >= a->next_hyst_s) {
             a->next_hyst_s = now_s + HYST_CHECK_S;
             alma_hysteresis_check(a, now_s);
         }

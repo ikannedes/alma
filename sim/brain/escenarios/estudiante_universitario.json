@@ -1,0 +1,97 @@
+{
+  "id": "estudiante_universitario",
+  "descripcion": "Estudiante que comparte departamento: unos días tiene clases temprano, otros en la tarde y otros no va; sus roomies y amigos (caras desconocidas) pasan seguido y el domingo amanece crudo y de malas.",
+  "peso": 1.0,
+  "dias": [
+    {
+      "nombre": "clases en la mañana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "p": 0.5,
+      "despierta": "06:30",
+      "duerme": "23:50",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "06:30", "hasta": "07:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "07:00", "hasta": "14:30", "dueno": "fuera", "en_base": true},
+        {"desde": "14:30", "hasta": "15:00", "dueno": "cerca", "en_base": false, "caricias_h": 5, "felicita_h": 1.5, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.6},
+        {"desde": "15:00", "hasta": "16:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "16:00", "hasta": "19:30", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.5, "regana_h": 0.2, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.5, "responde_p": 0.35},
+        {"desde": "19:30", "hasta": "19:50", "dueno": "juego", "en_base": false, "caricias_h": 12, "felicita_h": 4, "regana_h": 0.3, "ordenes_h": 4, "levanta_h": 1.5, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "19:50", "hasta": "21:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "21:00", "hasta": "23:50", "dueno": "cerca", "en_base": false, "caricias_h": 2.5, "felicita_h": 0.8, "regana_h": 0.3, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.4}
+      ],
+      "visita": {"desde": "18:00", "hasta": "23:00", "p": 0.3},
+      "ruidos_dia": 1.5,
+      "musica_dia": 1.5
+    },
+    {
+      "nombre": "clases en la tarde",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "p": 0.3,
+      "despierta": "09:30",
+      "duerme": "23:50",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "09:30", "hasta": "10:15", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "10:15", "hasta": "11:30", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 1.5, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.4, "de_frente_p": 0.6, "responde_p": 0.6},
+        {"desde": "11:30", "hasta": "12:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "12:30", "hasta": "21:30", "dueno": "fuera", "en_base": true},
+        {"desde": "21:30", "hasta": "22:00", "dueno": "cerca", "en_base": false, "caricias_h": 5, "felicita_h": 1.5, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.6},
+        {"desde": "22:00", "hasta": "23:50", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.5, "regana_h": 0.3, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.5, "responde_p": 0.3}
+      ],
+      "visita": {"desde": "22:00", "hasta": "23:30", "p": 0.2},
+      "ruidos_dia": 1.0,
+      "musica_dia": 1.0
+    },
+    {
+      "nombre": "no fue a clases",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "p": 0.2,
+      "despierta": "11:00",
+      "duerme": "23:50",
+      "variacion_min": 40,
+      "bloques": [
+        {"desde": "11:00", "hasta": "12:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.3, "de_frente_p": 0.4, "responde_p": 0.5},
+        {"desde": "12:00", "hasta": "12:30", "dueno": "juego", "en_base": false, "caricias_h": 12, "felicita_h": 4, "regana_h": 0.3, "ordenes_h": 4, "levanta_h": 1.5, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "12:30", "hasta": "17:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "17:00", "hasta": "20:00", "dueno": "fuera", "en_base": true},
+        {"desde": "20:00", "hasta": "23:50", "dueno": "cerca", "en_base": false, "caricias_h": 2.5, "felicita_h": 0.8, "regana_h": 0.3, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.4}
+      ],
+      "visita": {"desde": "13:00", "hasta": "17:00", "p": 0.4},
+      "ruidos_dia": 1.5,
+      "musica_dia": 2.0
+    },
+    {
+      "nombre": "sábado de fiesta",
+      "dias_semana": [5],
+      "despierta": "11:00",
+      "duerme": "23:50",
+      "variacion_min": 40,
+      "bloques": [
+        {"desde": "11:00", "hasta": "12:30", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.2, "ordenes_h": 1, "levanta_h": 0.3, "de_frente_p": 0.5, "responde_p": 0.5},
+        {"desde": "12:30", "hasta": "13:00", "dueno": "juego", "en_base": false, "caricias_h": 12, "felicita_h": 4, "regana_h": 0.3, "ordenes_h": 4, "levanta_h": 1.5, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "13:00", "hasta": "16:00", "dueno": "casa", "en_base": false, "pasa_h": 3},
+        {"desde": "16:00", "hasta": "23:50", "dueno": "fuera", "en_base": true}
+      ],
+      "visita": {"desde": "13:00", "hasta": "16:00", "p": 0.5},
+      "ruidos_dia": 2.0,
+      "musica_dia": 2.5
+    },
+    {
+      "nombre": "domingo crudo",
+      "dias_semana": [6],
+      "despierta": "12:00",
+      "duerme": "23:30",
+      "variacion_min": 40,
+      "bloques": [
+        {"desde": "12:00", "hasta": "14:00", "dueno": "cerca", "en_base": true, "caricias_h": 1.5, "felicita_h": 0.3, "regana_h": 0.6, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.4, "responde_p": 0.2},
+        {"desde": "14:00", "hasta": "18:00", "dueno": "fuera", "en_base": true},
+        {"desde": "18:00", "hasta": "20:00", "dueno": "cerca", "en_base": false, "caricias_h": 2, "felicita_h": 0.8, "regana_h": 0.2, "ordenes_h": 0.5, "levanta_h": 0.2, "de_frente_p": 0.5, "responde_p": 0.4},
+        {"desde": "20:00", "hasta": "20:20", "dueno": "juego", "en_base": false, "caricias_h": 10, "felicita_h": 4, "regana_h": 0.2, "ordenes_h": 3, "levanta_h": 1, "de_frente_p": 0.8, "responde_p": 0.75},
+        {"desde": "20:20", "hasta": "23:30", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.5, "regana_h": 0.2, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.5, "responde_p": 0.35}
+      ],
+      "ruidos_dia": 0.5,
+      "musica_dia": 1.0
+    }
+  ]
+}

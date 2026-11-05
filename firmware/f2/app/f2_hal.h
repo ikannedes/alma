@@ -56,6 +56,8 @@ int  hal_k210_spi_read(uint8_t *p, size_t n);   /* el K210 → ESP32 (micrófono
 /* alma_test.avi incrustado (tools/make_test_avi.py): la animación propia de prueba para la pantalla */
 const uint8_t *hal_test_avi(size_t *n);
 const uint8_t *hal_test_sticker(size_t *n);   /* PNG de prueba (globo con hamburguesa) para encimar: tecla K */
+/* pesos de la red que decide (alma_brain.almb incrustado; tools/brain/train.py). NULL si no hay */
+const uint8_t *hal_brain_weights(size_t *n);
 void hal_delay_us(uint32_t us);
 /* Los bytes recibidos los entrega la plataforma con hal_k210_rx_feed (hal_k210.h), desde su propia tarea. */
 

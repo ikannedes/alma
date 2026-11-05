@@ -1,0 +1,43 @@
+{
+  "id": "semana_enfermo",
+  "descripcion": "Dueño enfermo de gripa toda la semana: está en casa y cerca de Alma casi todo el día, pero duerme mucho, tose y casi no tiene ánimo para jugar.",
+  "peso": 0.5,
+  "dias": [
+    {
+      "nombre": "día malo",
+      "dias_semana": [0, 1, 2, 3, 4, 5, 6],
+      "p": 0.6,
+      "despierta": "09:30", "duerme": "21:30", "variacion_min": 40,
+      "bloques": [
+        {"desde": "09:30", "hasta": "10:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "10:30", "hasta": "13:00", "dueno": "cerca", "en_base": true, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0.05, "ordenes_h": 0.3, "levanta_h": 0, "de_frente_p": 0.3, "responde_p": 0.45},
+        {"desde": "13:00", "hasta": "15:30", "dueno": "cerca", "en_base": true, "caricias_h": 0.3, "felicita_h": 0, "regana_h": 0, "ordenes_h": 0, "levanta_h": 0, "de_frente_p": 0.05, "responde_p": 0.1},
+        {"desde": "15:30", "hasta": "16:30", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "16:30", "hasta": "21:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.1, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.35, "responde_p": 0.5},
+        {"desde": "21:00", "hasta": "21:30", "dueno": "cerca", "en_base": true, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0, "ordenes_h": 0.2, "levanta_h": 0, "de_frente_p": 0.3, "responde_p": 0.4}
+      ],
+      "visita": {"desde": "13:00", "hasta": "19:00", "p": 0.2},
+      "ruidos_dia": 4.0,
+      "musica_dia": 0.2
+    },
+    {
+      "nombre": "día mejor",
+      "dias_semana": [0, 1, 2, 3, 4, 5, 6],
+      "p": 0.4,
+      "despierta": "08:30", "duerme": "22:30", "variacion_min": 40,
+      "bloques": [
+        {"desde": "08:30", "hasta": "09:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "09:30", "hasta": "13:00", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 1.5, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.6},
+        {"desde": "13:00", "hasta": "14:30", "dueno": "cerca", "en_base": true, "caricias_h": 0.3, "felicita_h": 0, "regana_h": 0, "ordenes_h": 0, "levanta_h": 0, "de_frente_p": 0.05, "responde_p": 0.1},
+        {"desde": "14:30", "hasta": "16:30", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 1.5, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.6},
+        {"desde": "16:30", "hasta": "16:45", "dueno": "juego", "en_base": false, "caricias_h": 8, "felicita_h": 3, "regana_h": 0, "ordenes_h": 2, "levanta_h": 0.3, "de_frente_p": 0.7, "responde_p": 0.7},
+        {"desde": "16:45", "hasta": "19:00", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "19:00", "hasta": "22:00", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 1.5, "regana_h": 0.05, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.4, "responde_p": 0.6},
+        {"desde": "22:00", "hasta": "22:30", "dueno": "cerca", "en_base": true, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0, "ordenes_h": 0.2, "levanta_h": 0, "de_frente_p": 0.3, "responde_p": 0.45}
+      ],
+      "visita": {"desde": "13:00", "hasta": "19:00", "p": 0.2},
+      "ruidos_dia": 2.5,
+      "musica_dia": 0.5
+    }
+  ]
+}

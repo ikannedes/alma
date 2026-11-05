@@ -1,0 +1,72 @@
+{
+  "id": "casi_siempre_en_base",
+  "descripcion": "La tiene de adorno en la base junto a la computadora: trabaja en casa lunes y viernes y en oficina el resto; casi nunca la saca a la mesa, le hace poco caso y la calla si hace ruido.",
+  "peso": 0.6,
+  "dias": [
+    {
+      "nombre": "home office",
+      "dias_semana": [0, 4],
+      "despierta": "07:00",
+      "duerme": "23:30",
+      "variacion_min": 15,
+      "bloques": [
+        {"desde": "07:00", "hasta": "08:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "08:30", "hasta": "13:30", "dueno": "cerca", "en_base": true, "caricias_h": 0.5, "felicita_h": 0.2, "regana_h": 0.3, "ordenes_h": 0.2, "levanta_h": 0.0, "de_frente_p": 0.7, "responde_p": 0.15},
+        {"desde": "13:30", "hasta": "14:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "14:30", "hasta": "14:45", "dueno": "juego", "en_base": false, "caricias_h": 6, "felicita_h": 3, "regana_h": 0.2, "ordenes_h": 3, "levanta_h": 0.5, "de_frente_p": 0.8, "responde_p": 0.6},
+        {"desde": "14:45", "hasta": "18:30", "dueno": "cerca", "en_base": true, "caricias_h": 0.5, "felicita_h": 0.2, "regana_h": 0.3, "ordenes_h": 0.2, "levanta_h": 0.0, "de_frente_p": 0.7, "responde_p": 0.15},
+        {"desde": "18:30", "hasta": "23:30", "dueno": "casa", "en_base": true, "pasa_h": 1.5}
+      ],
+      "ruidos_dia": 0.5,
+      "musica_dia": 0.5
+    },
+    {
+      "nombre": "oficina",
+      "dias_semana": [1, 2, 3],
+      "despierta": "06:30",
+      "duerme": "23:30",
+      "variacion_min": 15,
+      "bloques": [
+        {"desde": "06:30", "hasta": "07:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "07:30", "hasta": "19:30", "dueno": "fuera", "en_base": true},
+        {"desde": "19:30", "hasta": "20:00", "dueno": "cerca", "en_base": true, "caricias_h": 2, "felicita_h": 1, "regana_h": 0.2, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.5, "responde_p": 0.4},
+        {"desde": "20:00", "hasta": "23:30", "dueno": "casa", "en_base": true, "pasa_h": 1}
+      ],
+      "ruidos_dia": 0.5,
+      "musica_dia": 0.3
+    },
+    {
+      "nombre": "fin de semana fuera",
+      "dias_semana": [5, 6],
+      "p": 0.6,
+      "despierta": "09:30",
+      "duerme": "23:50",
+      "variacion_min": 40,
+      "bloques": [
+        {"desde": "09:30", "hasta": "11:00", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "11:00", "hasta": "20:00", "dueno": "fuera", "en_base": true},
+        {"desde": "20:00", "hasta": "21:00", "dueno": "cerca", "en_base": true, "caricias_h": 1.5, "felicita_h": 0.5, "regana_h": 0.2, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.5, "responde_p": 0.35},
+        {"desde": "21:00", "hasta": "21:20", "dueno": "juego", "en_base": false, "caricias_h": 6, "felicita_h": 3, "regana_h": 0.2, "ordenes_h": 3, "levanta_h": 0.5, "de_frente_p": 0.8, "responde_p": 0.6},
+        {"desde": "21:20", "hasta": "23:50", "dueno": "casa", "en_base": true, "pasa_h": 1}
+      ],
+      "ruidos_dia": 0.5,
+      "musica_dia": 0.3
+    },
+    {
+      "nombre": "fin de semana en casa",
+      "dias_semana": [5, 6],
+      "p": 0.4,
+      "despierta": "09:30",
+      "duerme": "23:50",
+      "variacion_min": 40,
+      "bloques": [
+        {"desde": "09:30", "hasta": "16:00", "dueno": "casa", "en_base": true, "pasa_h": 1.5},
+        {"desde": "16:00", "hasta": "19:00", "dueno": "cerca", "en_base": true, "caricias_h": 1, "felicita_h": 0.3, "regana_h": 0.3, "ordenes_h": 0.3, "levanta_h": 0.05, "de_frente_p": 0.6, "responde_p": 0.25},
+        {"desde": "19:00", "hasta": "23:50", "dueno": "casa", "en_base": true, "pasa_h": 1.5}
+      ],
+      "visita": {"desde": "17:00", "hasta": "21:00", "p": 0.2},
+      "ruidos_dia": 0.8,
+      "musica_dia": 0.5
+    }
+  ]
+}

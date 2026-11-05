@@ -300,6 +300,9 @@ const uint8_t *hal_test_avi(size_t *n) { *n = (size_t)(alma_test_avi_end - alma_
 extern const uint8_t sticker_test_png_start[] asm("_binary_sticker_test_png_start");
 extern const uint8_t sticker_test_png_end[] asm("_binary_sticker_test_png_end");
 const uint8_t *hal_test_sticker(size_t *n) { *n = (size_t)(sticker_test_png_end - sticker_test_png_start); return sticker_test_png_start; }
+extern const uint8_t alma_brain_almb_start[] asm("_binary_alma_brain_almb_start");
+extern const uint8_t alma_brain_almb_end[] asm("_binary_alma_brain_almb_end");
+const uint8_t *hal_brain_weights(size_t *n) { *n = (size_t)(alma_brain_almb_end - alma_brain_almb_start); return alma_brain_almb_start; }
 
 void hal_k210_resetn_pulse(int low_ms)
 {

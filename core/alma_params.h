@@ -228,6 +228,8 @@
 #define MUSIC_DANCE_GAP_S             300.0f   /* dueño, 2026-10-30: con música baila y no otra vez en 5 min (aparte del cooldown de 20 min de bhv_dance) */
 #define MUSIC_ENGAGED_S               120.0f   /* dueño: con caricia, toque o elogio hace menos de 2 min, la música no la hace bailar */
 #define GOODBYE_MIN_A                 0.05f    /* apego mínimo para despedirse (DERIVADO) */
+#define GOODBYE_GONE_S                115.0f   /* dueño, 2026-11-05: se despide solo si ya no lo ve en ~2 min (EV_FACE_LOST llega a los 5 s) */
+#define GOODBYE_MIN_VISIT_S           300.0f   /* ... de una visita de al menos 5 min en la que ya lo había saludado */
 #define WINDOW_BOOST                  3.0f     /* respuesta a una caricia o elogio en su ventana × 3 (2026-10-30: con 40 conductas casi nunca ganaba) */
 #define PRESENCE_PAUSE_F              0.35f    /* dueño, 2026-10-30: con alguien conocido delante, pausas × 0.35 ("que haga cosas, que llame mi atención") */
 #define RESPONSE_WINDOW_S             5.0f     /* 05 "Cómo se disparan" */

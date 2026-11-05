@@ -44,6 +44,15 @@ void  alma_pending_response(alma_t *a, alma_ev_type t, double now_s);
 void  alma_pending_tick(alma_t *a, double now_s);
 int   alma_req_ok(const alma_t *a, const alma_req *r, int P, double now_s);
 int   alma_relaxed_field(const alma_t *a, double now_s);
+int   alma_eligible(const alma_t *a, int b, double now_s);     /* desbloqueo, cooldown, precondiciones, reglas 3 y 4 */
+
+/* alma_brain.c: la red */
+void  alma_brain_init(alma_t *a);
+void  alma_brain_note_event(alma_t *a, alma_ev_type t, double now_s);
+void  alma_brain_on_start(alma_t *a, int b, double now_s);
+void  alma_brain_on_finish(alma_t *a, const alma_current *c, double now_s);
+void  alma_brain_ignored(alma_t *a, double now_s);
+void  alma_brain_poke(alma_t *a, double now_s, int event);     /* decide si toca (cada segundo) o si event = 1 */
 
 /* alma_rhythm.c: estados, ritmo diario, reflejos */
 int   alma_hour(double now_s);

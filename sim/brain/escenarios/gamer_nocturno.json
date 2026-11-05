@@ -1,0 +1,37 @@
+{
+  "id": "gamer_nocturno",
+  "descripcion": "Joven que trabaja por la tarde y juega videojuegos en el escritorio hasta las 3 de la mañana; está cerca muchas horas pero mira la pantalla, casi nunca a Alma, y a veces grita con las partidas.",
+  "peso": 0.9,
+  "dias": [
+    {
+      "nombre": "entre semana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "despierta": "11:30", "duerme": "03:00", "variacion_min": 30,
+      "bloques": [
+        {"desde": "11:30", "hasta": "12:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "12:30", "hasta": "13:30", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 1.5, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.3, "de_frente_p": 0.5, "responde_p": 0.55},
+        {"desde": "13:30", "hasta": "21:45", "dueno": "fuera", "en_base": true},
+        {"desde": "21:45", "hasta": "22:30", "dueno": "casa", "en_base": false, "pasa_h": 3},
+        {"desde": "22:30", "hasta": "22:50", "dueno": "juego", "en_base": false, "caricias_h": 12, "felicita_h": 5, "regana_h": 0.2, "ordenes_h": 3, "levanta_h": 1, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "22:50", "hasta": "03:00", "dueno": "cerca", "en_base": false, "caricias_h": 1, "felicita_h": 0.3, "regana_h": 0.4, "ordenes_h": 0.2, "levanta_h": 0.1, "de_frente_p": 0.15, "responde_p": 0.2}
+      ],
+      "ruidos_dia": 3.0,
+      "musica_dia": 1.0
+    },
+    {
+      "nombre": "fin de semana",
+      "dias_semana": [5, 6],
+      "despierta": "13:00", "duerme": "04:00", "variacion_min": 40,
+      "bloques": [
+        {"desde": "13:00", "hasta": "14:00", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "14:00", "hasta": "14:30", "dueno": "juego", "en_base": false, "caricias_h": 14, "felicita_h": 5, "regana_h": 0.2, "ordenes_h": 3, "levanta_h": 1, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "14:30", "hasta": "18:00", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.4, "regana_h": 0.5, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.2, "responde_p": 0.25},
+        {"desde": "18:00", "hasta": "21:00", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "21:00", "hasta": "04:00", "dueno": "cerca", "en_base": false, "caricias_h": 1, "felicita_h": 0.3, "regana_h": 0.6, "ordenes_h": 0.2, "levanta_h": 0.1, "de_frente_p": 0.15, "responde_p": 0.2}
+      ],
+      "visita": {"desde": "21:00", "hasta": "01:00", "p": 0.3},
+      "ruidos_dia": 4.0,
+      "musica_dia": 1.5
+    }
+  ]
+}

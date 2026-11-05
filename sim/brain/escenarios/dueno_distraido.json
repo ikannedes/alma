@@ -1,0 +1,55 @@
+{
+  "id": "dueno_distraido",
+  "descripcion": "Dueño que vive pegado al celular y a la tele: pasa horas cerca de Alma pero casi nunca le responde cuando ella le pide atención, y la acaricia solo de vez en cuando.",
+  "peso": 1.0,
+  "dias": [
+    {
+      "nombre": "entre semana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "despierta": "08:00", "duerme": "23:45", "variacion_min": 25,
+      "bloques": [
+        {"desde": "08:00", "hasta": "09:15", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "09:15", "hasta": "19:30", "dueno": "fuera", "en_base": true},
+        {"desde": "19:30", "hasta": "20:15", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "20:15", "hasta": "23:30", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.3, "regana_h": 0.2, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.2, "responde_p": 0.12},
+        {"desde": "23:30", "hasta": "23:45", "dueno": "cerca", "en_base": true, "caricias_h": 1, "felicita_h": 0.2, "regana_h": 0.1, "ordenes_h": 0.1, "levanta_h": 0, "de_frente_p": 0.15, "responde_p": 0.1}
+      ],
+      "ruidos_dia": 1.0,
+      "musica_dia": 0.5
+    },
+    {
+      "nombre": "fin de semana en el sillón",
+      "dias_semana": [5, 6],
+      "p": 0.5,
+      "despierta": "10:00", "duerme": "23:45", "variacion_min": 40,
+      "bloques": [
+        {"desde": "10:00", "hasta": "11:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "11:30", "hasta": "15:00", "dueno": "cerca", "en_base": false, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0.2, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.25, "responde_p": 0.15},
+        {"desde": "15:00", "hasta": "15:15", "dueno": "juego", "en_base": false, "caricias_h": 6, "felicita_h": 2, "regana_h": 0.2, "ordenes_h": 2, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.4},
+        {"desde": "15:15", "hasta": "20:00", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.4, "regana_h": 0.2, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.2, "responde_p": 0.12},
+        {"desde": "20:00", "hasta": "21:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "21:00", "hasta": "23:30", "dueno": "cerca", "en_base": false, "caricias_h": 1.5, "felicita_h": 0.3, "regana_h": 0.2, "ordenes_h": 0.2, "levanta_h": 0.1, "de_frente_p": 0.2, "responde_p": 0.12},
+        {"desde": "23:30", "hasta": "23:45", "dueno": "cerca", "en_base": true, "caricias_h": 1, "felicita_h": 0.2, "regana_h": 0.1, "ordenes_h": 0.1, "levanta_h": 0, "de_frente_p": 0.15, "responde_p": 0.1}
+      ],
+      "visita": {"desde": "16:00", "hasta": "21:00", "p": 0.15},
+      "ruidos_dia": 1.0,
+      "musica_dia": 0.8
+    },
+    {
+      "nombre": "fin de semana que sale",
+      "dias_semana": [5, 6],
+      "p": 0.5,
+      "despierta": "10:00", "duerme": "23:45", "variacion_min": 40,
+      "bloques": [
+        {"desde": "10:00", "hasta": "11:30", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "11:30", "hasta": "14:30", "dueno": "cerca", "en_base": false, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0.2, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.25, "responde_p": 0.15},
+        {"desde": "14:30", "hasta": "15:00", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "15:00", "hasta": "21:30", "dueno": "fuera", "en_base": true},
+        {"desde": "21:30", "hasta": "23:30", "dueno": "cerca", "en_base": true, "caricias_h": 1.2, "felicita_h": 0.3, "regana_h": 0.1, "ordenes_h": 0.2, "levanta_h": 0.05, "de_frente_p": 0.2, "responde_p": 0.1},
+        {"desde": "23:30", "hasta": "23:45", "dueno": "casa", "en_base": true, "pasa_h": 1}
+      ],
+      "ruidos_dia": 0.8,
+      "musica_dia": 0.3
+    }
+  ]
+}

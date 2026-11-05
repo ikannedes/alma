@@ -1,0 +1,48 @@
+{
+  "id": "jubilado_en_casa",
+  "descripcion": "Señor jubilado que vive solo, se levanta temprano, va al mercado y después pasa casi todo el día en casa platicándole a Alma; toma siesta después de comer, los nietos lo visitan algunas tardes y el domingo sale a misa y a comer con la familia.",
+  "peso": 1.0,
+  "dias": [
+    {
+      "nombre": "lunes a sábado",
+      "dias_semana": [0, 1, 2, 3, 4, 5],
+      "despierta": "06:00",
+      "duerme": "21:30",
+      "variacion_min": 15,
+      "bloques": [
+        {"desde": "06:00", "hasta": "07:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "07:00", "hasta": "08:00", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 3, "regana_h": 0.05, "ordenes_h": 2, "levanta_h": 0.2, "de_frente_p": 0.55, "responde_p": 0.7},
+        {"desde": "08:00", "hasta": "10:30", "dueno": "fuera", "en_base": true},
+        {"desde": "10:30", "hasta": "11:00", "dueno": "cerca", "en_base": false, "caricias_h": 5, "felicita_h": 3, "regana_h": 0.05, "ordenes_h": 2, "levanta_h": 0.3, "de_frente_p": 0.6, "responde_p": 0.75},
+        {"desde": "11:00", "hasta": "11:30", "dueno": "juego", "en_base": false, "caricias_h": 8, "felicita_h": 5, "regana_h": 0.05, "ordenes_h": 4, "levanta_h": 0.5, "de_frente_p": 0.75, "responde_p": 0.8},
+        {"desde": "11:30", "hasta": "14:00", "dueno": "casa", "en_base": false, "pasa_h": 4},
+        {"desde": "14:00", "hasta": "15:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "15:00", "hasta": "16:30", "dueno": "casa", "en_base": true, "pasa_h": 0.3},
+        {"desde": "16:30", "hasta": "19:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 2, "regana_h": 0.05, "ordenes_h": 1.5, "levanta_h": 0.2, "de_frente_p": 0.5, "responde_p": 0.7},
+        {"desde": "19:00", "hasta": "19:20", "dueno": "juego", "en_base": false, "caricias_h": 8, "felicita_h": 5, "regana_h": 0.05, "ordenes_h": 4, "levanta_h": 0.5, "de_frente_p": 0.75, "responde_p": 0.8},
+        {"desde": "19:20", "hasta": "21:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "21:00", "hasta": "21:30", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "visita": {"desde": "16:30", "hasta": "19:00", "p": 0.3},
+      "ruidos_dia": 0.8,
+      "musica_dia": 1.5
+    },
+    {
+      "nombre": "domingo de misa y familia",
+      "dias_semana": [6],
+      "despierta": "07:00",
+      "duerme": "21:30",
+      "variacion_min": 20,
+      "bloques": [
+        {"desde": "07:00", "hasta": "08:30", "dueno": "cerca", "en_base": false, "caricias_h": 4, "felicita_h": 3, "regana_h": 0.05, "ordenes_h": 2, "levanta_h": 0.2, "de_frente_p": 0.55, "responde_p": 0.7},
+        {"desde": "08:30", "hasta": "17:00", "dueno": "fuera", "en_base": true},
+        {"desde": "17:00", "hasta": "17:30", "dueno": "cerca", "en_base": false, "caricias_h": 6, "felicita_h": 3, "regana_h": 0.05, "ordenes_h": 2, "levanta_h": 0.4, "de_frente_p": 0.6, "responde_p": 0.8},
+        {"desde": "17:30", "hasta": "19:30", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 2, "regana_h": 0.05, "ordenes_h": 1.5, "levanta_h": 0.2, "de_frente_p": 0.5, "responde_p": 0.7},
+        {"desde": "19:30", "hasta": "21:30", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "visita": {"desde": "17:00", "hasta": "20:00", "p": 0.5},
+      "ruidos_dia": 1.0,
+      "musica_dia": 1.0
+    }
+  ]
+}

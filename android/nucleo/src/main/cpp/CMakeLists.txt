@@ -7,7 +7,7 @@ get_filename_component(ALMA "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUT
 add_library(alma_nucleo SHARED
     alma_jni.c
     ${ALMA}/core/alma_core.c ${ALMA}/core/alma_emotion.c ${ALMA}/core/alma_bonds.c ${ALMA}/core/alma_select.c
-    ${ALMA}/core/alma_rhythm.c ${ALMA}/core/alma_rng.c ${ALMA}/core/alma_care.c
+    ${ALMA}/core/alma_rhythm.c ${ALMA}/core/alma_rng.c ${ALMA}/core/alma_care.c ${ALMA}/core/alma_brain.c
     ${ALMA}/memory_store/alma_mem.c ${ALMA}/memory_store/alma_mem_flash_file.c
     ${ALMA}/sim/catalog_load.c ${ALMA}/sim/third_party/cjson/cJSON.c)
 target_include_directories(alma_nucleo PRIVATE ${ALMA}/core ${ALMA}/memory_store ${ALMA}/sim ${ALMA}/sim/third_party/cjson)

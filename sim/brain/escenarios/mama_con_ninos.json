@@ -1,0 +1,66 @@
+{
+  "id": "mama_con_ninos",
+  "descripcion": "Mamá que está en casa con dos niños pequeños (caras que Alma no conoce y que la levantan y gritan); casi todo el día la tiene en la base para que no se la tiren y solo en la noche, con los niños dormidos, le dedica un rato.",
+  "peso": 0.8,
+  "dias": [
+    {
+      "nombre": "entre semana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "despierta": "06:00",
+      "duerme": "23:00",
+      "variacion_min": 20,
+      "bloques": [
+        {"desde": "06:00", "hasta": "07:45", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "07:45", "hasta": "08:45", "dueno": "fuera", "en_base": true},
+        {"desde": "08:45", "hasta": "10:30", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "10:30", "hasta": "11:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1.5, "regana_h": 0.3, "ordenes_h": 0.5, "levanta_h": 0.8, "de_frente_p": 0.4, "responde_p": 0.3},
+        {"desde": "11:00", "hasta": "12:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "12:30", "hasta": "13:30", "dueno": "fuera", "en_base": true},
+        {"desde": "13:30", "hasta": "17:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "17:00", "hasta": "18:30", "dueno": "fuera", "en_base": true},
+        {"desde": "18:30", "hasta": "20:45", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "20:45", "hasta": "21:15", "dueno": "juego", "en_base": false, "caricias_h": 10, "felicita_h": 4, "regana_h": 0.1, "ordenes_h": 3, "levanta_h": 0.8, "de_frente_p": 0.8, "responde_p": 0.8},
+        {"desde": "21:15", "hasta": "23:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.5}
+      ],
+      "visita": {"desde": "13:30", "hasta": "17:00", "p": 0.85},
+      "ruidos_dia": 5.0,
+      "musica_dia": 1.5
+    },
+    {
+      "nombre": "sábado de fiesta infantil",
+      "dias_semana": [5],
+      "despierta": "07:00",
+      "duerme": "23:00",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "07:00", "hasta": "09:00", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "09:00", "hasta": "09:30", "dueno": "juego", "en_base": false, "caricias_h": 8, "felicita_h": 3, "regana_h": 0.4, "ordenes_h": 2, "levanta_h": 2, "de_frente_p": 0.6, "responde_p": 0.6},
+        {"desde": "09:30", "hasta": "11:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "11:00", "hasta": "17:30", "dueno": "fuera", "en_base": true},
+        {"desde": "17:30", "hasta": "20:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "20:30", "hasta": "23:00", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.5}
+      ],
+      "visita": {"desde": "09:00", "hasta": "11:00", "p": 0.9},
+      "ruidos_dia": 4.0,
+      "musica_dia": 1.5
+    },
+    {
+      "nombre": "domingo con los abuelos",
+      "dias_semana": [6],
+      "despierta": "07:30",
+      "duerme": "22:30",
+      "variacion_min": 30,
+      "bloques": [
+        {"desde": "07:30", "hasta": "10:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "10:00", "hasta": "10:30", "dueno": "juego", "en_base": false, "caricias_h": 8, "felicita_h": 3, "regana_h": 0.4, "ordenes_h": 2, "levanta_h": 2, "de_frente_p": 0.6, "responde_p": 0.6},
+        {"desde": "10:30", "hasta": "14:00", "dueno": "casa", "en_base": false, "pasa_h": 2},
+        {"desde": "14:00", "hasta": "18:00", "dueno": "fuera", "en_base": true},
+        {"desde": "18:00", "hasta": "20:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "20:30", "hasta": "22:30", "dueno": "cerca", "en_base": false, "caricias_h": 3, "felicita_h": 1, "regana_h": 0.05, "ordenes_h": 0.8, "levanta_h": 0.2, "de_frente_p": 0.4, "responde_p": 0.5}
+      ],
+      "visita": {"desde": "10:00", "hasta": "14:00", "p": 0.9},
+      "ruidos_dia": 4.0,
+      "musica_dia": 1.0
+    }
+  ]
+}

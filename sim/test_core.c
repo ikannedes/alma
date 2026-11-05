@@ -625,7 +625,7 @@ static void test_real_catalog(const char *catp, const char *invp)
 {
     static alma_catalog real;
     int n = catalog_load(catp, invp, &real, 0);
-    CHECK(n == 46, "catálogo real: 46 conductas válidas, con bhv_trick (%d)", n);
+    CHECK(n == 47, "catálogo real: 47 conductas válidas, con bhv_trick y bhv_nap (%d)", n);
     int g = alma_find(&real, "bhv_greet");
     CHECK(g >= 0 && NEAR(real.b[g].servo_cost_s, 8.0, 1e-3), "servo_cost_s de bhv_greet = 8 s (Good_morning)");
     int e = alma_find(&real, "bhv_enjoy_pet");
@@ -879,7 +879,7 @@ static void on_forget(void *u, int id) { (void)u; forgot[n_forgot++] = id; }
 static void test_forget(void)
 {
     double t = 1e6;
-    alma_init(&A, &cat, 1234, t, (alma_hooks){NULL, NULL, NULL, on_forget});
+    alma_init(&A, &cat, 1234, t, (alma_hooks){NULL, NULL, NULL, on_forget, NULL});
     n_forgot = 0;
     for (int id = 0; id <= 2; id++) {
         alma_ev f = {EV_FACE_SEEN, id, -1, -1, 160, 120, 80, 0};
@@ -905,6 +905,129 @@ static void test_forget(void)
     CHECK(alma_forget_unseen(&A, t + 900 * 86400) == 0, "sin reloj real (forget_enabled = 0): no se olvida a nadie");
 }
 
+
+/* despedida solo si de verdad se fue; la caricia de noche la despierta un rato (dueño, 2026-11-05) */
+static void test_goodbye_and_night_pet(void)
+{
+    double t = 15 * 3600.0;
+    fresh(t);
+    alma_ev f = {EV_FACE_SEEN, 1, -1, -1, 160, 120, 80, 0};
+    alma_sensors off = {100, 0};
+    for (int i = 0; i < 200; i++) { t += 2; alma_event(&A, &f, t); alma_tick(&A, t, &off); }
+    int s = alma_slot_of(&A, 1);
+    A.person[s].greeted_this_visit = 1;
+    alma_ev lost = {EV_FACE_LOST, 1, -1, -1, 0, 0, 0, 0};
+    t += 5;
+    alma_event(&A, &lost, t);
+    CHECK(A.bye_slot == s && NEAR(A.bye_due_s - t, GOODBYE_GONE_S, 1e-6), "cara perdida: la despedida espera %.0f s", GOODBYE_GONE_S);
+    t += 30;
+    alma_event(&A, &f, t);
+    CHECK(A.bye_slot == -1, "volvió a verlo a los 30 s: no hay despedida");
+
+    t = 23 * 3600.0;
+    fresh(t);
+    alma_sensors on = {100, 1};
+    alma_tick(&A, t, &on);
+    A.state = ST_SLEEPING;
+    alma_ev pet = {EV_TOUCH_PET, 1, -1, -1, 0, 0, 0, 1500};
+    alma_event(&A, &pet, t + 1);
+    CHECK(A.state != ST_SLEEPING, "de noche, una caricia la despierta (estado %d)", A.state);
+    t += 1;
+    for (int i = 0; i < 600; i++) {   /* el ejecutor termina cada conducta a su hora */
+        t += 1;
+        if (A.cur.active && t >= A.cur.t_start + A.cur.planned_s) {
+            alma_ev d = {EV_BEHAVIOR_DONE, -1, -1, A.cur.behavior, 0, 0, 0, 0};
+            alma_event(&A, &d, t);
+        }
+        alma_tick(&A, t, &on);
+    }
+    CHECK(A.state == ST_SLEEPING || A.state == ST_RESTING, "sin más estímulos vuelve a dormirse sola (estado %d)", A.state);
+}
+
+/* ---- la red (alma_brain.c; dueño, 2026-11-04) ---- */
+static int brain_execs, brain_last;
+static void brain_on_exec(void *u, const alma_exec_info *e) { (void)u; if (e->kind == RUN_SELECTOR) brain_execs++, brain_last = e->behavior; }
+static int pol_seguir(void *u, const float *x, const unsigned char *m, float *p)
+{
+    (void)u; (void)x; (void)m;
+    memset(p, 0, ALMA_BRAIN_OUT * sizeof *p);
+    p[0] = 1;
+    return 0;
+}
+static int pol_out;
+static int pol_one(void *u, const float *x, const unsigned char *m, float *p)
+{
+    (void)u; (void)x;
+    memset(p, 0, ALMA_BRAIN_OUT * sizeof *p);
+    if (m[pol_out]) p[pol_out] = 1; else p[0] = 1;
+    return 0;
+}
+
+static void test_brain(void)
+{
+    CHECK(BF_COUNT == ALMA_BRAIN_IN, "entradas: el enum (%d) y ALMA_BRAIN_IN (%d) coinciden", BF_COUNT, ALMA_BRAIN_IN);
+    double t = 10 * 3600.0;
+    alma_init(&A, &cat, 1234, t, (alma_hooks){brain_on_exec, NULL, NULL, NULL, NULL});
+    float x[ALMA_BRAIN_IN];
+    alma_brain_features(&A, t, x);
+    int finite = 1;
+    for (int i = 0; i < ALMA_BRAIN_IN; i++) finite &= isfinite(x[i]) && fabsf(x[i]) <= 1.5f;
+    CHECK(finite, "entradas finitas y acotadas al nacer");
+    /* "seguir" siempre: sin pausa ni fórmula, no empieza nada por su cuenta */
+    alma_brain_set_policy(&A, pol_seguir, NULL);
+    brain_execs = 0;
+    ticks_off(&t, 900);
+    CHECK(brain_execs == 0, "con la red diciendo seguir no hay conductas del selector (%d)", brain_execs);
+    /* una salida que no existe en el catálogo (bhv_nap) queda tachada; una que existe se hace */
+    unsigned char mk[ALMA_BRAIN_OUT];
+    alma_brain_mask(&A, t, mk);
+    int k_nap = -1, k_blink = -1;
+    for (int k = 0; k < ALMA_BRAIN_OUT; k++) {
+        if (!strcmp(ALMA_BRAIN_OUT_ID[k], "bhv_nap")) k_nap = k;
+        if (!strcmp(ALMA_BRAIN_OUT_ID[k], "bhv_blink_idle")) k_blink = k;
+    }
+    CHECK(mk[0] && k_nap > 0 && !mk[k_nap] && k_blink > 0 && mk[k_blink], "máscara: seguir siempre, bhv_nap sin catálogo no, parpadear sí");
+    pol_out = k_blink;
+    alma_brain_set_policy(&A, pol_one, NULL);
+    brain_execs = 0;
+    ticks_off(&t, 3);
+    CHECK(brain_execs >= 1 && brain_last == B_BLINK, "la red elige parpadear y el núcleo lo hace (%d)", brain_execs);
+    /* sin política vuelve la fórmula */
+    alma_brain_set_policy(&A, NULL, NULL);
+    CHECK(A.policy == NULL, "sin política, alma_select de siempre");
+
+    /* bloque ALMB: se carga, y un byte cambiado o un nombre ajeno lo invalidan */
+    enum { H = 2 };
+    static uint32_t blob[(32 + 32 * ALMA_BRAIN_OUT) / 4 + 2 * ALMA_BRAIN_IN + H * ALMA_BRAIN_IN + H + H * H + H + ALMA_BRAIN_OUT * H + ALMA_BRAIN_OUT + 1];
+    memset(blob, 0, sizeof blob);
+    uint32_t hdr[8] = {0x424D4C41u, 1, ALMA_BRAIN_FEAT_VERSION, ALMA_BRAIN_IN, H, H, ALMA_BRAIN_OUT, 20261104};
+    memcpy(blob, hdr, sizeof hdr);
+    char *ids = (char *)blob + 32;
+    for (int k = 0; k < ALMA_BRAIN_OUT; k++) strncpy(ids + 32 * k, ALMA_BRAIN_OUT_ID[k], 32);
+    float *f = (float *)(ids + 32 * ALMA_BRAIN_OUT);
+    for (int i = 0; i < ALMA_BRAIN_IN; i++) f[ALMA_BRAIN_IN + i] = 1;   /* sd = 1 */
+    float *b3 = f + 2 * ALMA_BRAIN_IN + H * ALMA_BRAIN_IN + H + H * H + H + ALMA_BRAIN_OUT * H;
+    b3[0] = 5;                                                         /* casi siempre "seguir" */
+    uint32_t size = sizeof blob;
+    uint32_t crc = alma_brain_crc32(blob, size - 4);
+    memcpy((char *)blob + size - 4, &crc, 4);
+    alma_mlp m;
+    CHECK(alma_mlp_load(&m, blob, size) == 0 && m.h1 == H && m.model_version == 20261104, "ALMB válido se carga");
+    float p[ALMA_BRAIN_OUT];
+    unsigned char all[ALMA_BRAIN_OUT];
+    memset(all, 1, sizeof all);
+    all[3] = 0;
+    CHECK(alma_mlp_policy(&m, x, all, p) == 0 && p[0] > 0.8f && p[3] == 0, "MLP: seguir %.2f, la tachada en 0", p[0]);
+    ((char *)blob)[40] ^= 1;
+    CHECK(alma_mlp_load(&m, blob, size) == -5, "un byte cambiado: CRC");
+    ((char *)blob)[40] ^= 1;
+    CHECK(alma_mlp_load(&m, blob, size - 4) == -3, "tamaño que no cuadra");
+    ids[0] = 'X';
+    crc = alma_brain_crc32(blob, size - 4);
+    memcpy((char *)blob + size - 4, &crc, 4);
+    CHECK(alma_mlp_load(&m, blob, size) == -4, "salidas con otro nombre");
+}
+
 int main(int argc, char **argv)
 {
     build_catalog();
@@ -927,6 +1050,8 @@ int main(int argc, char **argv)
     test_trait_learned_cap();
     test_wellbeing();
     test_forget();
+    test_brain();
+    test_goodbye_and_night_pet();
     if (argc >= 3) test_real_catalog(argv[1], argv[2]);
     printf("%d comprobaciones, %d fallas\n", checks, fails);
     return fails != 0;

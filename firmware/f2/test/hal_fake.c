@@ -116,6 +116,27 @@ const uint8_t *hal_test_avi(size_t *n)
     return avi;
 }
 
+/* la red de verdad (main/alma_brain.almb), leída una vez; fake_brain_off = 1 simula un firmware sin pesos */
+int fake_brain_off = 1;   /* las pruebas de siempre corren con la fórmula; test_brain la prende */
+const uint8_t *hal_brain_weights(size_t *n)
+{
+    static uint8_t *w;
+    static size_t wn;
+    if (fake_brain_off) return *n = 0, NULL;
+    if (!w) {
+        FILE *f = fopen("../main/alma_brain.almb", "rb");   /* las pruebas corren desde test/ */
+        if (!f) return *n = 0, NULL;
+        fseek(f, 0, SEEK_END);
+        wn = (size_t)ftell(f);
+        fseek(f, 0, SEEK_SET);
+        w = malloc(wn);
+        if (!w || fread(w, 1, wn, f) != wn) wn = 0;
+        fclose(f);
+    }
+    *n = wn;
+    return wn ? w : NULL;
+}
+
 const uint8_t *hal_test_sticker(size_t *n)
 {
     static uint8_t png[3000];

@@ -171,6 +171,8 @@ typedef struct {               /* resumen del pase nocturno (06, "Resumen diario
     int day_points, absent_days;
 } alma_day_summary;
 
+struct alma_brain_decision;     /* alma_brain.c, más abajo */
+
 typedef struct {
     void (*on_exec)(void *user, const alma_exec_info *e);
     void (*on_night)(void *user, const alma_day_summary *s);
@@ -178,6 +180,7 @@ typedef struct {
     /* 06 (dueño, 2026-10-30): la persona person_id no se vio en FORGET_DAYS y su lugar ya se liberó; el HAL borra la
        cara del K210. Va al final para que {on_exec, on_night, user} siga valiendo. */
     void (*on_forget)(void *user, int person_id);
+    void (*on_brain)(void *user, const struct alma_brain_decision *d);   /* la red eligió algo (alma_brain.c) */
 } alma_hooks;
 
 typedef struct {               /* lecturas que el HAL da en cada tick */
@@ -221,6 +224,44 @@ typedef struct {               /* respuesta esperada tras una ejecución (pref, 
 typedef struct {
     uint64_t s[2];
 } alma_rng;
+
+/* ---- la red que decide (alma_brain.c; dueño, 2026-11-04) ----
+ * Si hay política, elige la conducta cada segundo y en cada evento en lugar de alma_select, la pausa y la regla 2.
+ * Entradas: ALMA_BRAIN_IN números de alma_brain_features; salidas: ALMA_BRAIN_OUT (0 = seguir, el resto conductas). */
+#define ALMA_BRAIN_IN           72
+#define ALMA_BRAIN_OUT          30
+#define ALMA_BRAIN_FEAT_VERSION 2   /* 2: + eventos de este segundo (crítica de la red v2) */
+enum { BFAM_IDLE, BFAM_REST, BFAM_SOCIAL, BFAM_PLAY, BFAM_EXPLORE, BFAM_EMOTION, BFAM_OTHER, BFAM_COUNT };
+/* Índices de las entradas (alma_brain_features las llena en este orden) */
+enum {
+    BF_ENERGY, BF_NEED_SOCIAL, BF_NEED_STIM, BF_BOREDOM, BF_MOOD0, BF_VALENCE = BF_MOOD0 + 7, BF_AROUSAL, BF_MOOD, BF_FEAR,
+    BF_JOY, BF_FRUST, BF_HOUR_SIN, BF_HOUR_COS, BF_NIGHT, BF_PRESENT, BF_FACING, BF_UNKNOWN, BF_WARY, BF_ALONE, BF_GREET,
+    BF_GREETED, BF_PET, BF_PRAISE, BF_SCOLD, BF_CMD, BF_IGNORED, BF_ASKED, BF_OWNER_CONTACT, BF_SCOLD_ACC, BF_PET_ACC,
+    BF_INSIST, BF_ARRIVED, BF_FAM0, BF_ACTIVE = BF_FAM0 + BFAM_COUNT, BF_T_CUR, BF_T_IDLE, BF_FAMREC0,
+    BF_PLAY_TODAY = BF_FAMREC0 + BFAM_COUNT, BF_ON_CHARGER, BF_SOC, BF_RELAXED, BF_SICK, BF_HUNGER, BF_K_SOCIAL,
+    BF_K_INDEP, BF_K_PLAY, BF_K_IMPULSIVE, BF_K_BOLD, BF_K_ENERGY, BF_WELLBEING, BF_NOW_PET, BF_NOW_SCOLD, BF_NOW_PRAISE,
+    BF_NOW_ARRIVED, BF_COUNT
+};
+
+/* p: probabilidades de las ALMA_BRAIN_OUT salidas, ya con la máscara (las prohibidas en 0). 0 = ok */
+typedef int (*alma_policy_fn)(void *user, const float *x, const unsigned char *mask, float *p);
+
+typedef struct {               /* memoria corta que la red ve como entradas (no se guarda) */
+    double ask_t, ignored_t, owner_contact_t, arrive_t, cur_since_s, idle_since_s, next_s;
+    double fam_t[BFAM_COUNT];
+    float scold_acc, pet_acc, insist_acc;
+    double acc_t;
+    int last_fam, last_b, play_day;
+    float play_s_today;        /* juego intenso del día (s) */
+} alma_brain_mem;
+
+typedef struct alma_brain_decision {   /* una decisión que no fue "seguir", para el registro */
+    int out, behavior;
+    int top[3];
+    float top_p[3];
+    const float *x;            /* ALMA_BRAIN_IN entradas (ajuste fino en la PC) */
+    int event;                 /* 1 = la pidió un evento, 0 = el segundo */
+} alma_brain_decision;
 
 typedef struct {
     const alma_catalog *cat;
@@ -310,6 +351,15 @@ typedef struct {
         ix_explore, ix_go_rest, ix_greet, ix_goodbye, ix_dizzy;
     int ix_action[ACT_COUNT];
     alma_counters counts;
+    /* la red (alma_brain.c): sin política, todo sigue como antes */
+    alma_policy_fn policy;
+    void *policy_user;
+    float independence;        /* perilla de carácter nueva (0–1); la mueve Haiku de noche */
+    int ix_brain[ALMA_BRAIN_OUT];
+    alma_brain_mem bm;
+    /* despedida (dueño, 2026-11-05): solo si de verdad se fue; no se guarda */
+    double visit_start_s[ALMA_MAX_PERSONS], bye_due_s;
+    int bye_slot;
 } alma_t;
 
 /* API */
@@ -368,6 +418,24 @@ float alma_wellbeing_step(float base, float points);
 /* bloque identity (06): base y learned se guardan por separado */
 void  alma_traits_export(const alma_t *a, float base[TRAIT_COUNT], float learned[TRAIT_COUNT]);
 void  alma_traits_import(alma_t *a, const float base[TRAIT_COUNT], const float learned[TRAIT_COUNT]);
+
+/* La red (alma_brain.c). alma_brain_set_policy(a, NULL, NULL) vuelve a la fórmula. */
+extern const char *const ALMA_BRAIN_OUT_ID[ALMA_BRAIN_OUT];
+void  alma_brain_set_policy(alma_t *a, alma_policy_fn fn, void *user);
+void  alma_brain_features(const alma_t *a, double now_s, float x[ALMA_BRAIN_IN]);
+void  alma_brain_mask(const alma_t *a, double now_s, unsigned char mask[ALMA_BRAIN_OUT]);
+int   alma_brain_family(const alma_t *a, int b);                 /* BFAM_* de una conducta del catálogo */
+
+/* MLP de la red: pesos en un bloque "ALMB" (tools/brain/train.py). El bloque debe vivir mientras se use y estar
+   alineado a 4 bytes. 0 = ok; −1 formato, −2 versión de entradas, −3 tamaños, −4 salidas, −5 CRC */
+typedef struct {
+    int n_in, h1, h2, n_out;
+    uint32_t model_version;
+    const float *mu, *sd, *w1, *b1, *w2, *b2, *w3, *b3;
+} alma_mlp;
+int   alma_mlp_load(alma_mlp *m, const void *blob, uint32_t size);
+int   alma_mlp_policy(void *mlp, const float *x, const unsigned char *mask, float *p);   /* alma_policy_fn */
+uint32_t alma_brain_crc32(const void *p, uint32_t n);
 
 /* RNG portable (xoroshiro128+) y Beta(2,2) como mediana de 3 uniformes */
 void  alma_rng_seed(alma_rng *r, uint64_t seed);

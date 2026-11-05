@@ -26,7 +26,8 @@ ACTION_IDS = (
 ACTION_PHRASES: dict[str, tuple[str, ...]] = {
     "stop": ("detente", "quieta", "quieto", "alto", "para", "basta", "stop"),
     "come": ("ven", "ven aqui", "ven aca", "acercate", "ven conmigo"),
-    "dance": ("baila", "a bailar", "bailemos", "un baile", "aila"),   # "aila": la b se corta al empezar a grabar (2026-11-03)
+    "dance": ("baila", "a bailar", "bailemos", "un baile", "aila",   # "aila": la b se corta al empezar a grabar (2026-11-03)
+              "alocate", "a locate", "locate", "ponte loca"),          # "EMO, alócate" (dueño, 2026-11-04)
     "turn_around": ("gira", "da una vuelta", "date la vuelta", "da la vuelta", "voltea"),
     "sleep": ("duermete", "a dormir", "descansa", "a descansar", "hora de dormir"),
     "wake_up": ("despierta", "despiertate", "arriba", "levantate"),

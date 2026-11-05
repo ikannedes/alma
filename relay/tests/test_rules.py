@@ -30,6 +30,7 @@ def test_scold_phrase_matches(phrase):
     ("baila ya", "baila"),
     ("por favor Alma, mírame ahora", "mirame"),
     ("Emo, detente.", "detente"),
+    ("EMO, ¡alócate!", "alocate"),
     ("Buena niña", "buena nina"),
     ("Alma", ""),
 ])

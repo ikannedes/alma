@@ -445,7 +445,7 @@ static void run(sim *s, const alma_catalog *cat, profile_id prof, uint32_t seed,
         for (int b = 0; b < cat->n; b++) fprintf(s->hist, ",B:%s", cat->b[b].id);
         fprintf(s->hist, "\n");
     }
-    alma_hooks hooks = {on_exec, on_night, s, NULL};
+    alma_hooks hooks = {on_exec, on_night, s, NULL, NULL};
     double t0 = 8 * HR;                     /* sale de la caja el lunes a las 8:00 */
     alma_init(&s->alma, cat, seed, t0, hooks);
     s->use_mem = getenv("SIM_MEM") && atoi(getenv("SIM_MEM"));

@@ -115,13 +115,16 @@ void alma_init(alma_t *a, const alma_catalog *cat, uint32_t seed, double now_s, 
     static const char *ACT_BHV[ACT_COUNT] = {"bhv_come_here", "bhv_dance", "bhv_turn_around", "bhv_go_rest", "bhv_stretch",
                                              "bhv_follow_face", "bhv_play_bow", "bhv_stop", "bhv_greet", "bhv_go_home"};
     for (int i = 0; i < ACT_COUNT; i++) a->ix_action[i] = alma_find(cat, ACT_BHV[i]);
+    alma_brain_init(a);
+    a->bye_slot = -1;
 }
 
 static void open_window(alma_t *a, int b, double now_s)
 {
     if (b < 0) return;
     a->window_until[b] = now_s + RESPONSE_WINDOW_S;
-    if (a->state == ST_AWAKE) alma_select(a, now_s, RUN_WINDOW);   /* libre: sorteo en ese instante */
+    if (a->policy) alma_brain_poke(a, now_s, 1);                     /* la red decide en ese instante */
+    else if (a->state == ST_AWAKE) alma_select(a, now_s, RUN_WINDOW);   /* libre: sorteo en ese instante */
     else if (a->state == ST_PERFORMING) a->next_hyst_s = now_s;     /* ocupada: regla 2 */
 }
 
@@ -136,6 +139,8 @@ static void provoked_fall(alma_t *a, double now_s)
 void alma_event(alma_t *a, const alma_ev *ev, double now_s)
 {
     a->t_now = now_s;
+    alma_brain_note_event(a, ev->type, now_s);
+    int was_known = alma_any_known_present(a), was_unknown = now_s - a->unknown_seen_s < FACE_LOST_S;
     int slot = ev->person_id >= 0 ? alma_slot_of(a, ev->person_id) : alma_P(a);
     int sleeping = a->state == ST_SLEEPING;
     switch (ev->type) {
@@ -164,11 +169,12 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
         break;
     }
     case EV_FACE_LOST: {
-        /* dueño, 2026-10-30: se despide (Byebye) de alguien conocido que se va, si estaba despierta y le tiene apego */
+        /* dueño, 2026-10-30: se despide (Byebye) de alguien conocido que se va. 2026-11-05: solo si de verdad se fue
+           (alma_tick, GOODBYE_GONE_S); antes se despedía cada vez que la cara se perdía 5 s con el dueño enfrente */
         int s = alma_slot_of(a, ev->person_id);
         int was = s >= 0 && a->person[s].present;
         alma_face_lost(a, ev->person_id);
-        if (was && !sleeping && a->state != ST_REFLEX && a->person[s].attachment >= GOODBYE_MIN_A) alma_force(a, a->ix_goodbye, now_s);
+        if (was) { a->bye_slot = s; a->bye_due_s = now_s + GOODBYE_GONE_S; }
         break;
     }
     case EV_WAKE_WORD:
@@ -205,6 +211,13 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
             if (ev->type == EV_SCOLD) a->counts.scolds++;
         }
         alma_pending_response(a, ev->type, now_s);
+        if (sleeping && ev->type == EV_TOUCH_PET) {
+            /* dueño, 2026-11-05: una caricia de noche la despierta un rato; sin más estímulos vuelve a dormirse sola */
+            int here = a->sleep_here;
+            alma_wake(a, now_s, 0);
+            a->sleep_here = here;
+            sleeping = 0;
+        }
         if (sleeping) break;
         if (ev->type != EV_PRAISE && ev->type != EV_SCOLD) alma_stimulus(a, now_s);
         if (eff && ev->type == EV_TOUCH_PET) open_window(a, a->ix_enjoy_pet, now_s);
@@ -303,6 +316,17 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
     case EV_COUNT:
         break;
     }
+    /* la red decide en cuanto pasa algo; las caras que siguen viéndose (cada 2 s) no cuentan, solo una llegada */
+    /* llegada de verdad: estuvo fuera al menos 2 min (una cara que se pierde unos segundos no cuenta) */
+    if (ev->type == EV_FACE_SEEN && !was_known) {
+        int sl = alma_slot_of(a, ev->person_id);
+        if (sl >= 0 && a->person[sl].present && a->person[sl].absence_s >= 120.0) a->bm.arrive_t = now_s;
+    }
+    if (a->policy) {
+        int arrival = (ev->type == EV_FACE_SEEN && !was_known && alma_any_known_present(a))
+                      || (ev->type == EV_FACE_UNKNOWN && !was_unknown);
+        if (arrival || (ev->type != EV_FACE_SEEN && ev->type != EV_FACE_UNKNOWN)) alma_brain_poke(a, now_s, 1);
+    }
 }
 
 void alma_tick(alma_t *a, double now_s, const alma_sensors *s)
@@ -313,6 +337,14 @@ void alma_tick(alma_t *a, double now_s, const alma_sensors *s)
     if (s) { a->soc_pct = s->soc_pct; a->on_charger = s->on_charger; }
 
     alma_persons_tick(a, dt, now_s);
+    if (a->bye_slot >= 0 && now_s >= a->bye_due_s) {
+        alma_person *p = &a->person[a->bye_slot];
+        a->bye_slot = -1;
+        if (p->used && !p->present && p->greeted_this_visit && p->attachment >= GOODBYE_MIN_A
+            && p->last_seen_s - a->visit_start_s[p - a->person] >= GOODBYE_MIN_VISIT_S && a->state != ST_SLEEPING
+            && a->state != ST_REFLEX)
+            alma_force(a, a->ix_goodbye, now_s);
+    }
     alma_needs_tick(a, dt, now_s);
     if (a->care_enabled) alma_care_tick(a, dt, now_s);
     alma_exercise_tick(a, dt);

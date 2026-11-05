@@ -137,8 +137,8 @@ static size_t anim(uint8_t *f, size_t cap, const char *avi, const char *mp3, int
 static void test_catalog(void)
 {
     boot_app(K_REPLY_SAM);
-    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 46, "catalog_load de referencia: 46 conductas (con bhv_trick)");
-    CHECK(app_catalog()->n == 46 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
+    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 47, "catalog_load de referencia: 47 conductas (con bhv_trick y bhv_nap)");
+    CHECK(app_catalog()->n == 47 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
           "el catálogo cargado con el inventario de la SPIFFS es idéntico byte por byte al del simulador");
     const expr_face *f;
     CHECK(expression_faces(bx("bhv_listen"), &f) == 1 && strcmp(f[0].avi, "listen_and_think") == 0 && f[0].mode == 1,
@@ -1681,6 +1681,26 @@ static void test_vader(void)
     api_link_msg("{\"t\":\"trick\",\"mot\":\"vader\",\"req\":8}", rep, sizeof rep);
     CHECK(strstr(rep, "\"done\":true") != NULL, "se puede pedir otra vez");
     for (int i = 0; i < 200; i++) fake_run(100);
+
+    /* una orilla a media marcha (robot, 2026-11-04): deja de caminar, pero la boca y la marcha siguen hasta el final */
+    floor_all(1);
+    fake_run(3000);
+    fake_log_clear();
+    api_link_msg("{\"t\":\"trick\",\"mot\":\"vader\",\"req\":9}", rep, sizeof rep);
+    for (int i = 0; i < 30; i++) fake_run(100);
+    tp = fake_n_tx;
+    fake_sensors.floor[HAL_FOOT_L][HAL_FLOOR_FRONT] = 0;
+    for (int i = 0; i < 30; i++) fake_run(100);
+    fake_sensors.floor[HAL_FOOT_L][HAL_FLOOR_FRONT] = 1;
+    CHECK(fake_log_contains("REFLEJO EV_CLIFF") && !tx_has_text(tp, ".avi"),
+          "la orilla no quita la boca ni la marcha (reflejo %d, cara nueva %d)", fake_log_contains("REFLEJO EV_CLIFF"), tx_has_text(tp, ".avi"));
+    f0 = fake_log_count("motion: explore_foward1");
+    for (int i = 0; i < 100; i++) fake_run(100);
+    CHECK(fake_log_count("motion: explore_foward1") == f0, "después de la orilla ya no camina");
+    for (int i = 0; i < 40; i++) fake_run(100);
+    CHECK(fake_log_contains("truco: Darth Vader terminó"), "y termina a los 18.7 s");
+    floor_all(-1);
+    for (int i = 0; i < 100; i++) fake_run(100);
 }
 static void test_eyes_and_routine(void)
 {
@@ -1716,6 +1736,10 @@ static void test_eyes_and_routine(void)
     CHECK(tx_has_text(tx1, "_start"), "empieza con el inicio");
     fake_run(800); fake_k210_small(0, 0x08, 0, 0, 0); fake_run(50);
     CHECK(tx_has_text(tx1, "_loop1"), "después, la repetición");
+    int scans = 0, txr = fake_n_tx;   /* la repetición en curso: ni ojos ni vistazos encima (robot, 2026-11-04) */
+    for (int i = 0; i < 18; i++) { fake_run(1000); scans += k210_scanning(); }
+    CHECK(scans == 0 && !tx_has_text(txr, "stay_"), "a media rutina no salen los ojos ni se buscan caras (ojos %d, %d s en el modo 4)",
+          tx_has_text(txr, "stay_"), scans);
     for (int i = 0; i < 40; i++) { fake_run(800); fake_k210_small(0, 0x08, 0, 0, 0); }
     CHECK(tx_has_text(tx1, "_end"), "a los 30 s, el final");
     int tx2 = fake_n_tx;
@@ -3252,6 +3276,27 @@ static void test_console(void)
     CHECK(!fake_log_contains("tecla recibida") && fake_log_contains("h ayuda"), "la ayuda del arranque no es una tecla");
 }
 
+
+/* La red que decide (dueño, 2026-11-04): carga los pesos incrustados, decide en el robot y la tecla N la apaga */
+extern int fake_brain_off;
+static void test_brain_fw(void)
+{
+    fake_brain_off = 0;
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    CHECK(fake_log_contains("red: modelo ") && fake_log_contains("decide ella"), "los pesos incrustados se cargan y la red decide");
+    fake_sensors.on_charger = 0;
+    fake_sensors.soc_pct = 90;
+    fake_run(20 * 60 * 1000);
+    CHECK(fake_log_contains("red: seguir ") || fake_log_contains("red: bhv_"), "en 20 min la red tomó decisiones y quedaron en el registro");
+    keys("N");
+    CHECK(fake_log_contains("apagada (tecla N), decide la fórmula"), "tecla N: vuelve la fórmula");
+    keys("N");
+    fake_brain_off = 1;
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000) && fake_log_contains("red: sin pesos válidos (-8); decide la fórmula"), "sin pesos: la fórmula de siempre");
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 6) gait_ref_dir = argv[5];
@@ -3273,6 +3318,7 @@ int main(int argc, char **argv)
 #endif
     test_catalog();
     test_boot();
+    test_brain_fw();
     test_listen();
     test_pet_and_lift();
     test_own_shake();

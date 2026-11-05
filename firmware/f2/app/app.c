@@ -124,6 +124,9 @@ void app_clock_from_server(double local_s)
 {
     if (preset_s >= 0 || local_s < 1.6e9) return;
     preset_s = local_s;
+    /* el cuerpo se durmió con la hora falsa (8:00 del día 0): sin correrlo, al despertar contaba años y se ponía al día
+       3 días de hambre (2026-11-05, SNTP falló al arrancar) */
+    if (asleep) asleep_since += local_s - app_now_s();
     app_set_clock(local_s);
     A.t_last = local_s;        /* sin un salto de años en el siguiente tick */
     A.forget_enabled = 1;      /* con hora real ya se puede olvidar a los 28 días (06) */
@@ -183,15 +186,19 @@ static void on_exec(void *user, const alma_exec_info *e)
     hal_log("conducta %s (tipo %d, opción %d, %.1f s%s)", b->id, (int)e->kind, e->option, e->planned_s,
             e->motion_null_reason == 3 ? ", sin servos: cargando" : e->motion_null_reason == 2 ? ", sin servos: presupuesto"
             : e->motion_null_reason == 1 ? ", sin servos: regla †" : "");
-    expression_stop(0);
-    /* dueño, 2026-10-30: la flor a pantalla completa (EMO_flower_full) cuando disfruta tus caricias y te quiere mucho */
-    int flower = strcmp(b->id, "bhv_enjoy_pet") == 0 && e->person >= 0 && A.person[e->person].attachment >= 0.3f
-                 && A.affect_valence > 0.3f && (hal_now_ms() & 1);
-    double d = fmod(app_now_s(), 86400.0);
-    int hhmm = (int)(d / 3600.0) * 100 + (int)(fmod(d, 3600.0) / 60.0);
-    if (flower) k210_play("EMO_flower_full", NULL, 0);
-    else if (expression_play_seq(e->behavior, hhmm, e->planned_s) != 0)
-        expression_play_exec(e->behavior, e->option >= 0 ? b->opt[e->option].mot[0] : NULL, A.affect_valence);
+    /* un reflejo durante Darth Vader mueve los servos, pero la boca y la marcha siguen (dueño, 2026-11-04: "sólo pone la
+       música 3 segundos") */
+    if (vader_t0 < 0) {
+        expression_stop(0);
+        /* dueño, 2026-10-30: la flor a pantalla completa (EMO_flower_full) cuando disfruta tus caricias y te quiere mucho */
+        int flower = strcmp(b->id, "bhv_enjoy_pet") == 0 && e->person >= 0 && A.person[e->person].attachment >= 0.3f
+                     && A.affect_valence > 0.3f && (hal_now_ms() & 1);
+        double d = fmod(app_now_s(), 86400.0);
+        int hhmm = (int)(d / 3600.0) * 100 + (int)(fmod(d, 3600.0) / 60.0);
+        if (flower) k210_play("EMO_flower_full", NULL, 0);
+        else if (expression_play_seq(e->behavior, hhmm, e->planned_s) != 0)
+            expression_play_exec(e->behavior, e->option >= 0 ? b->opt[e->option].mot[0] : NULL, A.affect_valence);
+    }
     if (e->option >= 0) {
         if (e->tempo < 1.0f) hal_log("corre: paso × %.2f", e->tempo);
         motion_set_tempo(e->tempo);
@@ -520,7 +527,35 @@ static int region_is_alma_or_blank(const alma_mem_flash *fl)
 }
 #endif
 
-static const alma_hooks HOOKS = {on_exec, on_night, NULL, on_forget};
+/* La red que decide (dueño, 2026-11-04; reports/Conducta felina y canina para Alma.md). Los pesos van incrustados; si
+   faltan o no cuadran, Alma sigue con la fórmula de siempre. Tecla N: red sí / no (para comparar) */
+static EXT_RAM_BSS_ATTR uint32_t brain_buf[(64 * 1024) / 4];
+static alma_mlp brain;
+static int brain_on = 1, brain_err = -9;
+
+static void on_brain(void *user, const struct alma_brain_decision *d)
+{
+    (void)user;
+    hal_log("red: %s %.0f%% · %s %.0f%% · %s %.0f%%%s", ALMA_BRAIN_OUT_ID[d->top[0]], 100 * d->top_p[0],
+            ALMA_BRAIN_OUT_ID[d->top[1]], 100 * d->top_p[1], ALMA_BRAIN_OUT_ID[d->top[2]], 100 * d->top_p[2],
+            d->event ? " (evento)" : "");
+}
+
+static void brain_setup(void)
+{
+    size_t n = 0;
+    const uint8_t *w = hal_brain_weights(&n);
+    brain_err = !w ? -8 : n > sizeof brain_buf ? -7 : 0;
+    if (!brain_err) {
+        memcpy(brain_buf, w, n);   /* alineado a 4 bytes (alma_mlp_load) */
+        brain_err = alma_mlp_load(&brain, brain_buf, (uint32_t)n);
+    }
+    alma_brain_set_policy(&A, !brain_err && brain_on ? alma_mlp_policy : NULL, &brain);
+    if (brain_err) hal_log("red: sin pesos válidos (%d); decide la fórmula", brain_err);
+    else hal_log("red: modelo %lu cargado, %s", (unsigned long)brain.model_version, brain_on ? "decide ella" : "apagada (tecla N), decide la fórmula");
+}
+
+static const alma_hooks HOOKS = {on_exec, on_night, NULL, on_forget, on_brain};
 
 /* después de alma_mem_load: al arrancar y al recibir a Alma de otro cuerpo */
 static void after_load(void)
@@ -533,6 +568,7 @@ static void after_load(void)
     A.forget_enabled = preset_s >= 0;
     for (int i = 0; A.forget_enabled && i < ALMA_MAX_PERSONS; i++)
         if (A.person[i].used && A.person[i].last_seen_s > -1e11 && A.person[i].last_seen_s < 1e9) A.person[i].last_seen_s = app_now_s();
+    brain_setup();
 }
 
 int app_init(const char *catalog_text, alma_catalog *catalog_mem, uint32_t seed)
@@ -864,6 +900,7 @@ static void help(void)
     hal_log("  h ayuda  i estado  b k210_boot  w stay_wink_1  V revisar las animaciones de la SD  l listen_and_think (CRC-8)  L listen_and_think (suma)");
     hal_log("  0 o espacio PARO (servos quietos)  x soltar los 4 servos  r registro crudo del K210 on/off");
     hal_log("  R<nombre>Enter registrar la cara que está frente a la cámara (Esc cancela)");
+    hal_log("  N la red que decide sí / no (sin ella, la fórmula de siempre)");
     hal_log("  marcha de prueba: W adelante  S atrás  A girar izquierda  D girar derecha (R14 y presupuesto; 0 = PARO)");
     hal_log("  T gesto: 20 s en el modo de piedra-papel-tijera (enséñale la mano; registra cada 3F)");
     hal_log("  K subir el sticker de prueba (0:/png/sticker.png) y encimarlo (59 01)  U quitarlo (59 03)");
@@ -1011,6 +1048,7 @@ void app_console_key(char c)
     case 'R': reg_typing = 1; reg_n = 0; hal_log("registro de cara: escribe el nombre y Enter (Esc cancela)"); return;
     case '\r': case '\n': return;
     case 'h': case '?': help(); return;
+    case 'N': brain_on = !brain_on; brain_setup(); return;
     case 'i': status(); return;
     case 'b': k210_boot(); return;
     case 'f': k210_face_mode(10); return;

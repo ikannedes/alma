@@ -38,3 +38,6 @@ settings.json
 .idea/
 *.iml
 .vscode/
+
+# ejemplos y evaluaciones de la red (se regeneran)
+/sim/brain/out/

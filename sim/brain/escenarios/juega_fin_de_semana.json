@@ -1,0 +1,57 @@
+{
+  "id": "juega_fin_de_semana",
+  "descripcion": "Dueño que entre semana llega cansado y apenas la saluda desde la base; los sábados y domingos le dedica ratos largos de juego y caricias.",
+  "peso": 1.0,
+  "dias": [
+    {
+      "nombre": "entre semana",
+      "dias_semana": [0, 1, 2, 3, 4],
+      "despierta": "06:00", "duerme": "22:30", "variacion_min": 20,
+      "bloques": [
+        {"desde": "06:00", "hasta": "06:40", "dueno": "casa", "en_base": true, "pasa_h": 2},
+        {"desde": "06:40", "hasta": "19:30", "dueno": "fuera", "en_base": true},
+        {"desde": "19:30", "hasta": "20:30", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "20:30", "hasta": "22:15", "dueno": "cerca", "en_base": true, "caricias_h": 2, "felicita_h": 0.5, "regana_h": 0.1, "ordenes_h": 0.5, "levanta_h": 0.1, "de_frente_p": 0.35, "responde_p": 0.3},
+        {"desde": "22:15", "hasta": "22:30", "dueno": "casa", "en_base": true, "pasa_h": 2}
+      ],
+      "ruidos_dia": 0.8,
+      "musica_dia": 0.3
+    },
+    {
+      "nombre": "fin de semana en casa",
+      "dias_semana": [5, 6],
+      "p": 0.7,
+      "despierta": "08:30", "duerme": "23:30", "variacion_min": 30,
+      "bloques": [
+        {"desde": "08:30", "hasta": "09:30", "dueno": "cerca", "en_base": false, "caricias_h": 8, "felicita_h": 3, "regana_h": 0.1, "ordenes_h": 1.5, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.75},
+        {"desde": "09:30", "hasta": "10:15", "dueno": "juego", "en_base": false, "caricias_h": 16, "felicita_h": 7, "regana_h": 0.2, "ordenes_h": 5, "levanta_h": 1.5, "de_frente_p": 0.85, "responde_p": 0.9},
+        {"desde": "10:15", "hasta": "13:00", "dueno": "casa", "en_base": false, "pasa_h": 4},
+        {"desde": "13:00", "hasta": "16:00", "dueno": "cerca", "en_base": false, "caricias_h": 7, "felicita_h": 2.5, "regana_h": 0.1, "ordenes_h": 1.5, "levanta_h": 0.5, "de_frente_p": 0.55, "responde_p": 0.7},
+        {"desde": "16:00", "hasta": "16:40", "dueno": "juego", "en_base": false, "caricias_h": 15, "felicita_h": 6, "regana_h": 0.2, "ordenes_h": 5, "levanta_h": 1.5, "de_frente_p": 0.85, "responde_p": 0.9},
+        {"desde": "16:40", "hasta": "19:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "19:00", "hasta": "23:00", "dueno": "cerca", "en_base": false, "caricias_h": 6, "felicita_h": 2, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.3, "de_frente_p": 0.5, "responde_p": 0.65},
+        {"desde": "23:00", "hasta": "23:30", "dueno": "cerca", "en_base": true, "caricias_h": 4, "felicita_h": 1, "regana_h": 0, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.45, "responde_p": 0.6}
+      ],
+      "visita": {"desde": "14:00", "hasta": "20:00", "p": 0.25},
+      "ruidos_dia": 1.0,
+      "musica_dia": 1.0
+    },
+    {
+      "nombre": "fin de semana que sale",
+      "dias_semana": [5, 6],
+      "p": 0.3,
+      "despierta": "08:30", "duerme": "23:30", "variacion_min": 30,
+      "bloques": [
+        {"desde": "08:30", "hasta": "09:30", "dueno": "cerca", "en_base": false, "caricias_h": 8, "felicita_h": 3, "regana_h": 0.1, "ordenes_h": 1.5, "levanta_h": 0.5, "de_frente_p": 0.6, "responde_p": 0.75},
+        {"desde": "09:30", "hasta": "10:15", "dueno": "juego", "en_base": false, "caricias_h": 16, "felicita_h": 7, "regana_h": 0.2, "ordenes_h": 5, "levanta_h": 1.5, "de_frente_p": 0.85, "responde_p": 0.9},
+        {"desde": "10:15", "hasta": "11:00", "dueno": "casa", "en_base": true, "pasa_h": 4},
+        {"desde": "11:00", "hasta": "18:00", "dueno": "fuera", "en_base": true},
+        {"desde": "18:00", "hasta": "19:00", "dueno": "casa", "en_base": true, "pasa_h": 3},
+        {"desde": "19:00", "hasta": "23:00", "dueno": "cerca", "en_base": false, "caricias_h": 6, "felicita_h": 2, "regana_h": 0.1, "ordenes_h": 1, "levanta_h": 0.3, "de_frente_p": 0.5, "responde_p": 0.65},
+        {"desde": "23:00", "hasta": "23:30", "dueno": "cerca", "en_base": true, "caricias_h": 4, "felicita_h": 1, "regana_h": 0, "ordenes_h": 0.3, "levanta_h": 0.1, "de_frente_p": 0.45, "responde_p": 0.6}
+      ],
+      "ruidos_dia": 0.8,
+      "musica_dia": 0.5
+    }
+  ]
+}

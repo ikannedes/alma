@@ -98,6 +98,43 @@
       "unlock_day": 0
     },
     {
+      "id": "bhv_nap",
+      "category": "rest",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_breath_1"
+        },
+        {
+          "avi": "sleep_breath_2"
+        },
+        {
+          "avi": "sleep_bubble_1"
+        },
+        {
+          "avi": "sleep_bubble_2"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        1200000,
+        5400000
+      ],
+      "base": 0.0,
+      "need_w": {
+        "rest": 1.5
+      },
+      "mood_fit": {
+        "SM_SLEEPY": 1.5
+      },
+      "requires": [
+        "day_window"
+      ],
+      "cooldown_s": 3600,
+      "unlock_day": 0,
+      "note": "Siesta de día (dueño, 2026-11-04; informe de gatos y perros, H1). Solo la elige la red: base 0 la deja fuera de la fórmula."
+    },
+    {
       "id": "bhv_sleep_cycle",
       "category": "rest",
       "tags": [],

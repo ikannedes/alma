@@ -198,9 +198,11 @@ static void anim_done(void)
         play_raw(a, m[0] ? m : NULL, 0);
         return;
     }
-    if (done_cb) done_cb();   /* una secuencia (rutinas) manda la siguiente aquí: expr_pending sube antes de bajar */
+    /* una secuencia (rutinas) manda la siguiente aquí; esa sigue en curso: si se bajaba expr_pending, el vistazo de caras
+       la cortaba a los pocos segundos (dueño, 2026-11-04: "cocina, sus ojos, cocina… como que está cortada") */
+    int next = done_cb ? done_cb() : 0;
     /* una sola animación en curso: una nueva reemplaza a la anterior y no se sabe si la reemplazada manda su 08 00 */
-    if (fm_phase == 4 && expr_pending) { expr_pending = 0; next_idle = now + eye_pause(); }
+    if (fm_phase == 4 && expr_pending && !next) { expr_pending = 0; next_idle = now + eye_pause(); }
 }
 void k210_set_fallback(const char *avi, const char *mp3)
 {

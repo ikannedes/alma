@@ -1,5 +1,6 @@
 /* alma_core.c — inicialización, eventos y tick del núcleo (01, 04). */
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include "alma_internal.h"
 
@@ -20,6 +21,7 @@ static const struct { const char *name; alma_req_kind kind; int has_arg; } REQ_N
     {"greet_intensity>=", REQ_GREET_INTENSITY_GE, 1}, {"not_wary_of_P", REQ_NOT_WARY_OF_P, 0},
     {"wary_of_P", REQ_WARY_OF_P, 0}, {"night_window", REQ_NIGHT_WINDOW, 0}, {"day_window", REQ_DAY_WINDOW, 0},
     {"has_home_station", REQ_HAS_HOME_STATION, 0}, {"hungry", REQ_HUNGRY, 0}, {"sick", REQ_SICK, 0},
+    {"tilted", REQ_TILTED, 0}, {"trick_new", REQ_TRICK_NEW, 0},
 };
 
 /* Precondición de 05: "a", "battery>=30" o alternativas "a|b" */
@@ -76,6 +78,8 @@ void alma_init(alma_t *a, const alma_catalog *cat, uint32_t seed, double now_s, 
     a->unknown_seen_s = a->last_known_face_s = NEVER;
     a->near_mm = -1;
     a->near_t = NEVER;
+    a->tilt_t = NEVER;
+    a->voice_sector = -1;
     a->last_fall_or_shake_s = a->last_cliff_s = a->last_lift_or_shake_s = NEVER;
     a->attention_suppressed_until = NEVER;
     a->lift_person = -1;
@@ -152,6 +156,7 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
         alma_face_seen(a, ev, now_s);
         s = alma_slot_of(a, ev->person_id);
         if (s < 0) break;
+        if (ev->w > 0) a->face_x = (ev->x - 160.0f) / 160.0f;   /* imagen de 320: −1 izquierda … 1 derecha */
         if (sleeping) {
             /* despierta si A > 0.5 durante la última hora de la ventana (04) */
             int last_hour = (alma_hour(now_s) - NIGHT_WINDOW_DEFAULT_START + 24) % 24 == NIGHT_WINDOW_H - 1;
@@ -180,6 +185,8 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
         break;
     }
     case EV_WAKE_WORD:
+        /* value = sector + 1 (1–12) del K210; 0 = sin dato (consola, simulador) */
+        a->voice_sector = ev->value >= 1 && ev->value <= 12 ? (int)ev->value - 1 : -1;
         if (sleeping || a->state == ST_REFLEX) break;
         alma_stimulus(a, now_s);
         alma_force(a, a->ix_listen, now_s);
@@ -337,6 +344,19 @@ void alma_near(alma_t *a, int mm, double now_s)
     a->near_mm = mm;
     if (mm >= 0 && mm < NEAR_SEEN_MM && !was) {
         a->near_t = now_s;
+        if (a->policy && a->state != ST_SLEEPING) alma_brain_poke(a, now_s, 1);
+    }
+}
+
+int alma_tilted(const alma_t *a) { return fabsf(a->tilt_a) > TILT_MIN_DEG || fabsf(a->tilt_b) > TILT_MIN_DEG; }
+
+void alma_tilt(alma_t *a, float deg_a, float deg_b, double now_s)
+{
+    int was = alma_tilted(a);
+    a->tilt_a = deg_a;
+    a->tilt_b = deg_b;
+    if (alma_tilted(a) && !was) {
+        a->tilt_t = now_s;
         if (a->policy && a->state != ST_SLEEPING) alma_brain_poke(a, now_s, 1);
     }
 }

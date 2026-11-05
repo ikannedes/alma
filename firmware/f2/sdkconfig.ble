@@ -1,0 +1,28 @@
+# Variante -Ble (build_esp32.ps1; dueño, 2026-11-05): escuchar a la Home Station por Bluetooth (main/ble_base.c).
+# Para que quepa en la IRAM: sin el código rápido del Wi-Fi en IRAM y FreeRTOS en la flash; y sin el parche de PSRAM de
+# los chips viejos, porque esta unidad es ESP32-D0WD-V3 rev 3.1 (HALLAZGOS-EMO.md). Este binario no corre en chips < v3.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
+CONFIG_ESP32_REV_MIN_3=y
+# NimBLE solo para escuchar: sin conexiones ni NVS (R15). Central y broadcaster quedan prendidos porque con ESP-IDF
+# v5.2.1 apagarlos no compila (ble_gap_adv_active_instance, ble_sm_alg_encrypt); no se usan
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=n
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# Memoria (dueño, 2026-11-05; RAM-PROPUESTA.md D, E, F, H): con el Bluetooth quedaban 38 KB libres. El original corría
+# Wi-Fi + Bluetooth con el mismo bloque apartado; la diferencia es la configuración del Wi-Fi, hecha para mucho tráfico.
+# Alma manda poco (registro, fotos chicas, respaldos): Wi-Fi y lwIP piden primero a la PSRAM, menos búferes fijos, solo
+# estación WPA2-PSK.
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_ESP_WIFI_STATIC_TX_BUFFER_NUM=8
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+CONFIG_ESP_WIFI_RX_BA_WIN=6
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=n
+CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n

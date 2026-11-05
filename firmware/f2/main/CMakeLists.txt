@@ -34,9 +34,16 @@ if(ALMA_F2_API)
     list(APPEND reqs esp_wifi esp_netif esp_event mbedtls)
     list(APPEND incs ${creds})
 endif()
+# Escuchar la Home Station por Bluetooth (ble_base.c; dueño, 2026-11-05): ALMA_F2_BLE=1 por entorno (build_esp32.ps1 -Ble),
+# con el sdkconfig de la variante (NimBLE solo observador). Sin ella, hal_home_ble dice que no la ve.
+set(BLE_SRCS)
+if("$ENV{ALMA_F2_BLE}" STREQUAL "1")
+    list(APPEND reqs bt)
+    set(BLE_SRCS ble_base.c)
+endif()
 
 idf_component_register(
-    SRCS main.c hal_esp32.c vl53l0x.c r15_guard.c api_esp32.c ${APP_SRCS}
+    SRCS main.c hal_esp32.c vl53l0x.c r15_guard.c api_esp32.c ${BLE_SRCS} ${APP_SRCS}
          ${S1}/k210_frames.c ${S1}/mot.c ${S1}/log_util.c ${S1}/vivo.c
          ${CORE_SRCS} ${A}/memory_store/alma_mem.c ${A}/memory_store/alma_mem_flash_esp32.c ${A}/sim/catalog_load.c ${CJSON}
     INCLUDE_DIRS ${incs}
@@ -56,6 +63,9 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE ALMA_MEM_WRITE_ENABLED=${MEM
 # Variante remota (sesion1a.md): sin servos en el binario (ALMA_SERVOS_DISABLED por entorno, build_esp32.ps1 -Remota)
 if("$ENV{ALMA_DEV_MOTION_ON_USB}" STREQUAL "1")
     target_compile_definitions(${COMPONENT_LIB} PRIVATE ALMA_DEV_MOTION_ON_USB=1)
+endif()
+if("$ENV{ALMA_F2_BLE}" STREQUAL "1")
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE ALMA_F2_BLE=1)
 endif()
 if("$ENV{ALMA_SERVOS_DISABLED}" STREQUAL "1")
     target_compile_definitions(${COMPONENT_LIB} PRIVATE ALMA_SERVOS_DISABLED=1)

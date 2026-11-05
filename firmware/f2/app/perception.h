@@ -46,6 +46,7 @@ void perception_poll_sensors(alma_sensors *for_tick);
 int  perception_on_usb(void);
 /* distancia de la cara (VL53L0X, mm; −1 sin sensor) */
 int  perception_front_mm(void);
+int  perception_tilt(float *a, float *b);   /* inclinación del IMU en grados (f2_hal.h); 0 si aún no hay lectura */
 
 uint32_t perception_unknown_frames(void);
 /* Bordes (regla del dueño, 2026-10-29): la marcha no debe avanzar hacia un lado bloqueado. */

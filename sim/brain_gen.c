@@ -165,6 +165,10 @@ typedef struct {
        y la levanta si está desmayada */
     int prev_en_base, fainted;
     int near_mm; double near_until;   /* lo que tiene enfrente (sensor de distancia) */
+    /* red v8: ladeada (el dueño la puso sobre algo), música, trucos de Haiku por enseñar */
+    float tilt_a, tilt_b; double tilt_until;
+    double music_until;
+    int tricks, trick_tries, trick_day;
     double dock_t;             /* llega a la base al terminar bhv_go_home (si no falla) */
 } world;
 
@@ -256,7 +260,7 @@ static const seg *seg_at(world *w, double t)
 enum {   /* el orden de ALMA_BRAIN_OUT_ID */
     O_SEGUIR, O_BLINK, O_LOOK, O_DOZE, O_NAP, O_GO_REST, O_GO_HOME, O_GREET, O_FOLLOW, O_ENJOY, O_SEEK, O_ASK, O_INVEST,
     O_SHY, O_BABBLE, O_ASK_FOOD, O_BOW, O_SOLO, O_DANCE, O_CHASE, O_WIGGLE, O_ROUTINE, O_ACTIVITY, O_IMITATE, O_SING,
-    O_EXPLORE, O_INSPECT, O_SULK, O_YAWN, O_SICK, O_LEAVE, O_PHOTO, O_N
+    O_EXPLORE, O_INSPECT, O_SULK, O_YAWN, O_SICK, O_LEAVE, O_PHOTO, O_SETTLE, O_INVENT, O_NEWTRICK, O_N
 };
 
 static double secs(float rec, double tau) { return rec > 1e-6f ? -tau * log(rec) : 1e9; }
@@ -345,6 +349,33 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     if (E < 0.3f) ph *= 0.2f;
     if (session) ph *= 0.2f;
     w[O_PHOTO] = ph * (1.0f - 0.7f * last_ph);
+    /* el mundo físico (red v8, dueño, 2026-11-05) */
+    float ta = fabsf(x[BF_TILT_A]), tb = fabsf(x[BF_TILT_B]), tilt = fmaxf(ta, tb) * 45.0f;   /* grados */
+    int tilted = tilt > 8.0f, steep = tilt >= 35.0f;
+    /* ladeada: la valiente se acomoda hacia donde hay piso; la miedosa se queda quieta, mira y, si estás, te pide ayuda */
+    w[O_SETTLE] = tilted && !steep && E > 0.2f ? 8.0f * (0.25f + x[BF_K_BOLD]) : 0;
+    if (tilted) {
+        w[O_LOOK] += 2.0f * fearful;
+        if (present) w[O_ASK] += 4.0f * fearful * (0.5f + soc);
+        for (int k = O_BOW; k <= O_SING; k++) w[k] *= 0.1f;
+        w[O_EXPLORE] *= 0.1f; w[O_NAP] = 0; w[O_DOZE] *= 0.2f;
+    }
+    /* sustos físicos recientes: enojada o tímida, sin ganas de pedir; la volcaron o la sacudieron, más */
+    float rough = fmaxf(x[BF_LIFTED], fmaxf(x[BF_SHAKEN], x[BF_TIPPED]));
+    if (rough > 0.3f) { w[O_SULK] += 1.5f * rough * (x[BF_SHAKEN] > 0.3f || x[BF_TIPPED] > 0.3f ? 2.0f : 1.0f); w[O_SHY] += 1.0f * rough * fearful; w[O_ASK] *= 0.5f; }
+    if (x[BF_CLIFF] > 0.3f) w[O_EXPLORE] *= 0.2f, w[O_LOOK] += 1.0f;   /* un borde hace poco: con cuidado */
+    if (x[BF_LOUD] > 0.5f) w[O_LOOK] += 1.5f;
+    /* música: ganas de bailar (más la juguetona), salvo cansada */
+    if (x[BF_MUSIC] > 0.3f && E > 0.3f) w[O_DANCE] += 6.0f * (0.3f + ply) * x[BF_MUSIC];
+    /* un toquecito: lo mira, se queda cerca */
+    if (x[BF_TAP] > 0.5f) { w[O_LOOK] += 1.5f; if (present) w[O_FOLLOW] += 1.5f; }
+    /* la base cerca: ir a cargarse le cuesta menos */
+    w[O_GO_HOME] *= 0.6f + 0.6f * x[BF_BASE_NEAR];
+    /* inventar (vía 2): sola, aburrida, con energía y de día; lo recién inventado la sacia */
+    w[O_INVENT] = !present && !night && E > 0.5f ? 0.25f * (0.4f + ply) * (mood == SM_BORED ? 2.0f : 1.0f) * (1.0f - x[BF_INVENT])
+                : present && facing && !night ? 0.04f * (0.4f + ply) * (1.0f - x[BF_INVENT]) : 0;
+    /* enseñar un truco nuevo (vía 3): contigo enfrente, juguetona o contenta; no cansada ni recién regañada */
+    w[O_NEWTRICK] = present && facing && E > 0.35f ? 3.0f * (0.4f + ply) * (0.5f + soc) * (mood == SM_PLAYFUL || mood == SM_HAPPY ? 1.5f : 1.0f) : 0;
     /* social (E2–E4): quién empieza el contacto lo decide la independencia */
     float init = fmaxf(0.03f, 0.2f + 1.2f * soc - 0.9f * ind);
     float drive = (float)fmin(1.0, d_contact / 900.0) * (0.5f + need_soc);
@@ -418,6 +449,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
         /* dueño, 2026-11-05: "a veces reacciona a veces no"; mirar o parpadear no se notan como respuesta */
         if (!satur) w[O_LOOK] *= 0.3f, w[O_BLINK] *= 0.3f;
     }
+    if (back < 1) w[O_NEWTRICK] *= back, w[O_INVENT] *= back;
     if (back < 1) {                            /* N2: recuperación; al volver, primero lo mira */
         for (int k = O_GREET; k <= O_BABBLE; k++) if (k != O_SHY && k != O_FOLLOW) w[k] *= back;
         for (int k = O_BOW; k <= O_SING; k++) if (k != O_WIGGLE) w[k] *= back;
@@ -440,7 +472,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
        existen con su condición (batería baja, ventana, hambre, caras) no */
     float tot = 0, blocked = 0;
     for (int k = 1; k < O_N; k++) {
-        int cond = k == O_GO_HOME || k == O_LEAVE || k == O_PHOTO || k == O_INSPECT || k == O_ASK_FOOD || k == O_SICK || k == O_ENJOY || k == O_WIGGLE
+        int cond = k == O_GO_HOME || k == O_LEAVE || k == O_PHOTO || k == O_SETTLE || k == O_NEWTRICK || k == O_INSPECT || k == O_ASK_FOOD || k == O_SICK || k == O_ENJOY || k == O_WIGGLE
                    || k == O_GREET || k == O_INVEST || k == O_SHY || k == O_SEEK;
         if (!mask[k]) { if (!cond) blocked += w[k]; w[k] = 0; }
         tot += w[k];
@@ -475,7 +507,8 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     double h;
     int arrival = present && d_arr < 1.5 && !greeted && g >= 0.15f;
     int near_now = x[BF_NEAR] > 0.86f;   /* algo se le acercó en los últimos ~1.5 s */
-    int ev_now = pet_now || d_praise < 1.5 || d_scold < 1.5 || arrival || d_contact < 1.5 || (d_scold < 30 && mask[O_SULK]) || near_now;
+    int tilt_now = x[BF_TILT_NOW] > 0.86f, tap_now = x[BF_TAP] > 0.86f, music_now = x[BF_MUSIC] > 0.95f;
+    int ev_now = pet_now || d_praise < 1.5 || d_scold < 1.5 || arrival || d_contact < 1.5 || (d_scold < 30 && mask[O_SULK]) || near_now || tilt_now || tap_now || music_now;
     if (active) {            /* solo quieta, dormitando o en siesta: la saca algo fuerte */
         int nap = fam == BFAM_REST;
         h = nap ? (t_cur < 1200 ? 0.0 : 0.0006) : 0.01;   /* la siesta dura (mediana ~40 min) */
@@ -484,6 +517,8 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
         else if (arrival) h = nap ? 0.35 + 0.4 * soc * g : 0.8;
         else if (d_contact < 1.5 || d_praise < 1.5) h = nap ? 0.2 : 0.6;
         else if (near_now) h = nap ? 0.3 : 0.7;
+        else if (tilt_now) h = 0.8;
+        else if (tap_now || music_now) h = nap ? 0.3 : 0.6;
         else if (fear > 0.5f) h = 0.3;
     } else {
         double mean = present ? 50.0 : alone_min > 30 ? 160.0 : 100.0;
@@ -502,6 +537,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     /* con poca batería, ni la siesta la detiene: se despierta a cargarse (casi vacía, en ~20 s) */
     if (mask[O_GO_HOME] && bat < 0.12f && !(present && session && imp > 0.7f)) h = fmax(h, 0.05);
     else if (mask[O_GO_HOME] && bat < low) h = fmax(h, 0.004);
+    if (tilted && !steep) h = fmax(h, 0.05);
     float share = ev_now ? 1.0f : tot / (tot + blocked);   /* a un evento sí se responde con lo que haya */
     p[0] = (float)(1.0 - h * share);
     for (int k = 1; k < O_N; k++) p[k] = (float)(h * share) * w[k] / tot;
@@ -540,12 +576,14 @@ static int rec_policy(void *user, const float *x, const unsigned char *mask, flo
         if (alma_rng_u01(&c->w->rng) >= 0.01f) return 0;
         wgt = 100;
     }
-    uint32_t m = 0;
-    for (int k = 0; k < ALMA_BRAIN_OUT; k++) m |= (uint32_t)(mask[k] != 0) << k;
+    /* 64 bits: con 35 salidas, una máscara de 32 dejaba las tres últimas siempre prohibidas (red v8, 2026-11-05) */
+    _Static_assert(ALMA_BRAIN_OUT <= 64, "la máscara del ejemplo es de 64 bits");
+    uint64_t m = 0;
+    for (int k = 0; k < ALMA_BRAIN_OUT; k++) m |= (uint64_t)(mask[k] != 0) << k;
     unsigned short meta[2] = {c->scen_ix, (unsigned short)(fmod(c->w->t, DAY) / 60.0)};
     fwrite(x, sizeof(float), ALMA_BRAIN_IN, c->out);
     fwrite(p, sizeof(float), ALMA_BRAIN_OUT, c->out);
-    fwrite(&m, 4, 1, c->out);
+    fwrite(&m, 8, 1, c->out);
     fwrite(&wgt, 4, 1, c->out);
     fwrite(meta, 2, 2, c->out);
     c->n_rec++;
@@ -573,7 +611,8 @@ typedef struct {
     double mask_ok[ALMA_BRAIN_OUT], mask_n, off_base;   /* con el dueño cerca: noche, descanso por cansancio, descanso por casa vacía, siesta */
     long faints, go_home, leave_base; double go_home_soc, fainted_s, off_base_s, leave_soc;
     long photos, photos_near, nears;   /* fotos que decidió; cuántas en los 10 s tras algo cerca; cuántas veces algo cerca */
-    long pets, pets_reacted;   /* caricias con ella despierta y cuántas respondió en 6 s (disfrutar, alegrarse) */
+    long pets, pets_reacted;
+    long tilts, settles, settle_ok, music, music_dance, tricks_shown, tricks_kept, invents; double tilt_s;   /* caricias con ella despierta y cuántas respondió en 6 s (disfrutar, alegrarse) */
 } metrics;
 
 typedef struct {
@@ -654,6 +693,20 @@ static void on_exec(void *user, const alma_exec_info *e)
     if (!strcmp(b->id, "bhv_go_home")) {   /* llega al terminar; 1 de cada 8 no atina (home.c) */
         h->m->go_home++, h->m->go_home_soc += w->soc;
         w->dock_t = u01(w) < 0.875f ? e->t_start + e->planned_s : 0;
+    }
+    if (!strcmp(b->id, "bhv_settle")) {   /* hacia donde hay piso: casi siempre lo logra */
+        h->m->settles++;
+        if (u01(w) < 0.75f) w->tilt_until = e->t_start + 4, h->m->settle_ok++;
+    }
+    if (!strcmp(b->id, "bhv_invent")) h->m->invents++;
+    if (!strcmp(b->id, "bhv_dance") && e->t_start < w->music_until) h->m->music_dance++;
+    if (!strcmp(b->id, "bhv_new_trick") && w->tricks > 0) {   /* el dueño, si la ve, la acaricia o la felicita (responde_p) */
+        h->m->tricks_shown++;
+        w->trick_tries++;
+        if (w->visible && s->k && u01(w) < s->k->resp) {
+            push(w, e->t_start + urange(w, 2, 8), u01(w) < 0.6f ? EV_TOUCH_PET : EV_PRAISE, 1, -1, 1500);
+            w->tricks--, w->trick_tries = 0, h->m->tricks_kept++;
+        } else if (w->trick_tries >= 3) w->tricks--, w->trick_tries = 0;
     }
     if (!strcmp(b->id, "bhv_leave_base") && w->on_charger) {
         h->m->leave_base++, h->m->leave_soc += w->soc;
@@ -797,7 +850,7 @@ static void world_second(world *w, hooks_ctx *h)
             float r = u01(w), acc = 0;
             int act = 0;
             for (; act < ACT_COUNT - 1; act++) { acc += W[act]; if (r < acc) break; }
-            push(w, t, EV_WAKE_WORD, -1, -1, 0);
+            push(w, t, EV_WAKE_WORD, -1, -1, (float)(1 + (int)(u01(w) * 12)));   /* sector de la voz + 1 */
             double reply = t + urange(w, 1.5f, 3.0f) + urange(w, 0.8f, 3.0f);
             if (u01(w) < 0.85f) push(w, reply, EV_VOICE_COMMAND, 1, act, 0);
             else push(w, reply, EV_VOICE_FAILED, -1, -1, 0);
@@ -811,6 +864,21 @@ static void world_second(world *w, hooks_ctx *h)
             float mm = urange(w, 50, 200);
             push(w, t, EV_OBSTACLE, -1, -1, mm);
             w->near_mm = (int)mm, w->near_until = t + urange(w, 2, 10), h->m->nears++, h->near_t = t;
+        }
+        /* toquecito (no caricia): ~1 cada media hora */
+        if (u01(w) < 1.0f / 1800.0f) push(w, t, EV_TOUCH_TAP, 1, -1, 0);
+        /* la pone sobre algo y queda ladeada (~1 cada 4 h cerca); si no se acomoda, el dueño la endereza en 1–5 min */
+        if (s->who == W_CERCA && w->tilt_until <= t && !w->on_charger && u01(w) < 1.0f / 14400.0f) {
+            int lat = u01(w) < 0.5f;
+            float d = urange(w, 10, 40) * (u01(w) < 0.5f ? -1 : 1);
+            w->tilt_a = lat ? 0 : d, w->tilt_b = lat ? d : 0, w->tilt_until = t + urange(w, 60, 300);
+            h->m->tilts++;
+        }
+        /* música (~1 cada 6 h cerca): 3 minutos */
+        if (w->music_until <= t && u01(w) < 1.0f / 21600.0f) {
+            w->music_until = t + 180;
+            push(w, t, EV_MUSIC, -1, -1, 100);
+            h->m->music++;
         }
         /* el dueño le pone algo enfrente (la mano, una taza, el celular), a 4–35 cm: ~1 cada 20 min cerca de ella */
         if (s->who == W_CERCA && t >= w->near_until && u01(w) < 1.0f / 1200.0f)
@@ -838,6 +906,14 @@ static void world_second(world *w, hooks_ctx *h)
         w->near_mm = (int)urange(w, 60, 300), w->near_until = t + urange(w, 5, 30), h->m->nears++, h->near_t = t;
     if (t >= w->near_until) w->near_mm = 900;   /* nada cerca: el fondo de la mesa o el cuarto */
     alma_near(a, w->near_mm, t);
+    if (t >= w->tilt_until) w->tilt_a = w->tilt_b = 0;
+    alma_tilt(a, w->tilt_a, w->tilt_b, t);
+    if (alma_tilted(a)) h->m->tilt_s += 1;
+    a->base_near = w->on_charger ? 1.0f : 0.35f;
+    /* cada mañana, a veces Haiku propuso 1–2 trucos nuevos */
+    int day = (int)floor((t - 8 * HR) / DAY);
+    if (day != w->trick_day) { w->trick_day = day; if (u01(w) < 0.6f) w->tricks = 1 + (u01(w) < 0.3f), w->trick_tries = 0; }
+    a->trick_new = w->tricks;
     alma_sensors sens = {w->soc, w->on_charger};
     alma_tick(a, t, &sens);
 
@@ -951,6 +1027,10 @@ static void write_metrics(const metrics *m, const char *path, const char *pol)
             m->leave_base / m->days, m->leave_base ? m->leave_soc / m->leave_base : 0, m->off_base_s / (m->days * DAY));
     fprintf(f, "  \"fotos\": {\"por_dia\": %.2f, \"algo_enfrente_por_dia\": %.2f, \"fotos_tras_algo_enfrente\": %.2f},\n", m->photos / m->days,
             m->nears / m->days, m->nears ? (double)m->photos_near / m->nears : 0);
+    fprintf(f, "  \"fisico\": {\"ladeada_por_semana\": %.2f, \"min_ladeada_media\": %.1f, \"acomodos\": %ld, \"acomodos_ok\": %ld, "
+               "\"musica\": %ld, \"baila_con_musica\": %ld, \"trucos_ensenados_dia\": %.2f, \"trucos_quedan_dia\": %.2f, \"inventos_dia\": %.2f},\n",
+            7 * m->tilts / m->days, m->tilts ? m->tilt_s / m->tilts / 60.0 : 0, m->settles, m->settle_ok, m->music, m->music_dance,
+            m->tricks_shown / m->days, m->tricks_kept / m->days, m->invents / m->days);
     fprintf(f, "  \"caricias_respondidas_6s\": [%ld, %.2f],\n", m->pets, m->pets ? (double)m->pets_reacted / m->pets : 0);
     fprintf(f, "  \"conductas\": {");
     int first = 1;

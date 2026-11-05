@@ -23,6 +23,7 @@ const char *const ALMA_BRAIN_OUT_ID[ALMA_BRAIN_OUT] = {
     "bhv_sulk", "bhv_yawn_bored", "bhv_sick",
     "bhv_leave_base",   /* v3 (dueño, 2026-11-05): ella decide bajarse de la base e ir a cargarse */
     "bhv_photo",        /* v4 (dueño, 2026-11-05): mirar con atención y tomar foto */
+    "bhv_settle", "bhv_invent", "bhv_new_trick",   /* v5: acomodarse si está ladeada, inventar movimientos, enseñar un truco */
 };
 
 #define NEVER (-1e12)
@@ -193,8 +194,29 @@ void alma_brain_features(const alma_t *a, double now_s, float x[ALMA_BRAIN_IN])
     x[i++] = alma_faint_rec(a, now_s);                                                /* 72 secuela del desmayo */
     x[i++] = rec(now_s, a->near_t, 10);                                               /* 73 algo apareció enfrente */
     x[i++] = a->near_mm >= 0 ? alma_clampf(1.0f - a->near_mm / NEAR_FAR_MM, 0, 1) : 0.0f;  /* qué tan cerca está ahora */
-    int ph = a->ix_brain[ALMA_BRAIN_OUT - 1];
-    x[i++] = ph >= 0 ? rec(now_s, a->last_exec_t[ph], 1800) : 0.0f;                    /* 74 la última foto */
+    int ph = alma_find(a->cat, "bhv_photo");
+    x[i++] = ph >= 0 ? rec(now_s, a->last_exec_t[ph], 1800) : 0.0f;                    /* 75 la última foto */
+    /* el mundo físico (v8) */
+    x[i++] = alma_clampf(a->tilt_a / TILT_FULL_DEG, -1, 1);                           /* 76 nariz abajo < 0 */
+    x[i++] = alma_clampf(a->tilt_b / TILT_FULL_DEG, -1, 1);                           /* 77 ladeada a su izquierda < 0 */
+    x[i++] = rec(now_s, a->tilt_t, 10);
+    x[i++] = rec(now_s, a->last_ev_t[EV_PICKED_UP], 60);                              /* 79 */
+    x[i++] = rec(now_s, a->last_ev_t[EV_SHAKEN], 120);
+    x[i++] = rec(now_s, a->last_ev_t[EV_TIPPED_OVER], 120);
+    x[i++] = rec(now_s, a->last_ev_t[EV_CLIFF], 60);
+    x[i++] = rec(now_s, a->last_ev_t[EV_LOUD_SOUND], 30);                             /* 83 */
+    x[i++] = rec(now_s, a->last_ev_t[EV_MUSIC], 30);
+    x[i++] = rec(now_s, a->last_ev_t[EV_TOUCH_TAP], 10);
+    /* la voz: sector 0–11 del K210, de frente 5–6 y de atrás 11–0 (HALLAZGOS); el lado (izquierda/derecha) por calibrar */
+    float vr = a->voice_sector >= 0 ? rec(now_s, a->last_ev_t[EV_WAKE_WORD], 10) : 0.0f;
+    double va = (a->voice_sector - 5.5) * (TWO_PI / 12.0);
+    x[i++] = vr * (float)sin(va);                                                      /* 86 */
+    x[i++] = vr * (float)cos(va);
+    x[i++] = present ? alma_clampf(a->face_x, -1, 1) : 0.0f;                          /* 88 */
+    x[i++] = alma_clampf(a->base_near, 0, 1);
+    x[i++] = a->trick_new > 0;                                                        /* 90 */
+    int iv = alma_find(a->cat, "bhv_invent");
+    x[i++] = iv >= 0 ? rec(now_s, a->last_exec_t[iv], 3600) : 0.0f;                   /* 91 */
     (void)i;   /* i == BF_COUNT == ALMA_BRAIN_IN (sim/test_core.c) */
 }
 

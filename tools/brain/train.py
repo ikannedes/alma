@@ -6,7 +6,7 @@ cada 20 pesan 20). Solo numpy.
 
 Uso: python tools/brain/train.py <ejemplos.bin> <salida.almb> [--h1 64] [--h2 32] [--epocas 20] [--semilla 1]
 
-Formato de ejemplos.bin (sim/brain_gen.c, rec_policy): por registro x float32[IN], p float32[OUT], máscara uint32,
+Formato de ejemplos.bin (sim/brain_gen.c, rec_policy): por registro x float32[IN], p float32[OUT], máscara uint64,
 peso float32, escenario uint16, minuto del día uint16.
 Formato de salida (core/alma_brain.c, alma_mlp_load): cabecera uint32[8] ("ALMB", 1, versión de entradas, IN, H1, H2,
 OUT, versión del modelo AAAAMMDD), OUT nombres de 32 bytes, float32 mu, sd, w1, b1, w2, b2, w3, b3 y CRC32 al final.
@@ -38,7 +38,7 @@ def core_consts():
 
 
 def load(path, n_in, n_out, quiet_keep=1.0, seed=1):
-    dt = np.dtype([("x", "<f4", (n_in,)), ("p", "<f4", (n_out,)), ("m", "<u4"), ("w", "<f4"), ("meta", "<u2", (2,))])
+    dt = np.dtype([("x", "<f4", (n_in,)), ("p", "<f4", (n_out,)), ("m", "<u8"), ("w", "<f4"), ("meta", "<u2", (2,))])
     d = np.memmap(path, dtype=dt, mode="r")
     if quiet_keep < 1.0:
         # más submuestreo de los segundos tranquilos, con su peso inverso: el total de cada situación no cambia
@@ -49,7 +49,7 @@ def load(path, n_in, n_out, quiet_keep=1.0, seed=1):
         d["w"] = np.where(d["w"] > 1.0, d["w"] / quiet_keep, d["w"])
     else:
         d = np.array(d)
-    mask = ((d["m"][:, None] >> np.arange(n_out)) & 1).astype(bool)
+    mask = ((d["m"][:, None] >> np.arange(n_out, dtype=np.uint64)) & np.uint64(1)).astype(bool)
     p = d["p"] * mask
     p /= p.sum(1, keepdims=True)
     return d["x"].astype(np.float32), p.astype(np.float32), mask, d["w"].astype(np.float32), d["meta"]

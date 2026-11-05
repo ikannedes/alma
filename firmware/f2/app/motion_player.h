@@ -23,6 +23,14 @@ motion_result motion_play(const alma_motion_opt *o, int on_charger, int over_bud
  * de MOTION_RUN_MIN_MS (el original ya usa pasos de 100–300 ms en react_back_* y struggle_*). Vuelve a 1 después. */
 #define MOTION_RUN_MIN_MS 300
 void motion_set_tempo(float tempo);
+/* Variación del siguiente motion_play (dueño, 2026-11-05, vía 1): velocidad (duración / speed), amplitud alrededor de 90 y
+   espejo izquierda/derecha (solo en .mot sin marcha). Dentro de R10 siempre. motion_vary_on = 0: sin variación (pruebas
+   que comparan cuadro por cuadro) */
+void motion_set_variation(float speed, float amp, int mirror);
+int  motion_angle_ok(int s, int deg);   /* dentro del rango observado (R10) para Sn */
+extern int motion_vary_on;
+/* Reproducir cuadros que viven en la memoria (inventos, trucos de Haiku): mismas reglas que motion_play (R10, R14) */
+motion_result motion_play_frames(const char *name, const mot_frame *f, int n, int on_charger);
 void motion_step(void);            /* llamar cada F2_MOTION_STEP_MS o más seguido */
 void motion_stop_now(void);        /* reflejo: corta y deja cada servo donde está */
 /* En la base (dueño, 2026-11-03): los 4 servos sin fuerza, para que el cuerpo se asiente sobre la base inalámbrica. El

@@ -55,6 +55,8 @@ static int req_one(const alma_t *a, alma_req_kind k, float arg, int P, double no
     case REQ_HAS_HOME_STATION:       return a->has_home_station;
     case REQ_HUNGRY:                 return a->hunger >= HUNGRY_AT;
     case REQ_SICK:                   return a->sick;
+    case REQ_TILTED:                 return alma_tilted(a);
+    case REQ_TRICK_NEW:              return a->trick_new > 0;
     }
     return 0;
 }

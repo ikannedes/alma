@@ -20,6 +20,7 @@
 #include "outbox.h"
 #include "perception.h"
 #include "reflexes.h"
+#include "repertorio.h"
 #include "vision.h"
 #include "voice.h"
 
@@ -162,6 +163,42 @@ static void log_event(const alma_ev *e)
     *l = (app_ev_log){hal_now_ms(), e->type, e->person_id, e->action_id, e->behavior};
 }
 
+/* ---- acomodarse (dueño, 2026-11-05): ladeada, hacia donde hay piso ----
+   Con la inclinación del IMU (HALLAZGOS: A < 0 nariz abajo, B < 0 ladeada a su izquierda) y el mapa de los .mot
+   (explore_foward1 avanza, explore_back_away1 retrocede, explore_turn_left2/right2 giran 44°): se aleja del lado en el
+   aire y va hacia el que tiene piso. Antes de moverse revisa que los pies de ese lado vean piso; si no, se queda quieta.
+   Muy ladeada (≥ SETTLE_MAX_DEG) no se mueve nunca. Si lo decide o no, es de la red (bhv_settle) */
+#define SETTLE_MAX_DEG 35.0f
+static void settle_start(void)
+{
+    static alma_motion_opt o;
+    hal_sensors s;
+    hal_sensors_read(&s);
+    float ta = s.tilt_a, tb = s.tilt_b;
+    memset(&o, 0, sizeof o);
+    o.hhmm0 = o.hhmm1 = -1;
+    const char *why = NULL;
+    if (fabsf(ta) >= SETTLE_MAX_DEG || fabsf(tb) >= SETTLE_MAX_DEG) why = "muy ladeada: no se mueve";
+    else if (fabsf(ta) >= fabsf(tb)) {
+        int fwd = ta < 0;   /* nariz abajo: los de adelante tienen piso → avanza; cara arriba → retrocede */
+        int p = fwd ? HAL_FLOOR_FRONT : HAL_FLOOR_REAR;
+        if (s.floor[HAL_FOOT_L][p] != 1 || s.floor[HAL_FOOT_R][p] != 1) why = fwd ? "sin piso adelante" : "sin piso atrás";
+        else { o.n = 1; snprintf(o.mot[0], sizeof o.mot[0], "%s", fwd ? "explore_foward1" : "explore_back_away1"); }
+    } else {
+        int left = tb < 0;   /* ladeada a su izquierda: el pie izquierdo es el que tiene piso → gira a la izquierda */
+        int f = left ? HAL_FOOT_L : HAL_FOOT_R;
+        if (s.floor[f][HAL_FLOOR_FRONT] != 1) why = left ? "sin piso a la izquierda" : "sin piso a la derecha";
+        else {
+            o.n = 2;
+            snprintf(o.mot[0], sizeof o.mot[0], "%s", left ? "explore_turn_left2" : "explore_turn_right2");
+            snprintf(o.mot[1], sizeof o.mot[1], "explore_foward1");
+        }
+    }
+    if (why) { hal_log("acomodarse (A %.0f°, B %.0f°): %s; se queda quieta", ta, tb, why); return; }
+    hal_log("acomodarse (A %.0f°, B %.0f°): %s%s%s", ta, tb, o.mot[0], o.n > 1 ? " + " : "", o.n > 1 ? o.mot[1] : "");
+    motion_play(&o, A.on_charger, 0);
+}
+
 /* ---- ejecutor: los ganchos del núcleo ---- */
 static void on_exec(void *user, const alma_exec_info *e)
 {
@@ -173,6 +210,15 @@ static void on_exec(void *user, const alma_exec_info *e)
     /* bajarse de la base (dueño, 2026-11-05: lo decide ella): los mismos pasos al frente que la regla de antes. Con "USB"
        también: en la Home Station RX0 sale alto y parece USB (2026-11-03 y 11-05, sin cable). El primer paso lo resuelve:
        si sigue cargando, es el cable de verdad y se queda (leave_check_ms) */
+    if (strcmp(b->id, "bhv_settle") == 0 && e->kind != RUN_REFLEX) settle_start();
+    /* sus movimientos propios (dueño, 2026-11-05): inventar (vía 2), enseñar un truco de Haiku (vía 3) y, jugando, a
+       veces uno de los suyos en vez del de fábrica */
+    if (strcmp(b->id, "bhv_invent") == 0 && e->kind != RUN_REFLEX && repertorio_invent(&A.rng, A.on_charger) != 0)
+        hal_log("invento: ahora no (ocupada o en la base)");
+    if (strcmp(b->id, "bhv_new_trick") == 0 && e->kind != RUN_REFLEX && repertorio_show_trick(A.on_charger) != 0)
+        hal_log("truco: no hay uno nuevo que enseñar");
+    int own = e->option >= 0 && e->kind == RUN_SELECTOR && (!strcmp(b->id, "bhv_play_solo") || !strcmp(b->id, "bhv_dance")
+              || !strcmp(b->id, "bhv_happy_wiggle")) && alma_rng_u01(&A.rng) < 0.25f;
     if (strcmp(b->id, "bhv_photo") == 0 && e->kind != RUN_REFLEX) {   /* mirar con atención y tomar foto (vision.c) */
         int P = alma_P(&A);
         vision_decide(P >= 0 && A.person[P].present && A.person[P].facing);
@@ -217,9 +263,17 @@ static void on_exec(void *user, const alma_exec_info *e)
     if (e->option >= 0) {
         if (e->tempo < 1.0f) hal_log("corre: paso × %.2f", e->tempo);
         motion_set_tempo(e->tempo);
+        /* variar lo que sabe (dueño, 2026-11-05, vía 1): contenta o emocionada, más rápido y amplio; cansada, más lento y
+           chico; a veces espejado. No en reflejos ni en lo que camina (la marcha y la dirección van exactas) */
+        if (e->kind != RUN_REFLEX && !(b->tags & TAG_LOCOMOTION)) {
+            float rest = alma_need(&A, NEED_REST), ar = A.affect_arousal, val = A.affect_valence;
+            float speed = 1.0f + 0.3f * ar - 0.3f * rest, amp = 1.0f + 0.15f * (val > 0 ? val : 0) + 0.1f * ar - 0.15f * rest;
+            motion_set_variation(speed, amp, alma_rng_u01(&A.rng) < 0.3f);
+        }
     }
-    if (e->option >= 0)
-        motion_play(&b->opt[e->option], A.on_charger, A.servo_active_s_today > alma_budget_s(&A) + 1e-3f);
+    if (own && repertorio_play_own(&A.rng, A.on_charger) == 0) {}   /* uno de los suyos (sin variación extra: la suya) */
+    else if (e->option >= 0)
+        motion_play(&b->opt[e->option], A.on_charger, 0);   /* sin límite diario de patas (dueño, 2026-11-05) */
     else if (e->kind != RUN_REFLEX)
         motion_stop_now();
     if (exec_cb) exec_cb(e);
@@ -235,7 +289,7 @@ static void seq_motion(const char *mot)
     o.n = 1;
     o.hhmm0 = o.hhmm1 = -1;
     snprintf(o.mot[0], sizeof o.mot[0], "%s", mot);
-    motion_play(&o, A.on_charger, A.servo_active_s_today > alma_budget_s(&A) + 1e-3f);
+    motion_play(&o, A.on_charger, 0);
 }
 
 static void on_night(void *user, const alma_day_summary *s)
@@ -391,6 +445,9 @@ static void base_servos(int64_t now)
         return;
     }
     if (base_since < 0) base_since = now;
+    /* bajándose (leave_steps): entre un paso y otro no hay movimiento, y soltarlas ahí dejaba cada paso con las patas
+       flojas; no avanzaba (2026-11-05 16:18: decidió bajarse y se quedó) */
+    if (leave_steps > 0 || leave_check_ms != 0) base_since = now;
     if (now - base_since >= BASE_RELEASE_MS && !motion_active() && !home_active()) {
         motion_release_all();
         if (hal_legs_on()) hal_legs_power(0);
@@ -493,6 +550,7 @@ static void deliver(const alma_ev *e)
     if (e->type == EV_OBSTACLE && !home_active() && !A.policy) vision_obstacle();   /* yendo a la base, lo que tiene enfrente es la base */   /* algo a 10 cm o menos: ¿qué es? (cada 3 min como mucho) */
     /* al servidor: una caricia justo después de un truco bien hecho cuenta como "¡muy bien!" (dueño, 2026-11-02) */
     if (e->type == EV_TOUCH_PET) outbox_event("pet", "");
+    repertorio_event(e->type);   /* ¿le gustó el truco nuevo? */
     alma_event(&A, e, app_now_s());
 #if ALMA_MEM_WRITE_ENABLED
     if (mem_wr) alma_mem_on_event(&MEM, &A, e->type);
@@ -637,6 +695,7 @@ int app_init(const char *catalog_text, alma_catalog *catalog_mem, uint32_t seed)
     rlog_set(1);   /* registro por Wi-Fi prendido las primeras RLOG_BOOT_MS (2026-11-02: se fue sola a la base sin cable y no quedó nada) */
     ota_init();
     backup_init();
+    repertorio_init();
     falls_n = 0;
     k210_init();
     perception_init(perc_emit);
@@ -834,6 +893,22 @@ void app_step(void)
             return;
         }
     }
+    {   /* Home Station por Bluetooth (main/ble_base.c): por ahora solo se anota, para calibrar (dueño, 2026-11-05) */
+        static int64_t ble_log_ms;
+        static int ble_last_chg = -1, ble_said_none;
+        int rssi, chg = A.on_charger + perception_on_usb();
+        int64_t age;
+        int seen = hal_home_ble(&rssi, &age);
+        if (seen && (now - ble_log_ms >= 300000 || chg != ble_last_chg)) {
+            hal_log("ble: Home Station a %d dBm (hace %lld ms); cargador %s", rssi, (long long)age,
+                    !A.on_charger ? "no" : perception_on_usb() ? "USB" : "Home Station");
+            ble_log_ms = now;
+            ble_last_chg = chg;
+        } else if (!seen && !ble_said_none && now > 120000) {
+            ble_said_none = 1;
+            hal_log("ble: en 2 min no oí a la Home Station (o esta variante no tiene Bluetooth)");
+        }
+    }
     base_servos(now);
     if (asleep) { vader_t0 = -1; absent_step(now); return; }
     if (!A.on_charger && !perception_on_usb() && A.soc_pct <= FAINT_PCT) {
@@ -934,6 +1009,8 @@ void app_step(void)
     fiesta_step(now);
     backup_step();
     hunger_step();
+    repertorio_step(now);
+    A.trick_new = repertorio_new_tricks();
     if (show_test_sticker && k210_file_state_get() != K210_FILE_BUSY) {
         if (k210_file_state_get() == K210_FILE_OK) k210_sticker(1);
         show_test_sticker = 0;
@@ -949,6 +1026,13 @@ void app_step(void)
     if (motion_active()) perception_moving(now);
     perception_poll_sensors(&s);   /* los reflejos salen de aquí en el acto */
     alma_near(&A, perception_front_mm(), app_now_s());   /* qué tan cerca le interesa lo decide la red */
+    float ta, tb;
+    if (perception_tilt(&ta, &tb)) alma_tilt(&A, ta, tb, app_now_s());   /* ladeada: la red decide (bhv_settle…) */
+    {   /* la base cerca (red v8): encima −20…−30 dBm, a un par de metros ~−50; con cargador, encima */
+        int rssi;
+        int64_t age;
+        A.base_near = A.on_charger ? 1.0f : hal_home_ble(&rssi, &age) && age < 10000 ? fminf(1.0f, fmaxf(0.0f, (rssi + 75) / 45.0f)) : 0.0f;
+    }
     while (q_n && catchup_left <= 0) {
         alma_ev e = q[q_head];
         q_head = (q_head + 1) % QMAX;
@@ -1038,7 +1122,7 @@ static void test_walk(const char *mot)
     memset(&o, 0, sizeof o);
     o.n = 1;
     snprintf(o.mot[0], sizeof o.mot[0], "%s", mot);
-    motion_result r = motion_play(&o, A.on_charger, A.servo_active_s_today >= alma_budget_s(&A));
+    motion_result r = motion_play(&o, A.on_charger, 0);
     hal_log("marcha de prueba %s: %s", mot, r == MOTION_OK ? "en marcha" : "rechazada (ver arriba)");
 }
 

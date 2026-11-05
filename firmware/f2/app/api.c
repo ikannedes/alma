@@ -15,6 +15,7 @@
 #include "ota.h"
 #include "home.h"
 #include "outbox.h"
+#include "repertorio.h"
 #include "perception.h"
 #include "rlog.h"
 #include "backup.h"
@@ -116,6 +117,7 @@ long api_state(char *out, size_t cap)
     cJSON_AddNumberToObject(j, "care_v", 2);
     cJSON_AddNumberToObject(j, "fiesta_v", 1);   /* sabe recibir caras de festividades (fiesta.c): el servidor solo se las manda así */
     cJSON_AddNumberToObject(j, "ota_v", 1);      /* sabe actualizarse por Wi-Fi (ota.c) */
+    cJSON_AddNumberToObject(j, "rep_v", 1);      /* sabe recibir trucos e inventos (repertorio.c) */
     cJSON_AddNumberToObject(j, "energy", a->care_energy);
     cJSON *ex = cJSON_AddObjectToObject(j, "exercise");
     for (int k = 0; k < EX_COUNT; k++) cJSON_AddNumberToObject(ex, alma_exercise_id(k), (int)a->ex_s[k]);
@@ -248,6 +250,12 @@ long api_link_msg(const char *json, char *out, size_t cap)
         n = snprintf(out, cap, "{\"t\":\"reminder_ack\"}");
     } else if (strcmp(t->valuestring, "voice_result") == 0) { if (!away("voice_result")) voice_result(json); }
     else if (strcmp(t->valuestring, "seen") == 0) { if (!away("seen")) vision_result(json); }
+    else if (strcmp(t->valuestring, "truco") == 0) {   /* trucos que propuso Haiku (repertorio.h, vía 3) */
+        int ok = repertorio_trick_msg(json) == 0;
+        n = snprintf(out, cap, "{\"t\":\"truco_ok\",\"ok\":%s}", ok ? "true" : "false");
+    } else if (strcmp(t->valuestring, "invento") == 0) {   /* respaldo de sus inventos tras reiniciar */
+        repertorio_invent_msg(json);
+    }
     else if (strcmp(t->valuestring, "trick") == 0) {   /* trucos (dueño, 2026-11-01): el servidor decide; aquí se hace */
         const char *why = NULL;
         const cJSON *rq = cJSON_GetObjectItemCaseSensitive(j, "req");

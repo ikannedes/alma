@@ -98,6 +98,43 @@
       "unlock_day": 0
     },
     {
+      "id": "bhv_nap",
+      "category": "rest",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "sleep_breath_1"
+        },
+        {
+          "avi": "sleep_breath_2"
+        },
+        {
+          "avi": "sleep_bubble_1"
+        },
+        {
+          "avi": "sleep_bubble_2"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        1200000,
+        5400000
+      ],
+      "base": 0.0,
+      "need_w": {
+        "rest": 1.5
+      },
+      "mood_fit": {
+        "SM_SLEEPY": 1.5
+      },
+      "requires": [
+        "day_window"
+      ],
+      "cooldown_s": 3600,
+      "unlock_day": 0,
+      "note": "Siesta de día (dueño, 2026-11-04; informe de gatos y perros, H1). Solo la elige la red: base 0 la deja fuera de la fórmula."
+    },
+    {
       "id": "bhv_sleep_cycle",
       "category": "rest",
       "tags": [],
@@ -203,17 +240,71 @@
           "gohome_connect"
         ]
       },
-      "base": 1.0,
+      "base": 0.0,
       "need_w": {
         "rest": 1.5
       },
       "requires": [
         "has_home_station",
-        "battery<=20"
+        "off_charger"
       ],
       "cooldown_s": 600,
       "unlock_day": 0,
-      "note": "Dueño, 2026-10-30: con menos de 20 %. La vuelta la hace home.c (cámara del K210 en el modo 65, giroscopio, de espaldas); el .mot no se usa."
+      "note": "Dueño, 2026-11-05: ir a cargarse lo decide ella (antes, solo con menos de 20 %). La vuelta la hace home.c (cámara del K210 en el modo 65, giroscopio, de espaldas); el .mot no se usa. Base 0: sin la red, la fórmula no la elige y van las reglas de batería del firmware."
+    },
+    {
+      "id": "bhv_leave_base",
+      "category": "explore",
+      "tags": [
+        "locomotion"
+      ],
+      "faces": [
+        {
+          "avi": "image_search",
+          "mp3": "image_search_000"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        6000,
+        9000
+      ],
+      "base": 0.0,
+      "need_w": {
+        "stimulation": 1.5
+      },
+      "requires": [
+        "on_charger"
+      ],
+      "cooldown_s": 300,
+      "unlock_day": 0,
+      "note": "Dueño, 2026-11-05: bajarse de la base lo decide ella (antes, cargada al 90 % y viéndote). Los pasos los da el firmware (app.c, leave_steps); base 0: la fórmula no la elige, solo la red."
+    },
+    {
+      "id": "bhv_photo",
+      "category": "explore",
+      "tags": [],
+      "faces": [
+        {
+          "avi": "image_search",
+          "mp3": "image_search_000"
+        }
+      ],
+      "motion": null,
+      "duration_ms": [
+        4000,
+        6000
+      ],
+      "base": 0.0,
+      "need_w": {
+        "stimulation": 1.5
+      },
+      "requires": [
+        "day_window"
+      ],
+      "cooldown_s": 180,
+      "unlock_day": 0,
+      "note": "Dueño, 2026-11-05: mirar con atención y tomar foto lo decide la red (antes, reglas fijas: algo a 10 cm, o el dueño de frente 5 s). El firmware toma la foto (vision.c) con sus límites: una cada 3 min, nunca de noche. Base 0: la fórmula no la elige; sin la red siguen las reglas de antes."
     },
     {
       "id": "bhv_greet",

@@ -13,6 +13,7 @@
 int motion_s_to_servo[4] = {0, 1, 2, 3};
 /* R10: rango observado por Sn en los 317 .mot (02) */
 static const uint8_t MOT_MIN[4] = {40, 53, 0, 30}, MOT_MAX[4] = {160, 130, 150, 180};
+int motion_angle_ok(int s, int deg) { return s >= 0 && s < 4 && deg >= MOT_MIN[s] && deg <= MOT_MAX[s]; }
 
 static struct {
     int active;
@@ -30,6 +31,13 @@ static struct {
 } P EXT_RAM_BSS_ATTR;
 static float cur[HAL_SERVOS] = {NAN, NAN, NAN, NAN};
 static float tempo_next = 1.0f, tempo = 1.0f;
+/* variación (dueño, 2026-11-05, vía 1): el siguiente motion_play sale más rápido o lento, más amplio o chico, o espejado */
+static float var_speed = 1.0f, var_amp = 1.0f;
+static int var_mirror;
+int motion_vary_on = 1;
+/* movimiento desde la memoria (inventos y trucos): motion_play_frames */
+static const mot_frame *ram_f;
+static int ram_n;
 static int gpio26_locked;
 static int all_released;   /* motion_release_all: los 4 sin pulsos hasta el siguiente comando */
 static uint32_t skipped, gait_frames, gait_stops;
@@ -118,11 +126,44 @@ static int gait_in_range(const mot_frame *f, int *bad_s, int *bad_v)
     return 1;
 }
 
+static uint8_t clamp_s(int s, float v)
+{
+    long r = lroundf(v);
+    return (uint8_t)(r < MOT_MIN[s] ? MOT_MIN[s] : r > MOT_MAX[s] ? MOT_MAX[s] : r);
+}
+
+/* Variación sobre las poses: amplitud alrededor de 90, espejo (S0↔S1 y S2↔S3 con 180 − x, como cliff_L/cliff_R; solo
+   si no hay marcha, porque un giro espejado cambia de sentido) y velocidad (duración / speed, 40–6400 ms). Siempre dentro
+   del rango observado (R10): lo que se sale se recorta */
+static void apply_variation(void)
+{
+    if (var_speed == 1.0f && var_amp == 1.0f && !var_mirror) return;
+    int gait = 0;
+    for (int k = 0; k < P.n; k++) gait |= P.f[k].mode != MOT_MODE_POSE;
+    for (int k = 0; k < P.n; k++) {
+        mot_frame *f = &P.f[k];
+        if (f->mode != MOT_MODE_POSE) continue;
+        float a[4];
+        for (int s = 0; s < 4; s++) a[s] = 90.0f + (f->s[s] - 90.0f) * var_amp;
+        if (var_mirror && !gait) {
+            float m[4] = {180 - a[1], 180 - a[0], 180 - a[3], 180 - a[2]};
+            memcpy(a, m, sizeof a);
+        }
+        for (int s = 0; s < 4; s++) f->s[s] = clamp_s(s, a[s]);
+        long ms = lroundf(f->ms / var_speed);
+        f->ms = (uint16_t)(ms < 40 ? 40 : ms > 6400 ? 6400 : ms);
+    }
+}
+
 static int load_current(void)
 {
     snprintf(P.name, sizeof P.name, "%s", P.opt->mot[P.chain_i]);
-    P.n = motion_load(P.name, P.f, MOTION_MAX_FRAMES);
+    if (ram_f) {
+        P.n = ram_n < MOTION_MAX_FRAMES ? ram_n : MOTION_MAX_FRAMES;
+        memcpy(P.f, ram_f, (size_t)P.n * sizeof *P.f);
+    } else P.n = motion_load(P.name, P.f, MOTION_MAX_FRAMES);
     if (P.n <= 0) { hal_log("motion: no pude leer %s", P.name); return MOTION_REFUSED_FILE; }
+    apply_variation();
     for (int k = 0; k < P.n; k++)
         if (P.f[k].mode == MOT_MODE_POSE)
             for (int s = 0; s < 4; s++)
@@ -149,6 +190,28 @@ static int load_current(void)
     return MOTION_OK;
 }
 
+void motion_set_variation(float speed, float amp, int mirror)
+{
+    if (!motion_vary_on) return;
+    var_speed = speed < 0.5f ? 0.5f : speed > 2.0f ? 2.0f : speed;
+    var_amp = amp < 0.7f ? 0.7f : amp > 1.3f ? 1.3f : amp;
+    var_mirror = mirror;
+}
+
+motion_result motion_play_frames(const char *name, const mot_frame *f, int n, int on_charger)
+{
+    static alma_motion_opt o;
+    memset(&o, 0, sizeof o);
+    o.n = 1;
+    o.hhmm0 = o.hhmm1 = -1;
+    snprintf(o.mot[0], sizeof o.mot[0], "%s", name);
+    ram_f = f;
+    ram_n = n;
+    motion_result r = motion_play(&o, on_charger, 0);
+    ram_f = NULL;   /* ya se copiaron a P.f (load_current) */
+    return r;
+}
+
 motion_result motion_play(const alma_motion_opt *o, int on_charger, int over_budget)
 {
     motion_stop_now();
@@ -166,9 +229,14 @@ motion_result motion_play(const alma_motion_opt *o, int on_charger, int over_bud
     P.opt = o;
     P.chain_i = 0;
     int r = load_current();
+    int varied = var_speed != 1.0f || var_amp != 1.0f || var_mirror;
+    char vtxt[48] = "";
+    if (varied) snprintf(vtxt, sizeof vtxt, " (×%.2f velocidad, ×%.2f amplitud%s)", var_speed, var_amp, var_mirror ? ", espejo" : "");
+    var_speed = var_amp = 1.0f;   /* se gasta en este motion_play */
+    var_mirror = 0;
     if (r) return (motion_result)r;
     P.active = 1;
-    hal_log("motion: %s (%d cuadros)%s", P.name, P.n, o->n > 1 ? " en cadena" : "");
+    hal_log("motion: %s (%d cuadros)%s%s", P.name, P.n, o->n > 1 ? " en cadena" : "", vtxt);
     return MOTION_OK;
 }
 

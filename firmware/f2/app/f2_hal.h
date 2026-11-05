@@ -94,6 +94,9 @@ typedef struct {
     float soc_pct;                               /* batería (02: ADC y unidad PENDIENTE) */
     int on_charger;                              /* GPIO36 > 1.2 V: USB o Home Station (medido 2026-10-30: ~2.5 V; sin nada, 0.14 V) */
     int on_usb;                                  /* con cargador y RX0 en alto: USB (el chip USB-serie tiene corriente); en la Home Station, RX0 = 0 */
+    float tilt_a, tilt_b;                        /* inclinación en grados (sense.c A y B; medido 2026-11-05: A < 0 nariz
+                                                    abajo, A > 0 cara arriba, B < 0 ladeada a su izquierda, B > 0 a su
+                                                    derecha; derecha ±1°) */
     int moved;                                   /* el IMU se movió (más que quieta, menos que sacudida): con las patas sin
                                                     corriente es lo único que avisa que la mueven (dueño, 2026-11-05) */
 } hal_sensors;
@@ -105,6 +108,9 @@ void hal_touch_debug(void);     /* teclas g y G: los 3 pads de toque */
    en alto si tiene corriente); charger = GPIO36 digital. 0 = ok */
 typedef struct { int mv[4]; int rx0, charger; } hal_power_probe_t;
 int  hal_power_probe(hal_power_probe_t *out);
+/* Home Station por Bluetooth (main/ble_base.c): 1 si alguna vez se oyó su anuncio; rssi en dBm y hace cuánto (ms).
+   Sin Bluetooth en la variante, 0 */
+int hal_home_ble(int *rssi, int64_t *age_ms);
 /* Rumbo integrado del giroscopio (grados, eje vertical = Y del IMU, como la gravedad). Deriva: sirve para giros cortos */
 float hal_yaw_deg(void);
 

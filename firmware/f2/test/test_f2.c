@@ -32,6 +32,7 @@
 #include "backup.h"
 #include "body.h"
 #include "uplink.h"
+#include "repertorio.h"
 #include "rlog.h"
 #include "vision.h"
 #include "voice.h"
@@ -137,8 +138,8 @@ static size_t anim(uint8_t *f, size_t cap, const char *avi, const char *mp3, int
 static void test_catalog(void)
 {
     boot_app(K_REPLY_SAM);
-    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 49, "catalog_load de referencia: 49 conductas (con bhv_trick, bhv_nap, bhv_leave_base y bhv_photo)");
-    CHECK(app_catalog()->n == 49 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
+    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 52, "catalog_load de referencia: 52 conductas (con bhv_trick, bhv_nap, bhv_leave_base, bhv_photo, bhv_settle, bhv_invent y bhv_new_trick)");
+    CHECK(app_catalog()->n == 52 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
           "el catálogo cargado con el inventario de la SPIFFS es idéntico byte por byte al del simulador");
     const expr_face *f;
     CHECK(expression_faces(bx("bhv_listen"), &f) == 1 && strcmp(f[0].avi, "listen_and_think") == 0 && f[0].mode == 1,
@@ -2159,7 +2160,7 @@ static void test_voice(void)
     boot_app(K_REPLY_SAM);
     CHECK(run_until_ready(15000), "K210 listo");
     fake_sensors.on_charger = 0;
-    char rep[64], m[4200];
+    static char rep[64], m[UPLINK_MAX + 1];
     api_link_msg("{\"t\":\"welcome\",\"time\":1}", rep, sizeof rep);   /* enlace arriba */
     int t0 = fake_n_tx;
     alma_ev w = {EV_WAKE_WORD, -1, -1, -1, 1, 5, 0, 0};
@@ -2200,7 +2201,7 @@ static void test_voice(void)
         last = strstr(m, "\"last\":1") != NULL;
         chunks++;
     }
-    CHECK(chunks == 14 && last && first_ok, "32000 bytes en 14 trozos de 2400 (base64), el último con last 1 (%d)", chunks);
+    CHECK(chunks == (32000 + VOICE_CHUNK - 1) / VOICE_CHUNK && last && first_ok, "32000 bytes en trozos de VOICE_CHUNK (base64), el último con last 1 (%d)", chunks);
     int e1 = n_ex;
     api_link_msg("{\"t\":\"voice_result\",\"intent\":\"action\",\"action_id\":\"dance\",\"confidence\":0.9,"
                  "\"transcript\":\"baila\"}", rep, sizeof rep);
@@ -2658,7 +2659,7 @@ static void test_vision(void)
     boot_app(K_REPLY_SAM);
     CHECK(run_until_ready(15000), "K210 listo");
     fake_sensors.on_charger = 0;
-    static char rep[64], m[4200];
+    static char rep[64], m[UPLINK_MAX + 1];
     api_link_msg("{\"t\":\"welcome\",\"time\":1}", rep, sizeof rep);
     while (api_link_take(m, sizeof m) > 0) {}
     fake_photo_late = 1;   /* la primera petición llega antes de que la foto esté */
@@ -2727,7 +2728,7 @@ static void test_vision_owner(void)
     boot_app(K_REPLY_SAM);
     CHECK(run_until_ready(15000), "K210 listo");
     fake_sensors.on_charger = 0;
-    static char rep[64], m[4200];
+    static char rep[64], m[UPLINK_MAX + 1];
     api_link_msg("{\"t\":\"welcome\",\"time\":1}", rep, sizeof rep);
     while (api_link_take(m, sizeof m) > 0) {}
     fake_run(60000);
@@ -3313,10 +3314,29 @@ static void test_leave_usb(void)
         fake_run(300);
         CHECK(fake_log_contains("base: decide bajarse") && fake_log_contains("parece USB: primero un paso"), "parece USB: primero un paso");
         if (!cable) { fake_sensors.on_charger = 0; fake_sensors.on_usb = 0; }   /* el paso la saca de la Home Station */
-        fake_run(20000);
+        int offs = fake_legs_offs;
+        fake_run(cable ? 1500 : 6000);
+        CHECK(fake_legs_offs == offs, "bajándose, las patas no se sueltan entre un paso y otro (%d)", fake_legs_offs - offs);
+        fake_run(cable ? 18500 : 14000);
         if (cable) CHECK(fake_log_contains("es el cable USB, se queda"), "con cable: tras un paso sigue cargando y se queda");
         else CHECK(fake_log_contains("era la Home Station, sigue bajando"), "en la Home Station: tras un paso ya no carga y sigue");
     }
+    /* 2026-11-05 16:18: en la Home Station (sin parecer USB) decidió bajarse y entre pasos se soltaban las patas */
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 1;
+    fake_sensors.on_usb = 0;
+    fake_sensors.soc_pct = 100;
+    fake_run(8000);   /* en la base y quieta: patas sueltas */
+    int offs = fake_legs_offs;
+    alma_force((alma_t *)app_alma(), bx("bhv_leave_base"), app_now_s());
+    int on_all = 1;
+    fake_run(500);   /* el primer paso prende las patas */
+    for (int i = 0; i < 55; i++) { fake_run(100); on_all &= fake_legs_on; }   /* 6 s: los tres pasos, sin salir de la base */
+    CHECK(fake_log_contains("base: decide bajarse (100 %)") && fake_log_contains("motion: explore_foward1"), "decide bajarse y da pasos");
+    CHECK(on_all && fake_legs_offs == offs, "en la base, bajándose: las patas no se sueltan entre pasos (%d)", fake_legs_offs - offs);
+    fake_run(8000);
+    CHECK(!fake_legs_on, "terminados los pasos y aún en la base: vuelven a soltarse");
     fake_sensors.on_charger = 0;
     fake_sensors.on_usb = 0;
     fake_sensors.soc_pct = 90;
@@ -3328,6 +3348,160 @@ static void test_leave_usb(void)
     alma_force((alma_t *)app_alma(), bx("bhv_photo"), app_now_s());
     fake_run(300);
     CHECK(fake_log_contains("vista: decide mirar con atención"), "bhv_photo: decide mirar con atención (foto o el motivo de no tomarla)");
+}
+
+/* Variar lo que sabe (vía 1) y moverse con cuadros de la memoria (inventos y trucos) */
+static int var_seen, var_frames;
+static mot_frame var_last;
+static void var_cb(const char *mot, int frame, const mot_frame *f, int executed)
+{
+    (void)mot; (void)frame; (void)executed;
+    var_frames++;
+    var_last = *f;
+    var_seen = 1;
+}
+static void test_variation(void)
+{
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 0;
+    motion_vary_on = 1;
+    mot_frame f[2];
+    memset(f, 0, sizeof f);
+    f[0].mode = f[1].mode = MOT_MODE_POSE;
+    f[0].s[0] = 120; f[0].s[1] = 70; f[0].s[2] = 100; f[0].s[3] = 80; f[0].ms = 400;
+    f[1].s[0] = f[1].s[1] = f[1].s[2] = f[1].s[3] = 90; f[1].ms = 400;
+    motion_set_frame_cb(var_cb);
+    var_frames = 0;
+    motion_set_variation(2.0f, 1.0f, 1);   /* el doble de rápido y espejado */
+    CHECK(motion_play_frames("prueba", f, 2, 0) == MOTION_OK, "cuadros desde la memoria: se reproducen");
+    fake_run(300);
+    CHECK(var_frames >= 1 && var_last.ms == 200 && var_last.s[0] == 180 - 70 && var_last.s[1] == 180 - 120
+          && var_last.s[2] == 180 - 80 && var_last.s[3] == 180 - 100,
+          "variación: ×2 de velocidad (400 → 200 ms) y espejo (S0↔S1, S2↔S3 con 180 − x) (%u ms, %u %u %u %u)",
+          var_last.ms, var_last.s[0], var_last.s[1], var_last.s[2], var_last.s[3]);
+    fake_run(1000);
+    var_frames = 0;
+    CHECK(motion_play_frames("prueba", f, 2, 0) == MOTION_OK, "otra vez");
+    fake_run(500);
+    CHECK(var_last.ms == 400 && var_last.s[0] == 120, "la variación se gasta en un solo movimiento");
+    motion_set_variation(1.0f, 1.3f, 0);
+    f[0].s[0] = 160;
+    motion_play_frames("prueba", f, 2, 0);
+    fake_run(500);
+    CHECK(var_last.s[0] == 160 && var_last.s[1] == 64, "amplitud: 90 + (x − 90)·1.3, recortada al rango observado (160 → 160, 70 → 64)");
+    motion_set_frame_cb(NULL);
+    motion_vary_on = 0;
+    fake_run(1500);
+}
+
+/* Ladeada (dueño, 2026-11-05; calibración en HALLAZGOS): los pies del lado alto sin piso no son borde, y acomodarse va
+   hacia donde hay piso */
+static void floors(int lf, int lr, int rf, int rr)
+{
+    fake_sensors.floor[HAL_FOOT_L][HAL_FLOOR_FRONT] = lf; fake_sensors.floor[HAL_FOOT_L][HAL_FLOOR_REAR] = lr;
+    fake_sensors.floor[HAL_FOOT_R][HAL_FLOOR_FRONT] = rf; fake_sensors.floor[HAL_FOOT_R][HAL_FLOOR_REAR] = rr;
+}
+static void test_tilt(void)
+{
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 0;
+    floors(1, 1, 1, 1);
+    fake_sensors.tilt_a = fake_sensors.tilt_b = 0;
+    fake_run(3000);
+    fake_log_clear();
+    fake_sensors.tilt_a = 14;   /* cara arriba: los de adelante en el aire (medido) */
+    floors(0, 1, 0, 1);
+    fake_run(2000);
+    CHECK(!fake_log_contains("REFLEJO EV_CLIFF") && fake_log_contains("ladeada (A 14°"), "cara arriba: los de adelante sin piso no son borde");
+    CHECK(alma_tilted(app_alma()), "el núcleo la sabe ladeada");
+    fake_log_clear();
+    alma_force((alma_t *)app_alma(), bx("bhv_settle"), app_now_s());
+    fake_run(500);
+    CHECK(fake_log_contains("acomodarse (A 14°, B 0°): explore_back_away1"), "cara arriba: retrocede hacia donde hay piso");
+    fake_run(4000);
+    fake_sensors.tilt_a = 0;
+    fake_sensors.tilt_b = -24;   /* ladeada a su izquierda: el pie derecho en el aire */
+    floors(1, 1, 0, 1);
+    fake_run(21000);   /* bhv_settle tiene 20 s de espera */
+    fake_log_clear();
+    alma_force((alma_t *)app_alma(), bx("bhv_settle"), app_now_s());
+    fake_run(500);
+    CHECK(fake_log_contains("explore_turn_left2 + explore_foward1"), "ladeada a su izquierda: gira a la izquierda y avanza");
+    fake_run(6000);
+    fake_sensors.tilt_b = 40;
+    floors(0, 0, 1, 1);
+    fake_run(21000);
+    fake_log_clear();
+    alma_force((alma_t *)app_alma(), bx("bhv_settle"), app_now_s());
+    fake_run(500);
+    CHECK(fake_log_contains("muy ladeada: no se mueve"), "más de 35°: no se mueve");
+    fake_sensors.tilt_b = 0;
+    fake_sensors.tilt_a = -15;   /* nariz abajo pero sin piso adelante: borde de verdad por el lado bajo */
+    floors(0, 1, 0, 1);
+    fake_log_clear();
+    fake_run(2000);
+    CHECK(fake_log_contains("REFLEJO EV_CLIFF"), "nariz abajo y sin piso adelante (el lado bajo): sí es borde");
+    fake_sensors.tilt_a = 0;
+    floors(1, 1, 1, 1);
+    fake_run(4000);
+}
+
+/* Sus movimientos propios (dueño, 2026-11-05): trucos de Haiku (vía 3) e inventos (vía 2) */
+static void test_repertorio(void)
+{
+    static char rep[256];
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 0;
+    fake_sensors.soc_pct = 90;
+    fake_sensors.tilt_a = fake_sensors.tilt_b = 0;
+    fake_run(2000);
+    outbox_has("");   /* vaciar */
+    mot_frame f[REP_FRAMES];
+    CHECK(repertorio_parse_frames("[{\"pose\":[200,90,90,90],\"ms\":300}]", f, REP_FRAMES) < 0, "un ángulo fuera del rango seguro: no se acepta");
+    CHECK(repertorio_parse_frames("[{\"pose\":[110,70,95,85],\"ms\":300},{\"pose\":[90,90,90,90],\"ms\":300}]", f, REP_FRAMES) == 2,
+          "alma-anim/1 con dos poses: 2 cuadros");
+    const char *t1 = "{\"t\":\"truco\",\"id\":\"t1\",\"nombre\":\"saludo raro\",\"estado\":\"nuevo\","
+                     "\"cuadros\":[{\"pose\":[110,70,95,85],\"ms\":300},{\"pose\":[90,90,90,90],\"ms\":300}]}";
+    api_link_msg(t1, rep, sizeof rep);
+    CHECK(strstr(rep, "\"ok\":true") && repertorio_new_tricks() == 1, "llega un truco nuevo de Haiku");
+    fake_run(500);
+    CHECK(app_alma()->trick_new == 1, "la red lo ve (trick_new)");
+    alma_force((alma_t *)app_alma(), bx("bhv_new_trick"), app_now_s());
+    fake_run(800);
+    CHECK(fake_log_contains("truco: enseña \"saludo raro\" (intento 1)"), "lo enseña");
+    alma_ev pet = {EV_TOUCH_PET, 0, -1, -1, 0, 0, 0, 1500};
+    app_post(&pet);
+    fake_run(500);
+    CHECK(fake_log_contains("truco: \"saludo raro\" → gusta") && repertorio_new_tricks() == 0 && outbox_has("\"res\":\"gusta\""),
+          "la acaricias: se queda en su repertorio y el servidor lo sabe");
+    const char *t2 = "{\"t\":\"truco\",\"id\":\"t2\",\"nombre\":\"vueltita\",\"estado\":\"nuevo\",\"cuadros\":[{\"pose\":[100,80,90,90],\"ms\":300}]}";
+    api_link_msg(t2, rep, sizeof rep);
+    for (int k = 0; k < 3; k++) {
+        fake_run(130 * 1000);   /* más que el cooldown y la ventana de 30 s */
+        alma_force((alma_t *)app_alma(), bx("bhv_new_trick"), app_now_s());
+        fake_run(31 * 1000);
+    }
+    CHECK(fake_log_contains("truco: \"vueltita\" se olvida (tres veces sin reacción)") && repertorio_new_tricks() == 0,
+          "tres veces sin reacción: se olvida");
+    /* invento estable: la inclinación no cambia */
+    int n0 = repertorio_inventions();
+    fake_log_clear();
+    CHECK(repertorio_invent(&((alma_t *)app_alma())->rng, 0) == 0, "inventa");
+    fake_run(6000);
+    CHECK(fake_log_contains("estable: se queda") && repertorio_inventions() == n0 + 1 && outbox_has("\"ev\":\"invento\""),
+          "invento estable: se queda y va al servidor");
+    /* inestable: se ladea a la mitad */
+    fake_log_clear();
+    repertorio_invent(&((alma_t *)app_alma())->rng, 0);
+    fake_run(300);
+    fake_sensors.tilt_b = 25;
+    fake_run(6000);
+    CHECK(fake_log_contains("inestable: se descarta") && repertorio_inventions() == n0 + 1, "invento inestable: se descarta");
+    fake_sensors.tilt_b = 0;
+    fake_run(1000);
 }
 
 /* Desmayo con secuela (dueño, 2026-11-05) y la caricia en el registro */
@@ -3366,6 +3540,7 @@ int main(int argc, char **argv)
     if (argc < 5) { fprintf(stderr, "uso: %s <catalog.json> <storage.bin> <assets_inventory.json> <mot_tool.json>\n", argv[0]); return 2; }
     catalog_path = argv[1];
     inventory_path = argv[3];
+    motion_vary_on = 0;   /* las pruebas comparan cuadro por cuadro con mot_tool; la variación tiene su propia prueba */
     catalog_text = read_text(argv[1]);
     char *mt = read_text(argv[4]);
     motref = mt ? cJSON_Parse(mt) : NULL;
@@ -3426,6 +3601,9 @@ int main(int argc, char **argv)
     test_vader();
     test_ota();
     test_leave_usb();
+    test_variation();
+    test_tilt();
+    test_repertorio();
     test_faint_fw();   /* al final: deja la vuelta a casa "batería baja" recién intentada (HOME_RETRY_MS) */
     printf("%d comprobaciones, %d fallas\n", checks, fails);
     return fails != 0;

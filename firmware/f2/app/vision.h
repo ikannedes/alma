@@ -9,7 +9,8 @@
 #include <stddef.h>
 
 #define VISION_COOLDOWN_S 180      /* dueño: cada 3 minutos como mucho */
-#define VISION_CHUNK      2400     /* bytes de JPEG por mensaje: 3200 en base64, cabe en UPLINK_MAX */
+#define VISION_CHUNK      9000     /* bytes de JPEG por mensaje: 12 000 en base64, cabe en UPLINK_MAX (16 KB, en PSRAM).
+                                      Antes 2400 por la RAM interna (dueño, 2026-11-05: trozos más grandes, llega antes) */
 #define VISION_WAIT_S     30       /* el servidor contesta en este tiempo o se da por perdida */
 #define VISION_OWNER_EVERY_S  1800 /* foto del dueño: cada 30 minutos como mucho */
 #define VISION_OWNER_FACING_S 5    /* de frente este tiempo seguido antes del gesto */

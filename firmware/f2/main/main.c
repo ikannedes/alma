@@ -97,6 +97,10 @@ void app_main(void)
     app_console_help();
 #if ALMA_F2_API
     if (ok) f2_link_start();
+#if ALMA_F2_BLE
+    ble_base_start();   /* después del Wi-Fi: comparten la radio */
+    hal_heap_mark("ble");
+#endif
     hal_heap_mark("enlace");
 #endif
     TickType_t wake = xTaskGetTickCount();

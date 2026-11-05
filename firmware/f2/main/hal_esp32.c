@@ -302,6 +302,9 @@ extern const uint8_t sticker_test_png_end[] asm("_binary_sticker_test_png_end");
 const uint8_t *hal_test_sticker(size_t *n) { *n = (size_t)(sticker_test_png_end - sticker_test_png_start); return sticker_test_png_start; }
 extern const uint8_t alma_brain_almb_start[] asm("_binary_alma_brain_almb_start");
 extern const uint8_t alma_brain_almb_end[] asm("_binary_alma_brain_almb_end");
+#if !ALMA_F2_BLE
+int hal_home_ble(int *rssi, int64_t *age_ms) { (void)rssi; (void)age_ms; return 0; }
+#endif
 const uint8_t *hal_brain_weights(size_t *n) { *n = (size_t)(alma_brain_almb_end - alma_brain_almb_start); return alma_brain_almb_start; }
 
 void hal_k210_resetn_pulse(int low_ms)
@@ -702,6 +705,8 @@ void hal_sensors_read(hal_sensors *out)
     out->lifted = S_imu.pose == SENSE_AIR;
     out->tipped = S_imu.pose == SENSE_TIPPED;
     out->shaken = S_imu.shaken;
+    out->tilt_a = (float)S_imu.A;
+    out->tilt_b = (float)S_imu.B;
     out->moved = S_imu.dev[0] > IMU_MOVED || S_imu.dev[1] > IMU_MOVED || S_imu.dev[2] > IMU_MOVED;
     out->touch_tap = S_touch.taps != taps_seen;
     out->touch_pet = S_touch.pets != pets_seen;

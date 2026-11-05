@@ -623,7 +623,7 @@ static void test_real_catalog(const char *catp, const char *invp)
 {
     static alma_catalog real;
     int n = catalog_load(catp, invp, &real, 0);
-    CHECK(n == 49, "catálogo real: 49 conductas válidas, con bhv_trick, bhv_nap, bhv_leave_base y bhv_photo (%d)", n);
+    CHECK(n == 52, "catálogo real: 52 conductas válidas, con bhv_trick, bhv_nap, bhv_leave_base, bhv_photo, bhv_settle, bhv_invent y bhv_new_trick (%d)", n);
     int g = alma_find(&real, "bhv_greet");
     CHECK(g >= 0 && NEAR(real.b[g].servo_cost_s, 8.0, 1e-3), "servo_cost_s de bhv_greet = 8 s (Good_morning)");
     int e = alma_find(&real, "bhv_enjoy_pet");

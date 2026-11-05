@@ -137,6 +137,8 @@
 #define NEAR_SEEN_MM                  350      /* algo aparece enfrente: más cerca que esto (la red decide si le interesa) */
 #define NEAR_GONE_MM                  450      /* y se va cuando pasa de esto (histéresis) */
 #define NEAR_FAR_MM                   400.0f   /* entrada de la red: 0 a esta distancia o más, 1 pegado */
+#define TILT_MIN_DEG                  8.0f     /* ladeada: más que esto en A o B (derecha mide ±1°, a mano 12–34°) */
+#define TILT_FULL_DEG                 45.0f    /* entrada de la red: ±1 a esta inclinación */
 #define GAME_REACT_MIN_INTEREST       0.25f    /* juegos de la app: con menos interés (habituada) no reacciona */
 #define GAME_JOY_WIN                  0.35f
 #define GAME_FRUST_LOSE               0.25f

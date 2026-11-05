@@ -352,3 +352,58 @@ def night_report(summary: dict, previous: list[dict], assets: list[str]) -> dict
         messages=[{"role": "user", "content": user}],
     )
     return _tool_input(response, "night_report")
+
+
+# --- trucos nuevos (repertorio.py; dueño, 2026-11-05) ------------------------
+
+MOVES_SYSTEM = (
+    "Eres coreógrafo de Alma, una mascota robot de escritorio (cuerpo de EMO): cabeza con pantalla y dos piernas cortas.\n"
+    "Cada noche propones 1 o 2 trucos NUEVOS: movimientos cortos y expresivos que ella intentará mañana; si a su dueño le\n"
+    "gustan (la acaricia o la felicita) se quedan en su repertorio.\n"
+    "El cuerpo tiene 4 servos; 90 es la posición neutra de todos:\n"
+    "- S0 cadera izquierda y S1 cadera derecha: giran cada pierna (40–160 y 53–130).\n"
+    "- S2 pie izquierdo y S3 pie derecho: inclinan el pie y con él todo el cuerpo (usa 65–115; más allá se puede caer).\n"
+    "- Simétrico (como espejo de sí misma): S1 = 180 − S0 y S3 = 180 − S2. Asimétrico: se ladea o gira el cuerpo.\n"
+    "Cada cuadro es una pose {\"pose\":[S0,S1,S2,S3],\"ms\":duración para llegar} (150–1500 ms) o un paso de fábrica\n"
+    "{\"paso\":\"adelante|atras|izquierda|derecha\"} (avanza ~1 cm, retrocede o gira ~44°).\n"
+    "Reglas: de 3 a 10 cuadros; empieza y termina cerca de 90; cambios de pies suaves (≤ 20° por cuadro); que tenga\n"
+    "ritmo o intención (un saludo, un meneo, un 'ta-da', un baile corto). No repitas los que ya tiene.\n"
+    "Inspírate en cómo fue su día (resumen) y en su carácter. Nombre corto en español."
+)
+
+PROPOSE_MOVES_TOOL = {
+    "name": "proponer_trucos",
+    "description": "Trucos nuevos para que Alma los intente mañana.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "trucos": {
+                "type": "array", "minItems": 1, "maxItems": 2,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "nombre": {"type": "string", "description": "corto, en español"},
+                        "por_que": {"type": "string", "description": "por qué este truco, por su día o su carácter"},
+                        "cuadros": {"type": "array", "minItems": 3, "maxItems": 10, "items": {"type": "object"}},
+                    },
+                    "required": ["nombre", "cuadros"],
+                },
+            }
+        },
+        "required": ["trucos"],
+    },
+}
+
+
+def propose_moves(summary: dict, repertorio: dict | None) -> list[dict]:
+    """Propuestas crudas de Haiku; repertorio.add_tricks las valida."""
+    user = json.dumps({"dia": summary, "ya_tiene": repertorio or {}}, ensure_ascii=False)
+    response = client().messages.create(
+        model=MODEL,
+        max_tokens=1200,
+        system=[{"type": "text", "text": MOVES_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        tools=[PROPOSE_MOVES_TOOL],
+        tool_choice={"type": "tool", "name": "proponer_trucos"},
+        messages=[{"role": "user", "content": user}],
+    )
+    return list(_tool_input(response, "proponer_trucos").get("trucos") or [])

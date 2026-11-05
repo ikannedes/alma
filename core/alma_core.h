@@ -77,7 +77,8 @@ typedef enum {
     REQ_ON_CHARGER, REQ_OFF_CHARGER, REQ_RELAXED_FIELD, REQ_BATTERY_GE, REQ_BATTERY_LE,
     REQ_NOT_GREETED_THIS_VISIT, REQ_GREET_INTENSITY_GE, REQ_NOT_WARY_OF_P, REQ_WARY_OF_P,
     REQ_NIGHT_WINDOW, REQ_DAY_WINDOW, REQ_HAS_HOME_STATION,
-    REQ_HUNGRY, REQ_SICK         /* tamagotchi (dueño, 2026-10-30) */
+    REQ_HUNGRY, REQ_SICK,        /* tamagotchi (dueño, 2026-10-30) */
+    REQ_TILTED, REQ_TRICK_NEW    /* 2026-11-05: ladeada (alma_tilt); hay un truco nuevo que enseñar */
 } alma_req_kind;
 
 /* Comida real que el dueño le da desde la app (tamagotchi; dueño, 2026-10-30). Ids de la app: alma_food_id. */
@@ -228,10 +229,12 @@ typedef struct {
 /* ---- la red que decide (alma_brain.c; dueño, 2026-11-04) ----
  * Si hay política, elige la conducta cada segundo y en cada evento en lugar de alma_select, la pausa y la regla 2.
  * Entradas: ALMA_BRAIN_IN números de alma_brain_features; salidas: ALMA_BRAIN_OUT (0 = seguir, el resto conductas). */
-#define ALMA_BRAIN_IN           76
-#define ALMA_BRAIN_OUT          32
-#define ALMA_BRAIN_FEAT_VERSION 4   /* 2: + eventos de este segundo (crítica de la red v2); 3: + desmayo, bajarse de la base;
-                                       4: + algo enfrente, qué tan cerca y última foto (la foto la decide ella) */
+#define ALMA_BRAIN_IN           92
+#define ALMA_BRAIN_OUT          35
+#define ALMA_BRAIN_FEAT_VERSION 5   /* 2: + eventos de este segundo (crítica de la red v2); 3: + desmayo, bajarse de la base;
+                                       4: + algo enfrente, qué tan cerca y última foto (la foto la decide ella);
+                                       5: + el mundo físico: inclinación, sustos, ruido, música, voz y cara con
+                                       dirección, la base cerca, trucos e inventos */
 enum { BFAM_IDLE, BFAM_REST, BFAM_SOCIAL, BFAM_PLAY, BFAM_EXPLORE, BFAM_EMOTION, BFAM_OTHER, BFAM_COUNT };
 /* Índices de las entradas (alma_brain_features las llena en este orden) */
 enum {
@@ -241,7 +244,9 @@ enum {
     BF_INSIST, BF_ARRIVED, BF_FAM0, BF_ACTIVE = BF_FAM0 + BFAM_COUNT, BF_T_CUR, BF_T_IDLE, BF_FAMREC0,
     BF_PLAY_TODAY = BF_FAMREC0 + BFAM_COUNT, BF_ON_CHARGER, BF_SOC, BF_RELAXED, BF_SICK, BF_HUNGER, BF_K_SOCIAL,
     BF_K_INDEP, BF_K_PLAY, BF_K_IMPULSIVE, BF_K_BOLD, BF_K_ENERGY, BF_WELLBEING, BF_NOW_PET, BF_NOW_SCOLD, BF_NOW_PRAISE,
-    BF_NOW_ARRIVED, BF_FAINT, BF_NEAR, BF_CLOSE, BF_PHOTO, BF_COUNT
+    BF_NOW_ARRIVED, BF_FAINT, BF_NEAR, BF_CLOSE, BF_PHOTO,
+    BF_TILT_A, BF_TILT_B, BF_TILT_NOW, BF_LIFTED, BF_SHAKEN, BF_TIPPED, BF_CLIFF, BF_LOUD, BF_MUSIC, BF_TAP, BF_VOICE_X,
+    BF_VOICE_Y, BF_FACE_X, BF_BASE_NEAR, BF_TRICK_NEW, BF_INVENT, BF_COUNT
 };
 
 /* p: probabilidades de las ALMA_BRAIN_OUT salidas, ya con la máscara (las prohibidas en 0). 0 = ok */
@@ -279,6 +284,13 @@ typedef struct {
        cerca le interesa lo decide la red (dueño, 2026-11-05: "con que lo considere cerca"); no se guarda */
     int near_mm;
     double near_t;
+    /* el mundo físico (2026-11-05, red v8): inclinación del IMU en grados (A < 0 nariz abajo, B < 0 ladeada a su
+       izquierda; HALLAZGOS) y cuándo empezó a estar ladeada; dónde estaba la cara (−1 izquierda … 1 derecha de la imagen);
+       de qué sector vino la voz (0–11, 5.5 = de frente); qué tan cerca está la base (0 lejos … 1 encima, por Bluetooth);
+       trucos nuevos por enseñar (los pone el firmware). No se guardan */
+    float tilt_a, tilt_b, face_x, base_near;
+    double tilt_t;
+    int voice_sector, trick_new;
     float food_like[FOOD_COUNT];   /* gustos de nacimiento (−1 … 1), cambian poco a poco */
     int last_food, same_food_streak;
     double starve_acc_s;
@@ -378,6 +390,9 @@ void alma_tick(alma_t *a, double now_s, const alma_sensors *s);
 /* distancia de lo que tiene enfrente en mm (−1 sin lectura), cada vez que el HAL la lee. Si algo aparece a menos de
    NEAR_SEEN_MM, la red decide en ese instante si le interesa (mirarlo, tomarle foto) */
 void alma_near(alma_t *a, int mm, double now_s);
+/* inclinación del IMU (grados; HALLAZGOS): si pasa de TILT_MIN_DEG, la red decide en ese instante (acomodarse, quedarse quieta…) */
+void alma_tilt(alma_t *a, float deg_a, float deg_b, double now_s);
+int  alma_tilted(const alma_t *a);
 int  alma_find(const alma_catalog *cat, const char *id);     /* índice o −1 */
 
 /* Consultas (también usadas por las pruebas) */

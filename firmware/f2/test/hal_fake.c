@@ -118,6 +118,15 @@ const uint8_t *hal_test_avi(size_t *n)
 
 /* la red de verdad (main/alma_brain.almb), leída una vez; fake_brain_off = 1 simula un firmware sin pesos */
 int fake_brain_off = 1;   /* las pruebas de siempre corren con la fórmula; test_brain la prende */
+int fake_ble_rssi = -127;
+int64_t fake_ble_seen_ms = -1;   /* −1 = nunca se oyó la base */
+int hal_home_ble(int *rssi, int64_t *age_ms)
+{
+    if (fake_ble_seen_ms < 0) return 0;
+    if (rssi) *rssi = fake_ble_rssi;
+    if (age_ms) *age_ms = fake_ms - fake_ble_seen_ms;
+    return 1;
+}
 const uint8_t *hal_brain_weights(size_t *n)
 {
     static uint8_t *w;
@@ -260,6 +269,7 @@ void hal_ota_trial_revert(void)
 }
 
 int fake_log_contains(const char *s) { return logbuf && strstr(logbuf, s) != NULL; }
+const char *fake_log_text(void) { return logbuf ? logbuf : ""; }
 int fake_log_count(const char *s)
 {
     int n = 0;
@@ -385,7 +395,7 @@ static void servo_ev(int idx, float deg, char op)
 {
     if (fake_n_servo < FAKE_SERVO_MAX) fake_servo[fake_n_servo++] = (fake_servo_ev){fake_ms, idx, deg, op};
 }
-void hal_servo_set(int idx, float deg) { fake_servo_deg[idx] = deg; servo_ev(idx, deg, 's'); }
+void hal_servo_set(int idx, float deg) { fake_legs_on = 1; fake_servo_deg[idx] = deg; servo_ev(idx, deg, 's'); }   /* como hal_esp32: mover prende las patas */
 void hal_servo_hold_all(void) { servo_ev(-1, 0, 'h'); }
 void hal_servo_release(int idx) { servo_ev(idx, 0, 'r'); }
 void hal_servo_restore(int idx) { servo_ev(idx, fake_servo_deg[idx], 'R'); }

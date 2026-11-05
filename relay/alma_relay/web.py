@@ -18,7 +18,7 @@ import time
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from . import alarms, bgammon_alma, calendar_ics, care, haiku, history, link, night, notify, play, playstrategy, settings, vision, voice
+from . import alarms, bgammon_alma, calendar_ics, care, haiku, history, link, night, notify, play, playstrategy, repertorio, settings, vision, voice
 from . import album, fiestas, mem_backup, milestones, robot_debug, tricks
 
 router = APIRouter()
@@ -597,6 +597,7 @@ async def robot(ws: WebSocket):
     hub.fiesta = None   # la fiesta de hoy se le vuelve a mandar (_fiestas_tick, en menos de 20 s)
     from . import reloj
     rpkg = reloj.RobotPkg()
+    asyncio.create_task(_repertorio_send())   # sus trucos e inventos (repertorio.py), si su firmware los sabe
     if hub.unsent_play:   # lo que jugaste mientras estaba desconectada también cuenta
         add, hub.unsent_play = hub.unsent_play, 0
         await hub.send({"t": "remote_play", "add_s": min(add, 3600)})
@@ -622,6 +623,12 @@ async def robot(ws: WebSocket):
                     hub.ota_ready.set_result(True)
             elif t == "event" and msg.get("ev") == "bateria":   # cada 5 min: a bateria.csv, no a los avisos
                 await asyncio.to_thread(robot_debug.bateria, msg)
+            elif t == "event" and msg.get("ev") in ("invento", "truco_res"):   # sus movimientos propios
+                if msg.get("ev") == "invento":
+                    await asyncio.to_thread(repertorio.on_invention, msg)
+                else:
+                    estado = await asyncio.to_thread(repertorio.on_result, msg)
+                    hub.events.append({"ev": "truco_res", "res": msg.get("res"), "estado": estado, "at": int(time.time())})
             elif t == "event":
                 hub.events.append(msg | {"at": int(time.time())})
                 if msg.get("ev") == "pet":
@@ -744,6 +751,8 @@ async def _night(msg: dict):
             summary["fotos"] = fotos
         if trucos := tricks.today_summary():
             summary["trucos"] = trucos
+        if propios := repertorio.today_summary():
+            summary["movimientos_propios"] = propios
         from . import reloj
         if paseos := reloj.today_summary():
             summary["reloj"] = paseos
@@ -767,9 +776,35 @@ async def _night(msg: dict):
         result = night.apply_limits(raw, msg.get("assets") or [])
         history.add(summary, result)
         await hub.send({"t": "night_result"} | result)
+        asyncio.create_task(_new_moves(summary))
     except Exception as e:
         history.add(summary, None)
         await hub.send({"t": "night_result", "error": f"{type(e).__name__}"})
+
+
+async def _repertorio_send():
+    """Al conectar: sus trucos (nuevos y aprendidos) e inventos, para que no los pierda al reiniciar."""
+    await asyncio.sleep(5)   # que llegue su primer estado (rep_v)
+    if not hub.ws or not hub.state.get("rep_v"):
+        return
+    for m in await asyncio.to_thread(repertorio.mensajes_robot):
+        if not await hub.send(m):
+            return
+
+
+async def _new_moves(summary: dict):
+    """Después del pase nocturno, Haiku propone 1–2 trucos nuevos (vía 3); como mucho 3 sin enseñar a la vez."""
+    try:
+        if await asyncio.to_thread(repertorio.pending_count) >= 3:
+            return
+        props = await asyncio.to_thread(haiku.propose_moves, summary, repertorio.today_summary())
+        nuevos = await asyncio.to_thread(repertorio.add_tricks, props)
+        print(f"[alma-relay] trucos nuevos de Haiku: {[t['nombre'] for t in nuevos]} ({len(props)} propuestos)", flush=True)
+        if hub.ws and hub.state.get("rep_v"):
+            for t in nuevos:
+                await hub.send({"t": "truco", "id": t["id"], "nombre": t["nombre"], "estado": "nuevo", "cuadros": t["cuadros"]})
+    except Exception as e:
+        print(f"[alma-relay] trucos nuevos: {type(e).__name__}", flush=True)
 
 
 async def _voice(clip: "voice.Clip"):

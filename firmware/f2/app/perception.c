@@ -2,6 +2,7 @@
 
 #include "home.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -298,6 +299,7 @@ void perception_on_frame(void *user, k210_rx_kind kind, const uint8_t *p, size_t
         if (p[2] == 0x0B && p[3] == 0) return;   /* 0B 00 = fin de la escucha, no otra palabra de activación (hal_k210) */
         if (table[i].action == PERC_EVENT) {
             alma_ev e = {table[i].ev, -1, -1, -1, p[3], p[4], p[5], 0};
+            if (p[2] == 0x0B) e.value = (float)(p[4] % 12 + 1);   /* sector de la voz (d1, 0–11) + 1 para el núcleo */
             hal_log("perception: %02x → evento %d (%s, %s)", p[2], (int)table[i].ev, table[i].what, table[i].status);
             emit(&e);
         }
@@ -341,12 +343,33 @@ static int edges(const hal_sensors *s)   /* bit 0 = borde adelante, bit 1 = bord
     return gait_dir > 0 ? mask & 1 : gait_dir < 0 ? mask & 2 : mask;
 }
 
+/* Ladeada, los sensores del lado alto quedan en el aire y parecen borde (medido 2026-11-05: cara arriba → "borde adelante";
+   ladeada a su izquierda → el pie derecho sin piso). Si todo lo que falta está del lado alto, es la inclinación, no un
+   borde. Si falta del lado bajo (se está yendo de boca por una orilla), sí es borde */
+#define TILT_EDGE_DEG 8.0f
+static int tilt_explains(const hal_sensors *s)
+{
+    int any = 0;
+    for (int f = 0; f < 2; f++)
+        for (int p = 0; p < 2; p++) {
+            if (s->floor[f][p] != 0) continue;
+            any = 1;
+            int high = (p == HAL_FLOOR_FRONT && s->tilt_a > TILT_EDGE_DEG) || (p == HAL_FLOOR_REAR && s->tilt_a < -TILT_EDGE_DEG)
+                       || (f == HAL_FOOT_R && s->tilt_b < -TILT_EDGE_DEG) || (f == HAL_FOOT_L && s->tilt_b > TILT_EDGE_DEG);
+            if (!high) return 0;
+        }
+    return any;
+}
+int perception_tilt(float *a, float *b) { if (a) *a = last.tilt_a; if (b) *b = last.tilt_b; return have_last; }
+
 /* adelante: un borde, o algo a menos de FRONT_STOP_MM en el sensor de distancia (2026-10-30) */
 #define FRONT_STOP_MM 60
 static int front_mm = -1;
 static int leaving_base;   /* bajándose de la base: su orilla de enfrente no frena los pasos (dueño, 2026-11-02) */
 void perception_leaving_base(int on) { leaving_base = on; }
-int perception_forward_blocked(void) { return ((edge_now & 1) && !leaving_base) || (front_mm >= 0 && front_mm < FRONT_STOP_MM); }
+/* muy ladeada (≥ 35°, dueño, 2026-11-05): no camina para ningún lado; se puede ir de lado */
+static int too_tilted(void) { return have_last && (fabsf(last.tilt_a) >= 35.0f || fabsf(last.tilt_b) >= 35.0f); }
+int perception_forward_blocked(void) { return ((edge_now & 1) && !leaving_base) || (front_mm >= 0 && front_mm < FRONT_STOP_MM) || too_tilted(); }
 int perception_front_mm(void) { return front_mm; }
 
 void perception_hold_edges(int64_t until_ms)
@@ -369,7 +392,7 @@ static void post_edge(int e, const char *why)
 int perception_edges_now(void) { return edge_now; }
 /* subiendo de espaldas a la base (medido 2026-11-02 sin el USB): la rampa se lee como borde atrás y cada paso se frenaba
    en el cuadro 2; los 14 intentos se quedaban en el sitio. Ahí atrás no frena */
-int perception_backward_blocked(void) { return (edge_now & 2) != 0 && home_get() != HOME_DOCK; }
+int perception_backward_blocked(void) { return ((edge_now & 2) != 0 && home_get() != HOME_DOCK) || too_tilted(); }
 
 void perception_poll_sensors(alma_sensors *for_tick)
 {
@@ -402,6 +425,11 @@ void perception_poll_sensors(alma_sensors *for_tick)
     if (s.soc_pct <= BATTERY_LOW_PCT && !low_sent) { low_sent = 1; post(EV_BATTERY_LOW, s.soc_pct); }
     if (s.soc_pct > BATTERY_LOW_PCT + 10) low_sent = 0;
     int e = edges(&s);
+    if (e && gait_dir == 0 && tilt_explains(&s)) {
+        static int64_t said = -1000000;
+        if (hal_now_ms() - said > 10000) { hal_log("perception: ladeada (A %.0f°, B %.0f°): el lado alto sin piso no es borde", s.tilt_a, s.tilt_b); said = hal_now_ms(); }
+        e = 0;
+    }
     if (hal_now_ms() < edge_hold_until) {
         /* en un movimiento de reflejo o en la espera de después: no se avisa (los bordes siguen frenando la marcha) */
     } else if (edge_recheck) {

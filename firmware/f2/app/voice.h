@@ -4,7 +4,7 @@
 #pragma once
 #include <stddef.h>
 
-#define VOICE_CHUNK 2400          /* bytes de PCM por mensaje: 3200 en base64, cabe en UPLINK_MAX */
+#define VOICE_CHUNK 9000          /* bytes de PCM por mensaje (~280 ms): 12 000 en base64, cabe en UPLINK_MAX. Antes 2400 */
 #define VOICE_MIN_CONF 0.6f       /* 07: menos que esto es EV_VOICE_FAILED */
 
 void voice_init(void);

@@ -160,7 +160,12 @@ typedef struct {
     struct { double t; alma_ev ev; } q[MAX_Q]; int nq;
     /* dueño fuera y regreso (métricas) */
     double away_since;
-    int was_present, arrival_pending, charge_hold;
+    int was_present, arrival_pending;
+    /* base y batería (dueño, 2026-11-05): ella decide ir a cargarse y bajarse; el dueño solo la mueve al cambiar de bloque
+       y la levanta si está desmayada */
+    int prev_en_base, fainted;
+    int near_mm; double near_until;   /* lo que tiene enfrente (sensor de distancia) */
+    double dock_t;             /* llega a la base al terminar bhv_go_home (si no falla) */
 } world;
 
 static float u01(world *w) { return alma_rng_u01(&w->rng); }
@@ -251,7 +256,7 @@ static const seg *seg_at(world *w, double t)
 enum {   /* el orden de ALMA_BRAIN_OUT_ID */
     O_SEGUIR, O_BLINK, O_LOOK, O_DOZE, O_NAP, O_GO_REST, O_GO_HOME, O_GREET, O_FOLLOW, O_ENJOY, O_SEEK, O_ASK, O_INVEST,
     O_SHY, O_BABBLE, O_ASK_FOOD, O_BOW, O_SOLO, O_DANCE, O_CHASE, O_WIGGLE, O_ROUTINE, O_ACTIVITY, O_IMITATE, O_SING,
-    O_EXPLORE, O_INSPECT, O_SULK, O_YAWN, O_SICK, O_N
+    O_EXPLORE, O_INSPECT, O_SULK, O_YAWN, O_SICK, O_LEAVE, O_PHOTO, O_N
 };
 
 static double secs(float rec, double tau) { return rec > 1e-6f ? -tau * log(rec) : 1e9; }
@@ -315,7 +320,31 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     if (rested) w[O_NAP] *= 0.2f, w[O_DOZE] *= 0.4f;
     if (!present && alone_min < 15) w[O_NAP] *= 0.1f, w[O_DOZE] *= 0.3f, w[O_LOOK] += 1.0f;   /* S1: recién se fue, aún atenta */
     w[O_GO_REST] = E < 0.25f ? 1.0f : 0;   /* "buenas noches" solo muy cansada (crítica de la red) */
-    w[O_GO_HOME] = 30.0f;   /* solo existe con la batería baja */
+    /* batería y base (dueño, 2026-11-05: lo decide ella; si no va, se desmaya). Como un animal con hambre: con poca
+       batería ir a cargarse gana, pero jugando con el dueño la impulsiva lo deja para después. Tras un desmayo es
+       precavida unos días (BF_FAINT sube los umbrales) */
+    float bat = x[BF_SOC], caut = x[BF_FAINT];
+    float low = 0.25f + 0.25f * caut;
+    float gh = bat < 0.12f ? 40.0f : bat < low ? 2.0f + 6.0f * (low - bat) / (low - 0.12f)
+             : bat < 0.5f + 0.2f * caut ? 1.2f * tired * tired + (mood == SM_SLEEPY ? 0.4f : 0) : 0.05f * tired;
+    if (present && (facing || session) && bat >= 0.12f) gh *= 0.25f + 0.75f * (1.0f - imp) * (1.0f - 0.5f * ply);
+    w[O_GO_HOME] = gh;
+    /* bajarse de la base: cargada y de día; con el dueño enfrente va hacia él, sola sale a explorar si está aburrida */
+    float full = 0.85f + 0.1f * caut;
+    float lv = 0;
+    if (!night && bat >= full - 0.25f && E > 0.35f) {
+        lv = present ? (facing ? 2.0f * (0.5f + soc) : 0.5f) : (0.2f + 0.5f * ind) * (mood == SM_BORED ? 2.0f : 1.0f) * (0.5f + x[BF_NEED_STIM]);
+        if (bat < full) lv *= 0.25f;
+    }
+    w[O_LEAVE] = lv;
+    /* mirar con atención y tomar foto (dueño, 2026-11-05: lo decide ella). Curiosidad: algo que se le acercó, una cara
+       desconocida, el dueño de frente un rato; casi nunca cansada, asustada, enojada o jugando; la última foto la sacia */
+    float near = x[BF_NEAR], last_ph = x[BF_PHOTO], bold = x[BF_K_BOLD];
+    float ph = (near > 0.6f ? 25.0f * (0.4f + bold) * (0.4f + 0.6f * x[BF_CLOSE]) : 0) + (unknown ? 1.5f * bold : 0)
+               + (present && facing ? 0.25f * (0.3f + soc) * (0.5f + x[BF_NEED_STIM]) : 0) + (!present ? 0.03f * x[BF_NEED_STIM] : 0);
+    if (E < 0.3f) ph *= 0.2f;
+    if (session) ph *= 0.2f;
+    w[O_PHOTO] = ph * (1.0f - 0.7f * last_ph);
     /* social (E2–E4): quién empieza el contacto lo decide la independencia */
     float init = fmaxf(0.03f, 0.2f + 1.2f * soc - 0.9f * ind);
     float drive = (float)fmin(1.0, d_contact / 900.0) * (0.5f + need_soc);
@@ -379,10 +408,15 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
         w[O_DOZE] *= 0.2f; w[O_NAP] *= 0.1f; w[O_EXPLORE] *= 0.3f;
         for (int k = O_BOW; k <= O_SING; k++) if (k != O_WIGGLE) w[k] *= 0.5f;
     }
+    if (x[BF_NEAR] > 0.86f && !pet_now) {      /* algo apareció enfrente: lo primero es mirarlo (o fotografiarlo) */
+        for (int k = 1; k < O_N; k++) if (k != O_PHOTO && k != O_LOOK && k != O_INSPECT && k != O_SHY) w[k] *= 0.3f;
+    }
     if (pet_now) {                             /* C1: la caricia se responde con la caricia */
         for (int k = 1; k < O_N; k++)
             if (k != O_ENJOY && k != O_WIGGLE && k != O_FOLLOW && k != O_BLINK && k != O_LOOK
                 && !(satur && (k == O_EXPLORE || k == O_SOLO))) w[k] *= 0.05f;
+        /* dueño, 2026-11-05: "a veces reacciona a veces no"; mirar o parpadear no se notan como respuesta */
+        if (!satur) w[O_LOOK] *= 0.3f, w[O_BLINK] *= 0.3f;
     }
     if (back < 1) {                            /* N2: recuperación; al volver, primero lo mira */
         for (int k = O_GREET; k <= O_BABBLE; k++) if (k != O_SHY && k != O_FOLLOW) w[k] *= back;
@@ -393,6 +427,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     }
     if (fear > 0.5f) {       /* F1: quieta y observando */
         for (int k = O_BOW; k <= O_SING; k++) w[k] *= 0.1f;
+        w[O_PHOTO] *= 0.2f;
         w[O_EXPLORE] *= 0.1f; w[O_ASK] *= 0.3f; w[O_FOLLOW] *= 0.3f;
         w[O_LOOK] *= 2.0f; w[O_BLINK] *= 2.0f; w[O_DOZE] = 0; w[O_NAP] = 0;
     }
@@ -405,7 +440,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
        existen con su condición (batería baja, ventana, hambre, caras) no */
     float tot = 0, blocked = 0;
     for (int k = 1; k < O_N; k++) {
-        int cond = k == O_GO_HOME || k == O_INSPECT || k == O_ASK_FOOD || k == O_SICK || k == O_ENJOY || k == O_WIGGLE
+        int cond = k == O_GO_HOME || k == O_LEAVE || k == O_PHOTO || k == O_INSPECT || k == O_ASK_FOOD || k == O_SICK || k == O_ENJOY || k == O_WIGGLE
                    || k == O_GREET || k == O_INVEST || k == O_SHY || k == O_SEEK;
         if (!mask[k]) { if (!cond) blocked += w[k]; w[k] = 0; }
         tot += w[k];
@@ -439,7 +474,8 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
     /* ¿cambia ahora? (D: inercia) */
     double h;
     int arrival = present && d_arr < 1.5 && !greeted && g >= 0.15f;
-    int ev_now = pet_now || d_praise < 1.5 || d_scold < 1.5 || arrival || d_contact < 1.5 || (d_scold < 30 && mask[O_SULK]);
+    int near_now = x[BF_NEAR] > 0.86f;   /* algo se le acercó en los últimos ~1.5 s */
+    int ev_now = pet_now || d_praise < 1.5 || d_scold < 1.5 || arrival || d_contact < 1.5 || (d_scold < 30 && mask[O_SULK]) || near_now;
     if (active) {            /* solo quieta, dormitando o en siesta: la saca algo fuerte */
         int nap = fam == BFAM_REST;
         h = nap ? (t_cur < 1200 ? 0.0 : 0.0006) : 0.01;   /* la siesta dura (mediana ~40 min) */
@@ -447,6 +483,7 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
         else if (d_scold < 1.5) h = 0.7;
         else if (arrival) h = nap ? 0.35 + 0.4 * soc * g : 0.8;
         else if (d_contact < 1.5 || d_praise < 1.5) h = nap ? 0.2 : 0.6;
+        else if (near_now) h = nap ? 0.3 : 0.7;
         else if (fear > 0.5f) h = 0.3;
     } else {
         double mean = present ? 50.0 : alone_min > 30 ? 160.0 : 100.0;
@@ -462,6 +499,9 @@ static int teacher(void *user, const float *x, const unsigned char *mask, float 
 
     if (tot <= 0) { p[0] = 1; return 0; }
     if (scold_fresh) h = 0.9;
+    /* con poca batería, ni la siesta la detiene: se despierta a cargarse (casi vacía, en ~20 s) */
+    if (mask[O_GO_HOME] && bat < 0.12f && !(present && session && imp > 0.7f)) h = fmax(h, 0.05);
+    else if (mask[O_GO_HOME] && bat < low) h = fmax(h, 0.004);
     float share = ev_now ? 1.0f : tot / (tot + blocked);   /* a un evento sí se responde con lo que haya */
     p[0] = (float)(1.0 - h * share);
     for (int k = 1; k < O_N; k++) p[k] = (float)(h * share) * w[k] / tot;
@@ -531,6 +571,9 @@ typedef struct {
     long by_b[ALMA_MAX_BEHAVIORS];
     double pres_sleep[4];
     double mask_ok[ALMA_BRAIN_OUT], mask_n, off_base;   /* con el dueño cerca: noche, descanso por cansancio, descanso por casa vacía, siesta */
+    long faints, go_home, leave_base; double go_home_soc, fainted_s, off_base_s, leave_soc;
+    long photos, photos_near, nears;   /* fotos que decidió; cuántas en los 10 s tras algo cerca; cuántas veces algo cerca */
+    long pets, pets_reacted;   /* caricias con ella despierta y cuántas respondió en 6 s (disfrutar, alegrarse) */
 } metrics;
 
 typedef struct {
@@ -541,6 +584,7 @@ typedef struct {
     double scold_t[8]; int nscold;
     double arr_t; int arr_bin, arr_open;
     int alma_ix_nap;
+    double pet_t, near_t;
 } hooks_ctx;
 
 static int act_of(const alma_t *a)
@@ -593,6 +637,11 @@ static void on_exec(void *user, const alma_exec_info *e)
             if (a->independence >= 0.6f) h->m->asks_hi++;
             else if (a->independence <= 0.4f) h->m->asks_lo++;
         }
+        if (!strcmp(b->id, "bhv_photo")) { h->m->photos++; if (e->t_start - h->near_t <= 10) h->m->photos_near++; }
+        if (e->t_start - h->pet_t <= 6 && (!strcmp(b->id, "bhv_enjoy_pet") || !strcmp(b->id, "bhv_happy_wiggle"))) {
+            h->m->pets_reacted++;
+            h->pet_t = -1e9;
+        }
         if (h->arr_open && !strcmp(b->id, "bhv_greet") && e->t_start - h->arr_t <= 60) { h->m->arr_greet[h->arr_bin]++; h->arr_open = 0; }
     }
     /* el dueño responde a lo que pide (responde_p), si la está viendo */
@@ -602,7 +651,15 @@ static void on_exec(void *user, const alma_exec_info *e)
         w->last_resp_t = e->t_start;
         push(w, e->t_start + urange(w, 1.0f, fminf(e->planned_s, 8.0f) + 2.0f), u01(w) < 0.6f ? EV_TOUCH_PET : EV_PRAISE, 1, -1, 1500);
     }
-    if (!strcmp(b->id, "bhv_go_home")) w->charge_hold = 1;   /* llega a la base y ahí se queda hasta cargar */
+    if (!strcmp(b->id, "bhv_go_home")) {   /* llega al terminar; 1 de cada 8 no atina (home.c) */
+        h->m->go_home++, h->m->go_home_soc += w->soc;
+        w->dock_t = u01(w) < 0.875f ? e->t_start + e->planned_s : 0;
+    }
+    if (!strcmp(b->id, "bhv_leave_base") && w->on_charger) {
+        h->m->leave_base++, h->m->leave_soc += w->soc;
+        w->on_charger = 0;
+        push(w, e->t_start + 1.0, EV_CHARGING_OFF, -1, -1, 0);
+    }
     if (h->log) {
         char ts[32];
         hhmmss(e->t_start, ts);
@@ -645,19 +702,37 @@ static void world_second(world *w, hooks_ctx *h)
     int near = s->who == W_CERCA || s->who == W_JUEGO;
     const blk *k = s->k;
 
-    /* base: la que diga el bloque; con batería baja y el dueño cerca, a la base */
-    if (w->soc <= 20.0f && (near || w->on_charger)) w->charge_hold = 1;   /* se quedó sin batería: a la base hasta el 80 % */
-    if (w->soc >= 80.0f) w->charge_hold = 0;
-    int want_on = s->en_base || w->charge_hold || w->soc <= 3.0f;
-    if (want_on != w->on_charger && !w->lifted) {
-        w->on_charger = want_on;
-        push(w, t, want_on ? EV_CHARGING_ON : EV_CHARGING_OFF, -1, -1, 0);
+    /* base (dueño, 2026-11-05): ir y bajarse lo decide ella. El dueño la pone o la quita solo al cambiar de bloque
+       ("en_base" del escenario), y de noche el firmware la lleva si se quedó descansando fuera (app.c, hora de dormir) */
+    int dock = 0, undock = 0;
+    if (s->en_base != w->prev_en_base && !w->fainted) { if (s->en_base) dock = 1; else if (near) undock = 1; }
+    w->prev_en_base = s->en_base;
+    if (w->dock_t > 0 && t >= w->dock_t) { w->dock_t = 0; dock = 1; }
+    if (!w->fainted && !w->on_charger && alma_in_night_window(a, t) && a->state == ST_RESTING && fmod(t, 180.0) < 1.0
+        && u01(w) < 0.875f) dock = 1;
+    /* desmayada: el dueño la encuentra (cerca en ~5 min; en casa en ~30) y la pone a cargar; revive al instante */
+    int home_now = s->who != W_FUERA;
+    if (w->fainted && home_now && u01(w) < (near ? 1.0f / 300 : 1.0f / 1800)) {
+        w->fainted = 0;
+        dock = 1;
+        a->state = ST_AWAKE;   /* revive como al arrancar */
     }
+    if (dock && !w->on_charger && !w->lifted) { w->on_charger = 1; push(w, t, EV_CHARGING_ON, -1, -1, 0); }
+    if (undock && w->on_charger && !w->lifted) { w->on_charger = 0; push(w, t, EV_CHARGING_OFF, -1, -1, 0); }
     if (w->on_charger) w->soc = fminf(100.0f, w->soc + 100.0f / (2.5f * 3600.0f));
-    else {
+    else if (!w->fainted) {
         float drain = a->state == ST_PERFORMING && a->cur.motion_played ? 1.5f : (a->state == ST_RESTING || a->state == ST_SLEEPING ? 8.0f : 3.0f);
         w->soc = fmaxf(0.0f, w->soc - 100.0f / (drain * 3600.0f));
+        if (w->soc <= 0.5f) {   /* se acabó: se desmaya (firmware: guarda la memoria y se apaga) */
+            w->fainted = 1;
+            h->m->faints++;
+            alma_faint(a, t);
+            if (a->cur.active) alma_finish(a, t, 0);
+            if (h->log) { char ts[32]; hhmmss(t, ts); fprintf(h->log, "%s  [%s]  ✝ se desmayó sin batería\n", ts, W_NAME[s->who]); }
+        }
     }
+    if (w->fainted) { h->m->fainted_s += 1; return; }   /* apagada: el núcleo no corre */
+    if (!w->on_charger) h->m->off_base_s += 1;
     if (w->soc <= 20.0f && !w->low_sent) { w->low_sent = 1; push(w, t, EV_BATTERY_LOW, -1, -1, w->soc); }
     if (w->soc > 30.0f) w->low_sent = 0;
 
@@ -732,7 +807,14 @@ static void world_second(world *w, hooks_ctx *h)
             push(w, t, EV_PICKED_UP, 1, -1, 0);
             push(w, t + urange(w, 5, 20), EV_PUT_DOWN, -1, -1, 0);
         }
-        if (s->who == W_JUEGO && u01(w) < 0.1f / 60.0f) push(w, t, EV_OBSTACLE, -1, -1, urange(w, 50, 200));
+        if (s->who == W_JUEGO && u01(w) < 0.1f / 60.0f) {
+            float mm = urange(w, 50, 200);
+            push(w, t, EV_OBSTACLE, -1, -1, mm);
+            w->near_mm = (int)mm, w->near_until = t + urange(w, 2, 10), h->m->nears++, h->near_t = t;
+        }
+        /* el dueño le pone algo enfrente (la mano, una taza, el celular), a 4–35 cm: ~1 cada 20 min cerca de ella */
+        if (s->who == W_CERCA && t >= w->near_until && u01(w) < 1.0f / 1200.0f)
+            w->near_mm = (int)urange(w, 40, 340), w->near_until = t + urange(w, 5, 60), h->m->nears++, h->near_t = t;
     }
     for (int i = 0; i < w->nloud; i++)
         if (w->loud[i] >= t && w->loud[i] < t + 1) push(w, t, EV_LOUD_SOUND, -1, -1, 0);
@@ -741,6 +823,7 @@ static void world_second(world *w, hooks_ctx *h)
         if (w->q[i].t <= t) {
             alma_ev e = w->q[i].ev;
             if (e.type == EV_PUT_DOWN) w->lifted = 0;
+            if (e.type == EV_TOUCH_PET && a->state != ST_SLEEPING) h->m->pets++, h->pet_t = t;
             w->q[i] = w->q[--w->nq];
             if (h->log && EVN(e.type)) {
                 char ts[32];
@@ -750,6 +833,11 @@ static void world_second(world *w, hooks_ctx *h)
             alma_event(a, &e, t);
         } else i++;
     }
+    /* sola y despierta fuera de la base, a veces queda frente a un mueble o una pared (~1 cada 4 h) */
+    if (!present && !w->on_charger && a->state == ST_AWAKE && t >= w->near_until && u01(w) < 1.0f / 14400.0f)
+        w->near_mm = (int)urange(w, 60, 300), w->near_until = t + urange(w, 5, 30), h->m->nears++, h->near_t = t;
+    if (t >= w->near_until) w->near_mm = 900;   /* nada cerca: el fondo de la mesa o el cuarto */
+    alma_near(a, w->near_mm, t);
     alma_sensors sens = {w->soc, w->on_charger};
     alma_tick(a, t, &sens);
 
@@ -805,7 +893,7 @@ static void run(const alma_catalog *cat, int sc_ix, uint32_t seed, int days, alm
     w.t0 = 10 * DAY;
     int wd0 = (int)(u01(&w) * 7);
     plan(&w, days, wd0);
-    hooks_ctx h = {&w, m, log, {-1, -1, -1}, {0}, {0}, 0, 0, 0, 0, alma_find(cat, "bhv_nap")};
+    hooks_ctx h = {&w, m, log, {-1, -1, -1}, {0}, {0}, 0, 0, 0, 0, alma_find(cat, "bhv_nap"), -1e9, -1e9};
     alma_hooks hooks = {on_exec, NULL, &h, NULL, on_brain};
     alma_init(&w.alma, cat, seed, w.t0, hooks);
     alma_t *a = &w.alma;
@@ -818,7 +906,10 @@ static void run(const alma_catalog *cat, int sc_ix, uint32_t seed, int days, alm
     a->independence = spread ? u01(&w) : 0.5f + 0.3f * (u01(&w) - 0.5f);
     a->age_days = 30 + (int)(u01(&w) * 200);   /* todo desbloqueado */
     a->soc_pct = w.soc = 60 + 40 * u01(&w);
+    /* casi nunca se desmaya: 15 % de las corridas empiezan con un desmayo de hace 0–4 días, para que la red vea la secuela */
+    if (u01(&w) < 0.15f) a->faint_s = w.t0 - urange(&w, 0, 4 * DAY);
     w.on_charger = 1;
+    w.prev_en_base = 1;
     w.away_since = w.t0 - 8 * HR;
     if (pol) {
         if (rc) { rc->inner = pol; rc->inner_user = pol_user; rc->w = &w; rc->scen_ix = (unsigned short)sc_ix; alma_brain_set_policy(a, rec_policy, rc); }
@@ -854,6 +945,13 @@ static void write_metrics(const metrics *m, const char *path, const char *pol)
     fprintf(f, "  \"siestas_por_dia\": %.2f,\n  \"siesta_min_media\": %.1f,\n", m->naps / m->days, m->naps ? m->nap_s / m->naps / 60.0 : 0);
     fprintf(f, "  \"pide_atencion_por_hora_con_dueno\": {\"independiente>=0.6\": %.2f, \"independiente<=0.4\": %.2f},\n",
             m->asks_hi / (m->pres_hi_s / HR + 1e-9), m->asks_lo / (m->pres_lo_s / HR + 1e-9));
+    fprintf(f, "  \"bateria\": {\"desmayos_por_semana\": %.2f, \"horas_desmayada_por_semana\": %.2f, \"va_a_cargarse_por_dia\": %.2f, "
+               "\"bateria_media_al_ir\": %.1f, \"se_baja_por_dia\": %.2f, \"bateria_media_al_bajarse\": %.1f, \"fuera_de_la_base\": %.3f},\n",
+            7 * m->faints / m->days, 7 * m->fainted_s / HR / m->days, m->go_home / m->days, m->go_home ? m->go_home_soc / m->go_home : 0,
+            m->leave_base / m->days, m->leave_base ? m->leave_soc / m->leave_base : 0, m->off_base_s / (m->days * DAY));
+    fprintf(f, "  \"fotos\": {\"por_dia\": %.2f, \"algo_enfrente_por_dia\": %.2f, \"fotos_tras_algo_enfrente\": %.2f},\n", m->photos / m->days,
+            m->nears / m->days, m->nears ? (double)m->photos_near / m->nears : 0);
+    fprintf(f, "  \"caricias_respondidas_6s\": [%ld, %.2f],\n", m->pets, m->pets ? (double)m->pets_reacted / m->pets : 0);
     fprintf(f, "  \"conductas\": {");
     int first = 1;
     for (int b = 0; b < ALMA_MAX_BEHAVIORS; b++)
@@ -925,7 +1023,7 @@ int main(int argc, char **argv)
     FILE *log = fopen(path, "w");
     for (int i = 0; i < runs; i++) {
         int sc = pick_scen(&r);
-        run(&cat, sc, seed * 100003u + i, days, fn, user, NULL, &m, i < 4 ? log : NULL);
+        run(&cat, sc, seed * 100003u + i, days, fn, user, NULL, &m, i < 4 || getenv("BRAIN_LOG_ALL") ? log : NULL);
     }
     if (log) fclose(log);
     if (getenv("BRAIN_DEBUG")) {

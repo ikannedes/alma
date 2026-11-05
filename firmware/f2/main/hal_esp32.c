@@ -413,6 +413,7 @@ static const touch_pad_t TOUCH_PADS[3] = {TOUCH_PAD_NUM7, TOUCH_PAD_NUM8, TOUCH_
 static portMUX_TYPE sense_mux = portMUX_INITIALIZER_UNLOCKED;
 static sense_floor S_floor;
 static sense_imu S_imu;
+#define IMU_MOVED 400.0f   /* quieta < 50, sacudida > 8000 (sense.c): la mueven o la empujan */
 static sense_touch S_touch;
 static int S_touch_raw[3] = {-1, -1, -1};   /* última lectura de cada pad (teclas g y G) */
 static int bus_ok, imu_ok, touch_ok, tof_ok;
@@ -701,6 +702,7 @@ void hal_sensors_read(hal_sensors *out)
     out->lifted = S_imu.pose == SENSE_AIR;
     out->tipped = S_imu.pose == SENSE_TIPPED;
     out->shaken = S_imu.shaken;
+    out->moved = S_imu.dev[0] > IMU_MOVED || S_imu.dev[1] > IMU_MOVED || S_imu.dev[2] > IMU_MOVED;
     out->touch_tap = S_touch.taps != taps_seen;
     out->touch_pet = S_touch.pets != pets_seen;
     taps_seen = S_touch.taps;

@@ -94,6 +94,8 @@ typedef struct {
     float soc_pct;                               /* batería (02: ADC y unidad PENDIENTE) */
     int on_charger;                              /* GPIO36 > 1.2 V: USB o Home Station (medido 2026-10-30: ~2.5 V; sin nada, 0.14 V) */
     int on_usb;                                  /* con cargador y RX0 en alto: USB (el chip USB-serie tiene corriente); en la Home Station, RX0 = 0 */
+    int moved;                                   /* el IMU se movió (más que quieta, menos que sacudida): con las patas sin
+                                                    corriente es lo único que avisa que la mueven (dueño, 2026-11-05) */
 } hal_sensors;
 void hal_sensors_read(hal_sensors *out);
 void hal_sensors_debug(void);   /* tecla g: registra lo que ve cada sensor */

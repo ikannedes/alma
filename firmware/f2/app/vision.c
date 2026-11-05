@@ -15,13 +15,14 @@ static size_t sent_n, jpg_n;
 static const uint8_t *jpg;
 static int64_t t_last = -1000000000, t_wait;
 static int64_t owner_since = -1, owner_last = -1000000000, t_gesture;
+static int gesture_owner;   /* la foto que sigue al gesto es del dueño (kind owner) */
 
 int vision_owner_on = 1;
 
 void vision_init(void) { phase = shots = 0; t_last = owner_last = -1000000000; owner_since = -1; }
 void vision_set_link(int up) { link_up = up; }
 
-static int take(int64_t now, int owner)
+static int take(int64_t now, int owner, const char *what)
 {
     char name[24];
     snprintf(name, sizeof name, "alma_%d", ++shots);
@@ -29,7 +30,7 @@ static int take(int64_t now, int owner)
     t_last = now;   /* intente o no, la siguiente vez es en 3 minutos */
     owner_shot = owner;
     phase = 1;
-    hal_log("vista: %s → foto \"%s\"", owner ? "tu dueño" : "algo a 10 cm o menos", name);
+    hal_log("vista: %s → foto \"%s\"", what, name);
     return 0;
 }
 
@@ -42,7 +43,21 @@ void vision_obstacle(void)
 {
     int64_t now = hal_now_ms();
     if (phase || !link_up || now - t_last < (int64_t)VISION_COOLDOWN_S * 1000 || !can_look(app_alma())) return;
-    take(now, 0);
+    take(now, 0, "algo a 10 cm o menos");
+}
+
+void vision_decide(int owner)
+{
+    int64_t now = hal_now_ms();
+    const alma_t *a = app_alma();
+    const char *no = phase ? "ya está viendo otra" : !link_up ? "sin servidor" : now - t_last < (int64_t)VISION_COOLDOWN_S * 1000
+                     ? "tomó una hace menos de 3 min" : !can_look(a) ? "no puede ahora" : alma_in_night_window(a, app_now_s())
+                     ? "de noche no toma fotos" : NULL;
+    if (no) { hal_log("vista: decide mirar con atención, sin foto (%s)", no); return; }
+    t_gesture = now;   /* la cara de la conducta (image_search) hace el gesto; la foto sale después */
+    gesture_owner = owner;
+    phase = 4;
+    hal_log("vista: decide mirar con atención (%s)", owner ? "a ti" : "lo que tiene enfrente");
 }
 
 /* foto del dueño: de frente VISION_OWNER_FACING_S seguidos, despierta, sin una orden en curso, de día y con el plazo */
@@ -57,6 +72,7 @@ static void owner_check(int64_t now)
     if (!can_look(a) || (a->cur.active && a->cur.hold >= 2) || alma_in_night_window(a, app_now_s())) return;
     if (k210_play(VISION_OWNER_GESTURE, NULL, 0) != 0) return;
     owner_last = t_gesture = now;   /* salga o no la foto, la siguiente es en 30 minutos */
+    gesture_owner = 1;
     phase = 4;
     hal_log("vista: tu dueño de frente %d s → gesto de cámara (%s)", VISION_OWNER_FACING_S, VISION_OWNER_GESTURE);
 }
@@ -64,10 +80,10 @@ static void owner_check(int64_t now)
 void vision_step(void)
 {
     int64_t now = hal_now_ms();
-    if (phase == 0) owner_check(now);
+    if (phase == 0 && !app_alma()->policy) owner_check(now);   /* con la red, la foto la decide ella (vision_decide) */
     if (phase == 4) {
         if (now - t_gesture < VISION_GESTURE_MS) return;
-        if (!link_up || !can_look(app_alma()) || take(now, 1) != 0) phase = 0;
+        if (!link_up || !can_look(app_alma()) || take(now, gesture_owner, gesture_owner ? "tu dueño" : "lo que tiene enfrente") != 0) phase = 0;
     } else if (phase == 1) {
         k210_photo_state st = k210_photo_state_get();
         if (st == K210_PHOTO_BUSY) return;

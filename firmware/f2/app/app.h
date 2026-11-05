@@ -13,6 +13,8 @@ void app_step(void);
 /* Encola un evento. Los reflejos (EV_CLIFF, EV_PICKED_UP, EV_SHAKEN, EV_TIPPED_OVER) no esperan: paran los servos
  * y entran al núcleo en el acto, fuera del sorteo (05). */
 void app_post(const alma_ev *e);
+int  app_fainted(void);             /* 1 = desmayada sin batería, esperando el cargador */
+void app_note_moved(int64_t now);   /* el IMU dice que la mueven: las patas vuelven (base_servos) */
 void app_legs_keep_on(int on);   /* 1 = en la base las patas siguen con corriente (si lo de apagarlas falla) */
 void app_usb_motion(int on);
 int  app_usb_motion_on(void);     /* con el USB: 1 = se mueve (pruebas), 0 = cuenta como base (por omisión) */

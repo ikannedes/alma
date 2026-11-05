@@ -175,7 +175,6 @@ void alma_start_opt(alma_t *a, int b, alma_run_kind kind, double now_s, float re
         dur = x->opt[opt].dur_s / speed;
         /* el reflejo de borde sí camina (hacia atrás) aunque la marcha propia de Alma siga apagada (dueño, 2026-10-30) */
         if (x->opt[opt].gait && !GAIT_MODE_AVAILABLE && kind != RUN_REFLEX) { reason = 1; opt = -1; }
-        else if (a->servo_active_s_today + x->opt[opt].dur_s * BUDGET_MARGIN > alma_budget_s(a)) { reason = 2; opt = -1; }
     } else if (forced_opt == -1) {
         dur = x->dur_max_s > 0 ? x->dur_min_s + (x->dur_max_s - x->dur_min_s) * alma_rng_u01(&a->rng) : 1.0f;
     } else if (x->n_opt > 0) {
@@ -198,8 +197,7 @@ void alma_start_opt(alma_t *a, int b, alma_run_kind kind, double now_s, float re
             dur = x->opt[(int)(alma_rng_u01(&a->rng) * x->n_opt)].dur_s;   /* dura lo que habría durado (05) */
         } else {
             opt = ok[(int)(alma_rng_u01(&a->rng) * n)];
-            dur = x->opt[opt].dur_s;
-            if (a->servo_active_s_today + x->servo_cost_s * BUDGET_MARGIN > alma_budget_s(a)) { reason = 2; opt = -1; }
+            dur = x->opt[opt].dur_s;   /* sin límite diario de patas (dueño, 2026-11-05): moverse solo la cansa (alma_need) */
         }
         dur /= speed;
     } else {

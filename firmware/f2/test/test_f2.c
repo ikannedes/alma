@@ -137,8 +137,8 @@ static size_t anim(uint8_t *f, size_t cap, const char *avi, const char *mp3, int
 static void test_catalog(void)
 {
     boot_app(K_REPLY_SAM);
-    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 47, "catalog_load de referencia: 47 conductas (con bhv_trick y bhv_nap)");
-    CHECK(app_catalog()->n == 47 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
+    CHECK(catalog_load(catalog_path, inventory_path, &cat_ref, 0) == 49, "catalog_load de referencia: 49 conductas (con bhv_trick, bhv_nap, bhv_leave_base y bhv_photo)");
+    CHECK(app_catalog()->n == 49 && memcmp(app_catalog(), &cat_ref, sizeof cat_ref) == 0,
           "el catálogo cargado con el inventario de la SPIFFS es idéntico byte por byte al del simulador");
     const expr_face *f;
     CHECK(expression_faces(bx("bhv_listen"), &f) == 1 && strcmp(f[0].avi, "listen_and_think") == 0 && f[0].mode == 1,
@@ -3297,6 +3297,69 @@ static void test_brain_fw(void)
     CHECK(run_until_ready(20000) && fake_log_contains("red: sin pesos válidos (-8); decide la fórmula"), "sin pesos: la fórmula de siempre");
 }
 
+/* Bajarse de la base cuando parece USB (2026-11-05: en la Home Station RX0 sale alto): el primer paso decide */
+void alma_force(alma_t *a, int b, double now_s);
+static void test_leave_usb(void)
+{
+    for (int cable = 1; cable >= 0; cable--) {
+        boot_app(K_REPLY_SAM);
+        CHECK(run_until_ready(20000), "K210 listo");
+        fake_sensors.on_charger = 1;
+        fake_sensors.on_usb = 1;
+        fake_sensors.soc_pct = 95;
+        fake_run(5000);
+        fake_log_clear();
+        alma_force((alma_t *)app_alma(), bx("bhv_leave_base"), app_now_s());
+        fake_run(300);
+        CHECK(fake_log_contains("base: decide bajarse") && fake_log_contains("parece USB: primero un paso"), "parece USB: primero un paso");
+        if (!cable) { fake_sensors.on_charger = 0; fake_sensors.on_usb = 0; }   /* el paso la saca de la Home Station */
+        fake_run(20000);
+        if (cable) CHECK(fake_log_contains("es el cable USB, se queda"), "con cable: tras un paso sigue cargando y se queda");
+        else CHECK(fake_log_contains("era la Home Station, sigue bajando"), "en la Home Station: tras un paso ya no carga y sigue");
+    }
+    fake_sensors.on_charger = 0;
+    fake_sensors.on_usb = 0;
+    fake_sensors.soc_pct = 90;
+
+    /* la foto la decide la red (dueño, 2026-11-05): la conducta llega a vision_decide; sin la red, el obstáculo de antes */
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_log_clear();
+    alma_force((alma_t *)app_alma(), bx("bhv_photo"), app_now_s());
+    fake_run(300);
+    CHECK(fake_log_contains("vista: decide mirar con atención"), "bhv_photo: decide mirar con atención (foto o el motivo de no tomarla)");
+}
+
+/* Desmayo con secuela (dueño, 2026-11-05) y la caricia en el registro */
+extern int fake_legs_on;
+static void test_faint_fw(void)
+{
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 0;
+    fake_sensors.soc_pct = 80;
+    fake_run(2000);
+    fake_log_clear();
+    fake_sensors.touch_pet = 1;
+    fake_run(200);
+    fake_sensors.touch_pet = 0;
+    CHECK(fake_log_contains("toque: caricia"), "la caricia queda en el registro");
+    fake_sensors.soc_pct = 0.5f;
+    fake_run(30 * 1000);
+    CHECK(!app_fainted(), "a los 30 s sin batería todavía no (un minuto seguido)");
+    fake_run(35 * 1000);
+    CHECK(app_fainted() && fake_log_contains("desmayo: se acabó la batería"), "un minuto sin batería: se desmaya");
+    CHECK(alma_faint_rec(app_alma(), app_now_s()) > 0.99f, "la secuela queda en el núcleo");
+    fake_run(5000);
+    CHECK(!fake_legs_on, "desmayada: las patas sueltas");
+    fake_sensors.on_charger = 1;
+    fake_sensors.soc_pct = 3;
+    fake_run(2000);
+    CHECK(!app_fainted() && fake_log_contains("desmayo: la pusieron a cargar; revive"), "en el cargador revive");
+    fake_sensors.on_charger = 0;
+    fake_sensors.soc_pct = 90;
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 6) gait_ref_dir = argv[5];
@@ -3362,6 +3425,8 @@ int main(int argc, char **argv)
     test_fiesta();
     test_vader();
     test_ota();
+    test_leave_usb();
+    test_faint_fw();   /* al final: deja la vuelta a casa "batería baja" recién intentada (HOME_RETRY_MS) */
     printf("%d comprobaciones, %d fallas\n", checks, fails);
     return fails != 0;
 }

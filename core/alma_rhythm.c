@@ -163,6 +163,12 @@ void alma_state_tick(alma_t *a, double now_s)
         a->reminder_pending = 0;
         alma_force(a, a->ix_reminder, now_s);
     }
+    /* pase nocturno perdido (2026-11-05: el robot se trabó toda la noche y amaneció con las cuentas de ayer): si ya pasó
+       la noche y no lo hizo, lo hace al despertar. Solo si alguna vez lo hizo: recién nacida no hay día que cerrar */
+    if (!alma_in_night_window(a, now_s) && a->night_done_for_day > -1000000 && a->night_done_for_day < night_key(now_s)) {
+        a->night_done_for_day = night_key(now_s);
+        alma_night_cycle(a, now_s);
+    }
     float need_rest = alma_need(a, NEED_REST);
     int P = alma_P(a);
     switch (a->state) {
@@ -191,13 +197,17 @@ void alma_state_tick(alma_t *a, double now_s)
             a->resting_for_rest = 0;
             a->pause_until_s = now_s;
         }
+        else if (a->policy) alma_brain_poke(a, now_s, 0);   /* acostada fuera de la base: decide ella (alma_brain_poke) */
         break;
     case ST_AWAKE: {
         /* de noche, tenerla enfrente no la mantiene despierta: solo jugar con ella (3 min tras el último estímulo) */
         int night = alma_in_night_window(a, now_s);
         int sticky = (!night && P >= 0 && a->person[P].facing) || now_s - a->last_stimulus_s < STIMULUS_STICKY_S;
-        /* con la red, descansar sin nadie en casa lo decide ella (siesta); quedan la noche y el cansancio fuerte */
-        if (!sticky && (night || need_rest > REST_ENTER || (!a->policy && house_inactive(a, now_s)))) {
+        /* con la red, descansar sin nadie en casa lo decide ella (siesta); quedan la noche y el cansancio fuerte. Fuera de
+           la base el cansancio tampoco la acuesta (dueño, 2026-11-05): con poca batería se siente cansada, y acostada la
+           red no decide, así que nunca iba a cargarse y se desmayaba; elige ella entre dormitar, la siesta o la base */
+        int tired = need_rest > REST_ENTER && (!a->policy || a->on_charger);
+        if (!sticky && (night || tired || (!a->policy && house_inactive(a, now_s)))) {
             a->state = ST_RESTING;
             a->resting_for_rest = need_rest > REST_ENTER;
             break;

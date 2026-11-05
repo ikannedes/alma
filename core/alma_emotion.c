@@ -137,6 +137,17 @@ void alma_needs_tick(alma_t *a, float dt, double now_s)
 
 float alma_budget_s(const alma_t *a) { return BUDGET_BASE_S + BUDGET_ENERGY_S * a->trait[TRAIT_ENERGY]; }
 
+float alma_faint_rec(const alma_t *a, double now_s)
+{
+    return a->faint_s > 0 && now_s >= a->faint_s ? (float)exp(-(now_s - a->faint_s) / FAINT_TAU_S) : 0.0f;
+}
+
+void alma_faint(alma_t *a, double now_s)
+{
+    a->faint_s = now_s;
+    if (a->mood > FAINT_MOOD) a->mood = FAINT_MOOD;
+}
+
 float alma_need(const alma_t *a, int need)
 {
     switch (need) {
@@ -151,6 +162,8 @@ float alma_need(const alma_t *a, int need)
         if (awake > r) r = awake;
         if (servo > 1) servo = 1;
         if (servo > r) r = servo;
+        float weak = FAINT_REST * alma_faint_rec(a, a->t_now);
+        if (weak > r) r = weak;
         return alma_clampf(r, 0, 1);
     }
     }
@@ -182,6 +195,7 @@ void alma_affect_tick(alma_t *a, float dt, double now_s)
     a->affect_valence = alma_clampf(a->emo_joy - VAL_FEAR_W * a->emo_fear - VAL_FRUST_W * a->emo_frustration
                                     - VAL_BOREDOM_W * a->boredom - VAL_SOCIAL_W * a->need_social
                                     + alma_presence_valence(a, now_s) + WB_VAL_W * a->wellbeing / WB_MAX
+                                    - FAINT_SAD * alma_faint_rec(a, now_s)
                                     - (a->care_enabled ? VAL_HUNGER_W * fmaxf(0, a->hunger - 0.5f) + VAL_SICK * a->sick : 0), -1, 1);
     float m = a->emo_fear;
     if (AROUSAL_JOY_W * a->emo_joy > m) m = AROUSAL_JOY_W * a->emo_joy;

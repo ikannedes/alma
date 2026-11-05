@@ -74,6 +74,8 @@ void alma_init(alma_t *a, const alma_catalog *cat, uint32_t seed, double now_s, 
     a->last_stimulus_s = now_s;
     for (int b = 0; b < ALMA_MAX_BEHAVIORS; b++) { a->interest[b] = 1; a->last_exec_t[b] = NEVER; a->window_until[b] = NEVER; }
     a->unknown_seen_s = a->last_known_face_s = NEVER;
+    a->near_mm = -1;
+    a->near_t = NEVER;
     a->last_fall_or_shake_s = a->last_cliff_s = a->last_lift_or_shake_s = NEVER;
     a->attention_suppressed_until = NEVER;
     a->lift_person = -1;
@@ -326,6 +328,16 @@ void alma_event(alma_t *a, const alma_ev *ev, double now_s)
         int arrival = (ev->type == EV_FACE_SEEN && !was_known && alma_any_known_present(a))
                       || (ev->type == EV_FACE_UNKNOWN && !was_unknown);
         if (arrival || (ev->type != EV_FACE_SEEN && ev->type != EV_FACE_UNKNOWN)) alma_brain_poke(a, now_s, 1);
+    }
+}
+
+void alma_near(alma_t *a, int mm, double now_s)
+{
+    int was = a->near_mm >= 0 && a->near_mm < NEAR_GONE_MM;
+    a->near_mm = mm;
+    if (mm >= 0 && mm < NEAR_SEEN_MM && !was) {
+        a->near_t = now_s;
+        if (a->policy && a->state != ST_SLEEPING) alma_brain_poke(a, now_s, 1);
     }
 }
 

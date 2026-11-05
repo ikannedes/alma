@@ -130,6 +130,13 @@
 #define TREATS_BEFORE_SICK            3        /* más golosinas en el día: empacho con probabilidad SICK_P */
 #define SICK_P                        0.5f
 #define SICK_CURE_S                   (24 * 3600.0)
+#define FAINT_TAU_S                   (2 * 86400.0)   /* secuela del desmayo: e^(−t/2 días), 60 % al día, 8 % a los 5 */
+#define FAINT_REST                    0.6f     /* débil: la necesidad de descanso no baja de 0.6·secuela */
+#define FAINT_SAD                     0.5f     /* triste: valencia − 0.5·secuela */
+#define FAINT_MOOD                   -0.6f     /* el ánimo al desmayarse */
+#define NEAR_SEEN_MM                  350      /* algo aparece enfrente: más cerca que esto (la red decide si le interesa) */
+#define NEAR_GONE_MM                  450      /* y se va cuando pasa de esto (histéresis) */
+#define NEAR_FAR_MM                   400.0f   /* entrada de la red: 0 a esta distancia o más, 1 pegado */
 #define GAME_REACT_MIN_INTEREST       0.25f    /* juegos de la app: con menos interés (habituada) no reacciona */
 #define GAME_JOY_WIN                  0.35f
 #define GAME_FRUST_LOSE               0.25f

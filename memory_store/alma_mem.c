@@ -72,7 +72,8 @@ typedef struct { uint32_t off; uint8_t kind, n, keyed; } fld;
 static const fld F_IDENTITY[] = {F(seed, FK_U32, 1), F(age_days, FK_I32, 1)};
 static const fld F_AFFECT[] = {   /* v2 (2026-10-30): bienestar de largo plazo y días seguidos sin verte (04) */
     F(mood, FK_F32, 1), F(need_social, FK_F32, 1), F(wellbeing, FK_F32, 1), F(absent_days, FK_I32, 1),
-    F(hunger, FK_F32, 1), F(sick, FK_I32, 1)};   /* v3 (2026-10-30): tamagotchi */
+    F(hunger, FK_F32, 1), F(sick, FK_I32, 1),    /* v3 (2026-10-30): tamagotchi */
+    F(faint_s, FK_F64, 1)};                      /* v4 (2026-11-05): desmayo; 0 = nunca */
 static const fld F_BONDS_P[] = {   /* por persona; seen_today agregado a 06: lo usa el pase nocturno */
     P(used, FK_I32, 1), P(id, FK_I32, 1), P(attachment, FK_F32, 1), P(floor, FK_F32, 1), P(last_seen_s, FK_F64, 1),
     P(first_seen_day, FK_I32, 1), P(wary_until_s, FK_F64, 1), P(greeted_this_visit, FK_I32, 1), P(seen_today, FK_I32, 1),
@@ -146,7 +147,9 @@ static int counters_v1_to_v2(uint8_t *payload, uint16_t *len, uint32_t cap) { re
 static int affect_v2_to_v3(uint8_t *payload, uint16_t *len, uint32_t cap) { return append_zeros(payload, len, cap, 8); }
 static int counters_v2_to_v3(uint8_t *payload, uint16_t *len, uint32_t cap) { return append_zeros(payload, len, cap, 20); }
 static int learning_v1_to_v2(uint8_t *payload, uint16_t *len, uint32_t cap) { return append_zeros(payload, len, cap, 4 * FOOD_COUNT); }
-static const migrate_fn MIG_AFFECT[] = {affect_v1_to_v2, affect_v2_to_v3};
+/* v3 → v4 (desmayo, 2026-11-05): 0 = nunca se ha desmayado */
+static int affect_v3_to_v4(uint8_t *payload, uint16_t *len, uint32_t cap) { return append_zeros(payload, len, cap, 8); }
+static const migrate_fn MIG_AFFECT[] = {affect_v1_to_v2, affect_v2_to_v3, affect_v3_to_v4};
 static const migrate_fn MIG_COUNTERS[] = {counters_v1_to_v2, counters_v2_to_v3};
 static const migrate_fn MIG_LEARNING[] = {learning_v1_to_v2};
 
@@ -154,7 +157,7 @@ static const migrate_fn MIG_LEARNING[] = {learning_v1_to_v2};
  * affect rota entre 8 ranuras: es el bloque que más se escribe (06, "Desgaste del flash"). */
 static const blk_def BLK[ALMA_MEM_BLOCKS] = {
     [MEM_IDENTITY]       = {"identity", 1, 1, F_IDENTITY, 2, NULL, 0, enc_identity, dec_identity, MIG_NONE, 1, 0},
-    [MEM_AFFECT]         = {"affect", 3, 1, F_AFFECT, 6, NULL, 0, NULL, NULL, MIG_AFFECT, 2, 1, 8},
+    [MEM_AFFECT]         = {"affect", 4, 1, F_AFFECT, 7, NULL, 0, NULL, NULL, MIG_AFFECT, 3, 1, 8},
     [MEM_BONDS]          = {"bonds", 1, 1, NULL, 0, F_BONDS_P, sizeof F_BONDS_P / sizeof *F_BONDS_P, NULL, NULL, MIG_NONE, 1, 0},
     [MEM_LEARNING]       = {"learning", 2, 1, F_LEARNING, 3, NULL, 0, NULL, NULL, MIG_LEARNING, 1, 1, 0},
     [MEM_RHYTHM]         = {"rhythm", 1, 1, F_RHYTHM, 3, NULL, 0, NULL, NULL, MIG_NONE, 1, 0},

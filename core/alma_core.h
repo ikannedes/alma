@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define ALMA_MAX_BEHAVIORS   48
+#define ALMA_MAX_BEHAVIORS   64
 #define ALMA_MAX_PERSONS     10   /* límite del reconocimiento del K210 (04) */
 #define ALMA_MAX_OPTIONS     32   /* 24 → 32 (2026-10-30): bhv_play_solo con los juegos del original llegó a 26 */
 #define ALMA_MAX_CHAIN       4
@@ -228,9 +228,10 @@ typedef struct {
 /* ---- la red que decide (alma_brain.c; dueño, 2026-11-04) ----
  * Si hay política, elige la conducta cada segundo y en cada evento en lugar de alma_select, la pausa y la regla 2.
  * Entradas: ALMA_BRAIN_IN números de alma_brain_features; salidas: ALMA_BRAIN_OUT (0 = seguir, el resto conductas). */
-#define ALMA_BRAIN_IN           72
-#define ALMA_BRAIN_OUT          30
-#define ALMA_BRAIN_FEAT_VERSION 2   /* 2: + eventos de este segundo (crítica de la red v2) */
+#define ALMA_BRAIN_IN           76
+#define ALMA_BRAIN_OUT          32
+#define ALMA_BRAIN_FEAT_VERSION 4   /* 2: + eventos de este segundo (crítica de la red v2); 3: + desmayo, bajarse de la base;
+                                       4: + algo enfrente, qué tan cerca y última foto (la foto la decide ella) */
 enum { BFAM_IDLE, BFAM_REST, BFAM_SOCIAL, BFAM_PLAY, BFAM_EXPLORE, BFAM_EMOTION, BFAM_OTHER, BFAM_COUNT };
 /* Índices de las entradas (alma_brain_features las llena en este orden) */
 enum {
@@ -240,7 +241,7 @@ enum {
     BF_INSIST, BF_ARRIVED, BF_FAM0, BF_ACTIVE = BF_FAM0 + BFAM_COUNT, BF_T_CUR, BF_T_IDLE, BF_FAMREC0,
     BF_PLAY_TODAY = BF_FAMREC0 + BFAM_COUNT, BF_ON_CHARGER, BF_SOC, BF_RELAXED, BF_SICK, BF_HUNGER, BF_K_SOCIAL,
     BF_K_INDEP, BF_K_PLAY, BF_K_IMPULSIVE, BF_K_BOLD, BF_K_ENERGY, BF_WELLBEING, BF_NOW_PET, BF_NOW_SCOLD, BF_NOW_PRAISE,
-    BF_NOW_ARRIVED, BF_COUNT
+    BF_NOW_ARRIVED, BF_FAINT, BF_NEAR, BF_CLOSE, BF_PHOTO, BF_COUNT
 };
 
 /* p: probabilidades de las ALMA_BRAIN_OUT salidas, ya con la máscara (las prohibidas en 0). 0 = ok */
@@ -271,6 +272,13 @@ typedef struct {
     float hunger;              /* 0 llena … 1 muerta de hambre; sube con el tiempo */
     int sick;                  /* empacho: se cura con medicina o solo en SICK_CURE_S */
     double sick_since_s;
+    /* desmayo (dueño, 2026-11-05: "desmayo con secuela"): si no se carga y se acaba la batería se desmaya; al revivir
+       queda débil y triste unos días (alma_faint_rec). Se guarda en affect */
+    double faint_s;
+    /* lo que tiene enfrente (sensor de distancia, alma_near): distancia de ahora y cuándo apareció algo cerca. Qué tan
+       cerca le interesa lo decide la red (dueño, 2026-11-05: "con que lo considere cerca"); no se guarda */
+    int near_mm;
+    double near_t;
     float food_like[FOOD_COUNT];   /* gustos de nacimiento (−1 … 1), cambian poco a poco */
     int last_food, same_food_streak;
     double starve_acc_s;
@@ -367,11 +375,17 @@ int  alma_req_parse(const char *s, alma_req *out);           /* 0 = ok */
 void alma_init(alma_t *a, const alma_catalog *cat, uint32_t seed, double now_s, alma_hooks hooks);
 void alma_event(alma_t *a, const alma_ev *ev, double now_s);
 void alma_tick(alma_t *a, double now_s, const alma_sensors *s);
+/* distancia de lo que tiene enfrente en mm (−1 sin lectura), cada vez que el HAL la lee. Si algo aparece a menos de
+   NEAR_SEEN_MM, la red decide en ese instante si le interesa (mirarlo, tomarle foto) */
+void alma_near(alma_t *a, int mm, double now_s);
 int  alma_find(const alma_catalog *cat, const char *id);     /* índice o −1 */
 
 /* Consultas (también usadas por las pruebas) */
 float alma_need(const alma_t *a, int need);
 float alma_budget_s(const alma_t *a);
+/* desmayo: la batería se acabó (el firmware se apaga después). alma_faint_rec: 1 recién desmayada … 0 en unos días */
+void  alma_faint(alma_t *a, double now_s);
+float alma_faint_rec(const alma_t *a, double now_s);
 float alma_score(alma_t *a, int b, int use_pref);
 float alma_greet_intensity(const alma_t *a, int slot, double now_s);
 float alma_p_obey(const alma_t *a, int slot, int action, double now_s);

@@ -284,15 +284,13 @@ static void test_dagger_and_budget(void)
     CHECK(A.servo_active_s_today == 0, "sin movimiento no consume presupuesto");
 
     A.trait[TRAIT_ENERGY] = A.trait_base[TRAIT_ENERGY] = 0;   /* budget 3600 s */
-    A.servo_active_s_today = 3600 - 10 * 1.3f + 0.5f;   /* no alcanza para 10 s × 1.3 */
+    /* sin límite diario de patas (dueño, 2026-11-05): pasado el presupuesto se sigue moviendo, solo está cansada */
+    A.servo_active_s_today = 3600 + 60;
     alma_start(&A, B_TOY, RUN_SELECTOR, t, 1, 0);
-    CHECK(A.cur.option == -1, "presupuesto: sin movimiento si servo + cost × 1.3 > budget");
-    alma_finish(&A, t + 10, 0);
-    A.servo_active_s_today = 3600 - 10 * 1.3f - 0.5f;
-    alma_start(&A, B_TOY, RUN_SELECTOR, t, 1, 0);
-    CHECK(A.cur.option == 0, "presupuesto: con movimiento si alcanza");
+    CHECK(A.cur.option == 0, "sin límite de patas: con movimiento aunque pasó el presupuesto");
+    CHECK(alma_need(&A, NEED_REST) >= 1.0f - 1e-6f, "pasado el presupuesto, descanso al máximo (%.2f)", alma_need(&A, NEED_REST));
     alma_finish(&A, t + A.cur.planned_s, 0);
-    CHECK(A.servo_active_s_today <= alma_budget_s(&A), "servo_active_s_today ≤ budget_s (%.1f)", A.servo_active_s_today);
+    A.servo_active_s_today = 0;
 }
 
 static void test_still_on_charger(void)
@@ -625,7 +623,7 @@ static void test_real_catalog(const char *catp, const char *invp)
 {
     static alma_catalog real;
     int n = catalog_load(catp, invp, &real, 0);
-    CHECK(n == 47, "catálogo real: 47 conductas válidas, con bhv_trick y bhv_nap (%d)", n);
+    CHECK(n == 49, "catálogo real: 49 conductas válidas, con bhv_trick, bhv_nap, bhv_leave_base y bhv_photo (%d)", n);
     int g = alma_find(&real, "bhv_greet");
     CHECK(g >= 0 && NEAR(real.b[g].servo_cost_s, 8.0, 1e-3), "servo_cost_s de bhv_greet = 8 s (Good_morning)");
     int e = alma_find(&real, "bhv_enjoy_pet");
@@ -905,6 +903,42 @@ static void test_forget(void)
     CHECK(alma_forget_unseen(&A, t + 900 * 86400) == 0, "sin reloj real (forget_enabled = 0): no se olvida a nadie");
 }
 
+/* desmayo con secuela (dueño, 2026-11-05): al revivir, débil y triste unos días */
+static void test_faint(void)
+{
+    double t = 15 * 3600.0;
+    fresh(t);
+    alma_sensors on = {5, 1};
+    alma_tick(&A, t, &on);
+    CHECK(alma_faint_rec(&A, t) == 0, "sin desmayos, sin secuela");
+    A.mood = 0.5f;
+    alma_faint(&A, t);
+    CHECK(A.mood <= FAINT_MOOD + 1e-6f, "al desmayarse, el ánimo baja a %.1f (%.2f)", FAINT_MOOD, A.mood);
+    double day = 86400.0;
+    alma_sensors full = {100, 1};
+    A.awake_since_s = t + day;
+    alma_tick(&A, t + day, &full);
+    CHECK(NEAR(alma_faint_rec(&A, t + day), exp(-0.5), 1e-4), "al día, secuela e^(−1/2) (%.3f)", alma_faint_rec(&A, t + day));
+    CHECK(alma_need(&A, NEED_REST) >= FAINT_REST * 0.6f - 1e-3f, "al día sigue débil: descanso ≥ %.2f (%.2f)", FAINT_REST * 0.6f,
+          alma_need(&A, NEED_REST));
+    CHECK(alma_faint_rec(&A, t + 6 * day) < 0.05f, "a los 6 días casi se le pasó (%.3f)", alma_faint_rec(&A, t + 6 * day));
+    float x[ALMA_BRAIN_IN];
+    alma_brain_features(&A, t + day, x);
+    CHECK(NEAR(x[BF_FAINT], alma_faint_rec(&A, t + day), 1e-6), "la red ve la secuela (BF_FAINT)");
+
+    /* pase nocturno perdido (2026-11-05): lo hace al despertar */
+    t = 20 * day + 10 * 3600.0;   /* 10:00 */
+    fresh(t);
+    int key = (int)floor((t - NIGHT_WINDOW_DEFAULT_START * 3600.0) / day);
+    A.night_done_for_day = key - 1;
+    A.servo_active_s_today = 900;
+    int age = A.age_days;
+    alma_tick(&A, t, &full);
+    CHECK(A.night_done_for_day == key && A.servo_active_s_today == 0 && A.age_days == age + 1,
+          "se saltó la noche: el pase se hace a las 10:00 (día %d, servo %.0f)", A.night_done_for_day, A.servo_active_s_today);
+    alma_tick(&A, t + 3600, &full);
+    CHECK(A.age_days == age + 1, "una sola vez");
+}
 
 /* despedida solo si de verdad se fue; la caricia de noche la despierta un rato (dueño, 2026-11-05) */
 static void test_goodbye_and_night_pet(void)
@@ -1052,6 +1086,7 @@ int main(int argc, char **argv)
     test_forget();
     test_brain();
     test_goodbye_and_night_pet();
+    test_faint();
     if (argc >= 3) test_real_catalog(argv[1], argv[2]);
     printf("%d comprobaciones, %d fallas\n", checks, fails);
     return fails != 0;

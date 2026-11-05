@@ -495,7 +495,7 @@ static void test_migrate_tamagotchi(const alma_t *a0)
 {
     static alma_t a, r, fresh;
     a = *a0;
-    a.hunger = 0.8f; a.sick = 1; a.counts.meals = 2; a.counts.remote_play_s = 600; a.food_like[FOOD_PIZZA] = 0.9f;
+    a.hunger = 0.8f; a.sick = 1; a.faint_s = 1.79e9; a.counts.meals = 2; a.counts.remote_play_s = 600; a.food_like[FOOD_PIZZA] = 0.9f;
     boot(1);
     CHECK(alma_mem_save(&mem, &a, MEM_ALL) >= 0, "guardar");
     r = a;
@@ -503,7 +503,8 @@ static void test_migrate_tamagotchi(const alma_t *a0)
     alma_mem_load(&mem, &r);
     CHECK(r.hunger == 0.8f && r.sick == 1 && r.counts.meals == 2 && r.counts.remote_play_s == 600 && r.food_like[FOOD_PIZZA] == 0.9f,
           "v3: hambre, empacho, contadores y gustos sobreviven al reinicio");
-    downgrade(MEM_AFFECT, 2, 8);
+    CHECK(r.faint_s == 1.79e9, "v4: el desmayo sobrevive al reinicio");
+    downgrade(MEM_AFFECT, 2, 16);   /* v4 → v2: sin desmayo (8) ni tamagotchi (8) */
     downgrade(MEM_COUNTERS_TODAY, 2, 20);
     downgrade(MEM_LEARNING, 1, 4 * FOOD_COUNT);
     power_off();
@@ -520,7 +521,7 @@ static void test_migrate_tamagotchi(const alma_t *a0)
           "lo de antes queda igual (bienestar, ánimo, contadores, intereses)");
     int zero = 1;
     for (int f = 0; f < FOOD_COUNT; f++) zero &= r.food_like[f] == 0;
-    CHECK(r.hunger == 0 && r.sick == 0 && r.counts.meals == 0 && r.counts.remote_play_s == 0 && zero, "lo nuevo en 0");
+    CHECK(r.hunger == 0 && r.sick == 0 && r.faint_s == 0 && r.counts.meals == 0 && r.counts.remote_play_s == 0 && zero, "lo nuevo en 0");
     alma_food_prefs_init(&r);
     alma_init(&fresh, &cat, r.seed, 0, (alma_hooks){0});
     CHECK(memcmp(r.food_like, fresh.food_like, sizeof r.food_like) == 0 && r.food_like[FOOD_PIZZA] != 0,

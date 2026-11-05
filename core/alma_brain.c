@@ -21,6 +21,8 @@ const char *const ALMA_BRAIN_OUT_ID[ALMA_BRAIN_OUT] = {
     "bhv_imitate", "bhv_sing",
     "bhv_explore", "bhv_inspect_obstacle",
     "bhv_sulk", "bhv_yawn_bored", "bhv_sick",
+    "bhv_leave_base",   /* v3 (dueño, 2026-11-05): ella decide bajarse de la base e ir a cargarse */
+    "bhv_photo",        /* v4 (dueño, 2026-11-05): mirar con atención y tomar foto */
 };
 
 #define NEVER (-1e12)
@@ -188,6 +190,11 @@ void alma_brain_features(const alma_t *a, double now_s, float x[ALMA_BRAIN_IN])
     x[i++] = rec(now_s, a->last_ev_t[EV_SCOLD], 5);
     x[i++] = rec(now_s, a->last_ev_t[EV_PRAISE], 5);
     x[i++] = present ? rec(now_s, m->arrive_t, 15) : 0.0f;                            /* 71 */
+    x[i++] = alma_faint_rec(a, now_s);                                                /* 72 secuela del desmayo */
+    x[i++] = rec(now_s, a->near_t, 10);                                               /* 73 algo apareció enfrente */
+    x[i++] = a->near_mm >= 0 ? alma_clampf(1.0f - a->near_mm / NEAR_FAR_MM, 0, 1) : 0.0f;  /* qué tan cerca está ahora */
+    int ph = a->ix_brain[ALMA_BRAIN_OUT - 1];
+    x[i++] = ph >= 0 ? rec(now_s, a->last_exec_t[ph], 1800) : 0.0f;                    /* 74 la última foto */
     (void)i;   /* i == BF_COUNT == ALMA_BRAIN_IN (sim/test_core.c) */
 }
 
@@ -252,7 +259,9 @@ void alma_brain_poke(alma_t *a, double now_s, int event)
 {
     if (!a->policy) return;
     if (!event && now_s < a->bm.next_s) return;
-    if (a->state != ST_AWAKE && !(a->state == ST_PERFORMING && interruptible(a))) return;
+    /* acostada de día fuera de la base ("buenas noches" o cansada): la red también decide, si no nunca iba a cargarse */
+    int lying = a->state == ST_RESTING && !a->on_charger && !alma_in_night_window(a, now_s);
+    if (a->state != ST_AWAKE && !(a->state == ST_PERFORMING && interruptible(a)) && !lying) return;
     a->bm.next_s = now_s + 1.0;
     step(a, now_s, event);
 }

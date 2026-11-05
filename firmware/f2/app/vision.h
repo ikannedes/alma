@@ -20,7 +20,10 @@ extern int vision_owner_on;        /* 1 = toma la foto del dueño; las pruebas q
 
 void vision_init(void);
 void vision_set_link(int up);
-void vision_obstacle(void);        /* app: llegó EV_OBSTACLE */
+void vision_obstacle(void);        /* app: llegó EV_OBSTACLE (sin la red) */
+/* La red decidió bhv_photo (dueño, 2026-11-05): foto de lo que tiene enfrente (o del dueño, owner = 1, si lo tiene de
+   frente). Límites fijos: una cada VISION_COOLDOWN_S, despierta, con servidor y nunca de noche */
+void vision_decide(int owner);
 void vision_step(void);            /* en cada vuelta del bucle: también decide la foto del dueño */
 /* El siguiente trozo para el enlace ({"t":"photo","seq":n,"last":0|1,"jpg":"<base64>"}; el primero de la foto del
    dueño lleva "kind":"owner"), o 0 si no hay */

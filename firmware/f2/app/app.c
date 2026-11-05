@@ -60,6 +60,7 @@ void app_battery_test(int on)
     hal_log("batería: prueba %s", on ? "prendida (sin siesta; a casa con menos de 15 %)" : "apagada");
 }
 static int leave_steps;
+static int64_t leave_check_ms;   /* −1: con "USB", tras el primer paso se mira si sigue cargando; >0: cuándo mirarlo */
 static int play_test_avi;   /* tecla J: reproducir alma_test.avi cuando termine de subir */
 static int show_test_sticker;   /* tecla K: encimar el sticker de prueba cuando termine de subir */
 static int mem_ok, mem_wr, mem_born_empty;   /* mem_wr: se puede escribir (región en 0xFF o ya de Alma; 06) */
@@ -169,6 +170,20 @@ static void on_exec(void *user, const alma_exec_info *e)
     if (asleep) { hal_log("conducta %s: Alma no está, sin movimiento ni cara", b->id); return; }
     /* volver a casa (home.c): la conducta la arranca; mientras dure, las demás no mueven servos ni cambian la cara */
     if (strcmp(b->id, "bhv_go_home") == 0 && e->kind != RUN_REFLEX) home_start("conducta bhv_go_home");
+    /* bajarse de la base (dueño, 2026-11-05: lo decide ella): los mismos pasos al frente que la regla de antes. Con "USB"
+       también: en la Home Station RX0 sale alto y parece USB (2026-11-03 y 11-05, sin cable). El primer paso lo resuelve:
+       si sigue cargando, es el cable de verdad y se queda (leave_check_ms) */
+    if (strcmp(b->id, "bhv_photo") == 0 && e->kind != RUN_REFLEX) {   /* mirar con atención y tomar foto (vision.c) */
+        int P = alma_P(&A);
+        vision_decide(P >= 0 && A.person[P].present && A.person[P].facing);
+    }
+    if (strcmp(b->id, "bhv_leave_base") == 0 && e->kind != RUN_REFLEX && A.on_charger && !home_active()) {
+        leave_try_ms = hal_now_ms();
+        leave_steps = LEAVE_STEPS;
+        leave_check_ms = perception_on_usb() ? -1 : 0;   /* −1: falta ver si es cable */
+        perception_leaving_base(1);
+        hal_log("base: decide bajarse (%.0f %%%s)", A.soc_pct, perception_on_usb() ? ", parece USB: primero un paso" : "");
+    }
     if (vader_t0 >= 0 && e->kind == RUN_REFLEX) vader_halt = 1;   /* un reflejo: ya no camina (la marcha sigue) */
     if (home_active() || (vader_t0 >= 0 && e->kind != RUN_REFLEX)) {
         hal_log("conducta %s: %s, sin movimiento ni cara", b->id, home_active() ? "volviendo a casa" : "haciendo Darth Vader");
@@ -340,12 +355,37 @@ void app_remote_play(int seconds)
    Fuera de la base (o con "patas on" por Wi-Fi) vuelve la corriente, para que los pies vean las orillas */
 static int legs_keep_on;
 void app_legs_keep_on(int on) { legs_keep_on = on; hal_log("patas: en la base %s", on ? "siempre con corriente" : "sin corriente"); }
+/* Descansando fuera de la base también relaja las patas (dueño, 2026-11-05: "si está descansando y desactivó los pies y yo
+   la muevo, que se enoje y los active"). Sin corriente los pies no ven el piso: el IMU avisa que la mueven, las patas
+   vuelven y, si está en el aire, los pies dan el levantado (reflejo de siempre) */
+#define MOVED_WAKE_MS 10000   /* tras moverla, las patas siguen con corriente un rato aunque vuelva a descansar */
+static int64_t moved_ms = -1000000;
+void app_note_moved(int64_t now) { moved_ms = now; }
+/* Desmayo (dueño, 2026-11-05: "desmayo con secuela"). Si no fue a cargarse y la batería llega a FAINT_PCT un minuto
+   seguido: guarda su memoria (y el respaldo al servidor), pone la cara de batería agotada, suelta las patas y no hace
+   nada más hasta que la pongan a cargar. El ESP32 y el enlace siguen prendidos: así el servidor no la manda al reloj, y
+   no se toca PWR_EN (R13). Si la batería se acaba del todo, la protección la apaga; al cargarla arranca con la secuela
+   guardada (alma_faint_rec) */
+#define FAINT_PCT      1.0f      /* ≈ 3.41 V (battery.c: 0 % = 3.40 V) */
+#define FAINT_HOLD_MS  60000     /* la lectura brinca ±100 mV: un minuto seguido */
+#define FAINT_FACE     "battery_l2"
+static int fainted;
+static int64_t empty_since = -1;
+int app_fainted(void) { return fainted; }
+static int resting_still(void)
+{
+    if (fainted) return 1;
+    if (A.state == ST_RESTING || A.state == ST_SLEEPING) return 1;
+    return A.state == ST_PERFORMING && A.cur.active && A.cur.option < 0 && CAT->b[A.cur.behavior].category == CAT_REST;
+}
 static void base_servos(int64_t now)
 {
     static int64_t base_since = -1;
     /* con cualquier cargador: en la base inalámbrica RX0 a veces sale alto y parece USB (medido 2026-11-03: GPIO36 2223 mV,
        RX0 1, sin cable); con el USB tampoco se mueve, salvo "usb on" */
-    if (!A.on_charger || usb_motion || legs_keep_on) {
+    int rest_off_base = !A.on_charger && !perception_on_usb() && resting_still() && (fainted || now - moved_ms > MOVED_WAKE_MS)
+                        && !motion_active() && !home_active() && leave_steps == 0;
+    if ((!A.on_charger && !rest_off_base) || usb_motion || legs_keep_on) {
         base_since = -1;
         if (!hal_legs_on()) { hal_legs_power(1); perception_hold_edges(now + 600); }
         return;
@@ -450,7 +490,7 @@ static void falls_check(int type)
 static void deliver(const alma_ev *e)
 {
     log_event(e);
-    if (e->type == EV_OBSTACLE && !home_active()) vision_obstacle();   /* yendo a la base, lo que tiene enfrente es la base */   /* algo a 10 cm o menos: ¿qué es? (cada 3 min como mucho) */
+    if (e->type == EV_OBSTACLE && !home_active() && !A.policy) vision_obstacle();   /* yendo a la base, lo que tiene enfrente es la base */   /* algo a 10 cm o menos: ¿qué es? (cada 3 min como mucho) */
     /* al servidor: una caricia justo después de un truco bien hecho cuenta como "¡muy bien!" (dueño, 2026-11-02) */
     if (e->type == EV_TOUCH_PET) outbox_event("pet", "");
     alma_event(&A, e, app_now_s());
@@ -593,6 +633,7 @@ int app_init(const char *catalog_text, alma_catalog *catalog_mem, uint32_t seed)
     usb_motion = (hal_keep_get() & KEEP_USB_MOTION) != 0;
     if (bat_test) hal_log("batería: la prueba sigue prendida (de antes del reinicio)");
     leave_steps = 0;
+    leave_check_ms = 0;
     rlog_set(1);   /* registro por Wi-Fi prendido las primeras RLOG_BOOT_MS (2026-11-02: se fue sola a la base sin cable y no quedó nada) */
     ota_init();
     backup_init();
@@ -779,8 +820,41 @@ void app_step(void)
                  A.soc_pct, hal_battery_mv(), A.on_charger, (int)A.state, asleep, A.servo_active_s_today, bat_test);
         outbox_event("bateria", extra);
     }
+    if (fainted) {   /* desmayada: solo espera el cargador (el enlace y el reporte de batería siguen arriba) */
+        hal_sensors hs;
+        hal_sensors_read(&hs);
+        if (hs.on_charger) {
+            fainted = 0;
+            empty_since = -1;
+            A.t_last = app_now_s();   /* apagada no vivió ese rato */
+            A.state = ST_AWAKE;
+            hal_log("desmayo: la pusieron a cargar; revive débil y triste (secuela %.2f)", alma_faint_rec(&A, app_now_s()));
+        } else {
+            base_servos(now);
+            return;
+        }
+    }
     base_servos(now);
     if (asleep) { vader_t0 = -1; absent_step(now); return; }
+    if (!A.on_charger && !perception_on_usb() && A.soc_pct <= FAINT_PCT) {
+        if (empty_since < 0) empty_since = now;
+        if (now - empty_since >= FAINT_HOLD_MS) {
+            hal_log("desmayo: se acabó la batería (%.0f %%, %d mV); guarda su memoria y se queda quieta hasta que la pongan a cargar",
+                    A.soc_pct, hal_battery_mv());
+            alma_faint(&A, app_now_s());
+            motion_stop_now();
+            expression_stop(0);
+            home_stop("desmayo");
+            leave_steps = 0;
+            k210_play(FAINT_FACE, NULL, 0);
+#if ALMA_MEM_WRITE_ENABLED
+            if (mem_wr) alma_mem_flush(&MEM, &A);
+#endif
+            body_event("desmayo", "{}");   /* a la memoria del cuerpo y respaldo inmediato al servidor */
+            fainted = 1;
+            return;
+        }
+    } else empty_since = -1;
     /* la cara de carga al ponerla en la Home Station (dueño, 2026-11-03: "no hizo ningún gesto de estar cargando"); una vez
        por minuto como mucho, porque los contactos a veces parpadean */
     static int was_base;
@@ -796,14 +870,17 @@ void app_step(void)
     /* batería baja: a casa sola (dueño, 2026-10-30: menos de 20 %), con 3 min entre intentos como el original */
     static int64_t home_try_ms = -1000000, off_charger_ms;
     if (A.on_charger || perception_on_usb()) off_charger_ms = now;   /* los contactos parpadean: cuenta desde la última vez */
-    if (A.soc_pct < (bat_test ? BAT_TEST_HOME_PCT : HOME_BATTERY_PCT) && !A.on_charger && now - off_charger_ms >= OFF_CHARGER_MS
+    /* dueño, 2026-11-05: con la red, ir a cargarse lo decide ella (bhv_go_home); estas reglas quedan para la fórmula y la
+       prueba de batería */
+    int rules = !A.policy || bat_test;
+    if (rules && A.soc_pct < (bat_test ? BAT_TEST_HOME_PCT : HOME_BATTERY_PCT) && !A.on_charger && now - off_charger_ms >= OFF_CHARGER_MS
         && !home_active() && now - home_try_ms > HOME_RETRY_MS) {
         home_try_ms = now;
         home_start("batería baja");
     }
     /* siesta (dueño, 2026-11-02): de día, cansada o aburrida y con menos de NAP_BATTERY_PCT, se va a cargar a la base */
     int night = alma_in_night_window(&A, app_now_s());
-    if (!bat_test && now > NAP_BOOT_MS && !night && !A.on_charger && !perception_on_usb() && !home_active() && A.soc_pct < NAP_BATTERY_PCT
+    if (!A.policy && !bat_test && now > NAP_BOOT_MS && !night && !A.on_charger && !perception_on_usb() && !home_active() && A.soc_pct < NAP_BATTERY_PCT
         && (alma_need(&A, NEED_REST) > NAP_REST || A.simple_mood == SM_BORED || A.simple_mood == SM_SLEEPY)
         && A.state != ST_REFLEX && A.state != ST_LISTENING && now - nap_try_ms > NAP_RETRY_MS && now - home_try_ms > HOME_RETRY_MS) {
         nap_try_ms = home_try_ms = now;
@@ -812,14 +889,22 @@ void app_step(void)
     /* bajarse de la base (dueño, 2026-11-02): cargada, de día y viéndote, unos pasos al frente (R14 no aplica a estos) */
     int who = -1;
     int64_t seen = perception_last_who(&who);
-    if (!night && A.on_charger && !perception_on_usb() && A.soc_pct >= LEAVE_BASE_PCT && who == 0 && seen >= 0
+    if (!A.policy && !night && A.on_charger && !perception_on_usb() && A.soc_pct >= LEAVE_BASE_PCT && who == 0 && seen >= 0
         && now - seen < 3000 && A.state == ST_AWAKE && !home_active() && now - leave_try_ms > LEAVE_RETRY_MS) {
         leave_try_ms = now;
         leave_steps = LEAVE_STEPS;
         perception_leaving_base(1);
         hal_log("base: cargada (%.0f %%) y te ve: se baja", A.soc_pct);
     }
-    if (leave_steps > 0 && !motion_active()) {
+    if (leave_check_ms == -1 && leave_steps == LEAVE_STEPS - 1 && !motion_active()) leave_check_ms = now + 2000;   /* el cargador tarda ~1 s */
+    if (leave_check_ms > 0 && now >= leave_check_ms) {
+        leave_check_ms = 0;
+        hal_sensors hs;
+        hal_sensors_read(&hs);
+        if (hs.on_charger) { leave_steps = 0; hal_log("base: tras un paso sigue cargando: es el cable USB, se queda"); }
+        else hal_log("base: tras un paso ya no carga: era la Home Station, sigue bajando");
+    }
+    if (leave_steps > 0 && !motion_active() && (leave_check_ms == 0 || (leave_check_ms == -1 && leave_steps == LEAVE_STEPS))) {
         alma_motion_opt o;
         memset(&o, 0, sizeof o);
         o.n = 1;
@@ -863,6 +948,7 @@ void app_step(void)
     if (A.state == ST_REFLEX && motion_active()) perception_hold_edges(now + 500);
     if (motion_active()) perception_moving(now);
     perception_poll_sensors(&s);   /* los reflejos salen de aquí en el acto */
+    alma_near(&A, perception_front_mm(), app_now_s());   /* qué tan cerca le interesa lo decide la red */
     while (q_n && catchup_left <= 0) {
         alma_ev e = q[q_head];
         q_head = (q_head + 1) % QMAX;

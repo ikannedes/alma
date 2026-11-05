@@ -7,6 +7,7 @@
 
 #include "hal_k210.h"
 #include "outbox.h"
+#include "app.h"
 
 /* Tabla inicial (03, "Lo que el K210 manda al ESP32"). Las caras no van en la tabla: llegan como extendido 0x0A
  * (on_face, más abajo); los gestos (YOLO, 0x3F) por on_gesture. */
@@ -386,8 +387,14 @@ void perception_poll_sensors(alma_sensors *for_tick)
             perception_hold_edges(hal_now_ms() + PUT_DOWN_SETTLE_MS);
             post(EV_PUT_DOWN, 0);
         }
-        if (s.touch_pet && !last.touch_pet) post(EV_TOUCH_PET, 1500);
-        if (s.touch_tap && !last.touch_tap) post(EV_TOUCH_TAP, 0);
+        /* que quede en el registro (dueño, 2026-11-05: "a veces reacciona a veces no"): sintió o no sintió */
+        if (s.touch_pet && !last.touch_pet) { hal_log("toque: caricia (≥ 1.5 s)"); post(EV_TOUCH_PET, 1500); }
+        if (s.touch_tap && !last.touch_tap) { hal_log("toque: toquecito"); post(EV_TOUCH_TAP, 0); }
+        if (s.moved && !hal_legs_on() && !s.on_charger) {   /* en la base siguen sueltas (se acomoda para cargar) */
+            static int64_t moved_log;
+            if (hal_now_ms() - moved_log > 5000) { hal_log("patas: la mueven, vuelve la corriente"); moved_log = hal_now_ms(); }
+            app_note_moved(hal_now_ms());
+        }
         int near = s.tof_mm >= 0 && s.tof_mm < OBSTACLE_MM, was = last.tof_mm >= 0 && last.tof_mm < OBSTACLE_MM;
         if (near && !was) post(EV_OBSTACLE, (float)s.tof_mm);
         if (s.on_charger != last.on_charger) post(s.on_charger ? EV_CHARGING_ON : EV_CHARGING_OFF, 0);

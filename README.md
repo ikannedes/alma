@@ -36,3 +36,11 @@ A virtual pet with its own personality, memory and mood that lives in an EMO rob
 ## Not included
 
 Wi-Fi and server credentials, API keys and the robot's original files (videos, sounds, `.mot`) are not in this repo. Credentials go in `firmware/f2/alma_dev_creds.h` (see `dev_creds.example.h`).
+
+## License
+
+Alma is licensed under the **GNU General Public License v3.0** (see `LICENSE`). You can use, modify and share it; if you
+distribute a modified version, it must stay under the GPL-3.0 with its source available. Please credit the project.
+
+Third-party parts keep their own licenses: the games in `games/` (MIT; `games/torres/` is AGPL-3.0) and cJSON in
+`sim/third_party/cjson/` (MIT). `tools/caras/assets/sonidos/imperial_march.mp3` is not covered by this license.

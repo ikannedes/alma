@@ -46,6 +46,15 @@ SCOLD_PHRASES = (
     "no", "eso no", "no alma", "mal", "asi no", "no hagas eso", "que haces", "malcriada",
 )
 
+# "EMO, vámonos" (dueño, 2026-11-06): Alma se muda al reloj, como el botón "Llévame contigo". Frases completas
+MOVE_PHRASES = ("vamonos", "nos vamos", "vente conmigo", "vente", "al reloj", "vamonos al reloj", "vente al reloj",
+                "acompaname", "llevame contigo", "te llevo", "vamos al reloj")
+
+
+def is_move(normalized: str) -> bool:
+    return normalized in MOVE_PHRASES
+
+
 # Relleno que se quita al inicio o al final de la frase (07). Los de varias
 # palabras van primero para que "oye alma" no quede como "alma" suelto.
 FILLERS = ("oye alma", "por favor", "alma", "emo", "oye", "ahora", "ya")

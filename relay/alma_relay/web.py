@@ -810,6 +810,12 @@ async def _new_moves(summary: dict):
 async def _voice(clip: "voice.Clip"):
     """Lo que dijo el dueño tras "Hey EMO": Whisper y reglas o Haiku; vuelve por el enlace (07)."""
     r = await asyncio.to_thread(voice.understand, clip)
+    from . import reloj, rules
+    if r.get("transcript") and rules.is_move(rules.normalize(r["transcript"])) and reloj.where().get("cuerpo") == "robot":
+        # "EMO, vámonos" (dueño, 2026-11-06): se despide (saluda) y se muda al reloj, como el botón del reloj
+        r = {"transcript": r["transcript"], "intent": "action", "action_id": "greet", "confidence": 1.0, "source": "mudanza"}
+        m = await reloj._move(f"voz-{int(time.time())}", "reloj", "boton")
+        hub.events.append({"ev": "mudanza_voz", "ok": m.get("ok"), "why": m.get("why"), "at": int(time.time())})
     hub.events.append({"ev": "voice", "transcript": r.get("transcript", ""), "action_id": r.get("action_id"),
                        "intent": r.get("intent"), "error": r.get("error"), "at": int(time.time())})
     await hub.send({"t": "voice_result"} | r)

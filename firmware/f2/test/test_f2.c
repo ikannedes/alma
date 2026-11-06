@@ -3164,6 +3164,13 @@ static void test_body(void)
 
     /* 5. llegada por cara (6.2): solo la cara 0, sostenida 7 s, y solo sin Alma */
     nbmsg = 0;
+    /* recién ida (2026-11-06): aunque vea al dueño, 10 min sin pedir que regrese y la carátula en vez de buscarlo */
+    fake_face_set(1, 0, 100, 80, 120, 120, "duena");
+    from = nbmsg;
+    body_pump(30000, ABSENT5);
+    CHECK(bmsg_find("\"t\":\"body_move\"", from) < 0 && !body_watching(), "recién ida: aunque te vea, no pide regresar ni te busca");
+    fake_face_set(-1, 0, 0, 0, 0, 0, "");
+    body_pump(BODY_LEFT_PAUSE_MS, ABSENT5);
     fake_face_set(1, 1, 100, 80, 120, 120, "otra");
     from = nbmsg;
     body_pump(40000, ABSENT5);

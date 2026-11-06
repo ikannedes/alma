@@ -380,6 +380,10 @@ static void soltar(const cJSON *j, int64_t t)
     meta_json(rel_meta, sizeof rel_meta);
     save();
     start_release();
+    /* recién ida (dueño, 2026-11-06: "lo pasé al reloj y se quedó la pantalla de EMO trabada"): con el dueño enfrente, a
+       los 8 s ya pedía regresar y la pantalla se quedaba buscándolo. Un rato sin pedir que vuelva, y con la carátula */
+    B.move_next = now_ms() + BODY_LEFT_PAUSE_MS;
+    B.arr_start = -1;
     hal_log("cuerpo: Alma se va (mudanza %s): manda su memoria (%ld bytes, %d eventos) y deja de correr el núcleo", mid, k, nmem);
 }
 
@@ -616,6 +620,7 @@ void body_step(void)
     if (seen < 0 || seen == B.arr_seen) return;
     B.arr_seen = seen;
     if (who != BODY_OWNER_ID) return;
+    if (t < B.move_next && B.arr_start < 0) return;   /* recién ida: ni la cuenta empieza (body_watching queda en 0) */
     if (B.arr_start < 0 || seen - B.arr_last > BODY_ARRIVAL_GAP_MS) { B.arr_start = seen; B.arr_sent = 0; }
     B.arr_last = seen;
     if (B.arr_sent || seen - B.arr_start < BODY_ARRIVAL_SUSTAIN_MS || t < B.move_next) return;

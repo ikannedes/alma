@@ -35,6 +35,7 @@
 #define BODY_ARRIVAL_GAP_MS  12000
 #define BODY_OWNER_ID        0      /* el dueño es la cara 0 del K210 (03; registrada primero) */
 #define BODY_MOVE_RETRY_MS   60000  /* entre dos pedidos de llegada */
+#define BODY_LEFT_PAUSE_MS   600000 /* recién ida al otro cuerpo: 10 min sin pedir que regrese por la cara */
 
 _Static_assert(BODY_LEASE_S + 60 <= BODY_SERVER_OFFLINE_S,
                "el lease del robot debe caducar antes de que el servidor lo dé por desconectado (5.2)");

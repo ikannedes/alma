@@ -169,6 +169,7 @@ static void log_event(const alma_ev *e)
    aire y va hacia el que tiene piso. Antes de moverse revisa que los pies de ese lado vean piso; si no, se queda quieta.
    Muy ladeada (≥ SETTLE_MAX_DEG) no se mueve nunca. Si lo decide o no, es de la red (bhv_settle) */
 #define SETTLE_MAX_DEG 35.0f
+#define HOME_BLE_ON_RSSI (-38)   /* encima de la base: −22…−27 dBm medidos; a un lado, −39 */
 #define SETTLE_MIN_DEG 12.0f
 #define SETTLE_AFTER_CLIFF_S 60.0
 static void settle_start(void)
@@ -233,9 +234,14 @@ static void on_exec(void *user, const alma_exec_info *e)
     if (strcmp(b->id, "bhv_leave_base") == 0 && e->kind != RUN_REFLEX && A.on_charger && !home_active()) {
         leave_try_ms = hal_now_ms();
         leave_steps = LEAVE_STEPS;
-        leave_check_ms = perception_on_usb() ? -1 : 0;   /* −1: falta ver si es cable */
+        /* con el Bluetooth (2026-11-06): encima de la base la oye a −20…−30 dBm. Si la oye fuerte, es la base aunque RX0
+           diga USB, y no hace falta la prueba del paso (en la base inalámbrica un paso no la saca de la zona de carga) */
+        int rssi;
+        int64_t age;
+        int on_base_ble = hal_home_ble(&rssi, &age) && age < 10000 && rssi >= HOME_BLE_ON_RSSI;
+        leave_check_ms = perception_on_usb() && !on_base_ble ? -1 : 0;   /* −1: falta ver si es cable */
         perception_leaving_base(1);
-        hal_log("base: decide bajarse (%.0f %%%s)", A.soc_pct, perception_on_usb() ? ", parece USB: primero un paso" : "");
+        hal_log("base: decide bajarse (%.0f %%%s)", A.soc_pct, leave_check_ms ? ", parece USB: primero un paso" : on_base_ble ? ", la base la oye encima" : "");
     }
     if (vader_t0 >= 0 && e->kind == RUN_REFLEX) vader_halt = 1;   /* un reflejo: ya no camina (la marcha sigue) */
     if (home_active() || (vader_t0 >= 0 && e->kind != RUN_REFLEX)) {
@@ -490,7 +496,7 @@ static void vader_step(int64_t now)
         vader_halt = 1;
         return;
     }
-    alma_motion_opt o;
+    static alma_motion_opt o;   /* el reproductor guarda el puntero (motion_play) */
     memset(&o, 0, sizeof o);
     o.n = 1;
     o.hhmm0 = o.hhmm1 = -1;
@@ -987,7 +993,7 @@ void app_step(void)
         else hal_log("base: tras un paso ya no carga: era la Home Station, sigue bajando");
     }
     if (leave_steps > 0 && !motion_active() && (leave_check_ms == 0 || (leave_check_ms == -1 && leave_steps == LEAVE_STEPS))) {
-        alma_motion_opt o;
+        static alma_motion_opt o;   /* el reproductor guarda el puntero: en la pila quedaba basura ("no pude leer") */
         memset(&o, 0, sizeof o);
         o.n = 1;
         o.hhmm0 = o.hhmm1 = -1;

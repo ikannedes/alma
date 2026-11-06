@@ -32,6 +32,8 @@ int  app_clock_real(void);                 /* 1 si la hora es real (SNTP o servi
 void app_clock_from_server(double local_s);
 
 const alma_t *app_alma(void);
+/* decisiones de la red desde la última llamada, su promedio y su máximo en µs; vuelve a cero (ALMA_TIEMPOS) */
+void app_brain_time(uint32_t *n, uint32_t *avg_us, uint32_t *max_us);
 /* ajuste de Haiku al bienestar del día y nudges de rasgos (07), del "night_result" del enlace */
 void app_night_result(int wb_adjust, const float nudges[TRAIT_COUNT]);
 /* enlace con el servidor arriba o abajo: la voz y el hambre (tamagotchi) dependen de él */
@@ -43,6 +45,7 @@ void app_care_state(float hunger, alma_sick_cause cause, alma_weight_band band, 
 void app_care_feed(int food, int accepted, float joy, float bond, float frust);
 /* juegos de la app (PLAN-JUEGOS, 2026-10-31): reacción a lo que pasó en la partida */
 void app_game_event(alma_game_ev e, const char *juego);
+int  app_play_mot(const char *mot);   /* un movimiento por nombre (juego_base.c); 0 = en marcha */
 /* vision.c: la reacción a lo que vio de cerca (Haiku) */
 void app_vision_event(alma_vision_ev e, const char *behavior);
 /* segundos que el dueño jugó con Alma desde la app (los manda el servidor): bienestar del día */

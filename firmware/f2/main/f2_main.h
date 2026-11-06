@@ -8,3 +8,6 @@ extern SemaphoreHandle_t f2_app_mutex;
 double f2_net_start(void);
 void f2_link_start(void);   /* enlace con el servidor (uplink.h), en su propio hilo */
 const char *f2_net_ip(void);   /* "a.b.c.d" o "sin" */
+/* ms desde la última señal de vida del hilo del enlace (main.c: si pasa de F2_LINK_STUCK_MS, reinicia) */
+#define F2_LINK_STUCK_MS (10 * 60 * 1000)
+int64_t f2_link_age_ms(void);

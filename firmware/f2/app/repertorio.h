@@ -5,6 +5,9 @@
  * reproduce y mide con el IMU si fue estable (la inclinación no cambió más de INV_MAX_DEV_DEG y no hubo borde). Se queda
  * con las estables (hasta REP_INV_MAX, se va la menos usada) y las manda al servidor para respaldarlas.
  *
+ * La mitad de los inventos nuevos son ondas (vía 4; dueño, 2026-11-06): cada servo oscila con su amplitud, centro y
+ * desfase (como las primitivas de marcha del original), muestreado en poses; se prueban y se guardan igual.
+ *
  * Trucos (vía 3, bhv_new_trick): el servidor manda los que propuso Haiku de noche ({"t":"truco"}); Alma enseña el nuevo
  * y mira tu reacción REP_WATCH_MS: caricia o elogio → se queda ("gusta"), regaño → se borra, nada → otro intento; tres
  * sin reacción → se olvida. Cada resultado va al servidor ({"t":"event","ev":"truco_res"}).
@@ -41,3 +44,5 @@ int  repertorio_invent_msg(const char *json);
 /* JSON alma-anim/1 → cuadros (−1 si algo sale de R10 o no se entiende). Lo usan los mensajes y las pruebas */
 int  repertorio_parse_frames(const char *json_array, mot_frame *out, int max);
 int  repertorio_inventions(void);                 /* inventos estables guardados */
+/* una onda nueva en out (≤ REP_FRAMES cuadros, termina en 90/90/90/90); −1 si saliera del rango seguro */
+int  repertorio_make_wave(alma_rng *r, mot_frame *out);

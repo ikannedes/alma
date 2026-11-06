@@ -7,7 +7,9 @@
 
 #include "link.h"
 
+#ifndef UPLINK_MAX   /* la base (firmware/base) usa uno menor: no tiene PSRAM */
 #define UPLINK_MAX 16384         /* el mensaje más grande en cualquier sentido (el hello con los eventos de la mudanza, body.h) */
+#endif
 #define UPLINK_SILENCE_MS 90000  /* sin nada del servidor (ni ping) en este tiempo: la conexión se da por muerta */
 
 typedef struct {

@@ -104,8 +104,9 @@ static int64_t chk_t, chk_e[2], chk_due;
    mandaron). Ese 08 00 no es el fin de la nueva: antes se tomaba por "no está en la SD" (la cara de respaldo sin
    hacer falta, y la rutina Daily_Work_stamp sin sus repeticiones). Se ignora si llega a menos de REPLACED_MS */
 #define REPLACED_MS 150
-static int anim_on, rep_skip;
+static int anim_on, rep_skip, snd_on;   /* snd_on: la animación en curso trae sonido (la base pone su analizador) */
 static int64_t rep_until;
+int k210_sound_on(void) { return anim_on && snd_on; }
 static void anim_sent(void)
 {
     rep_skip = anim_on;
@@ -188,6 +189,7 @@ static void anim_done(void)
         if (now < rep_until) return;   /* el de la reemplazada */
     }
     anim_on = 0;
+    snd_on = 0;
     if (now - expr_sent_ms < EXPR_MISSING_MS && fb_avi[0]) {
         hal_log("k210: la animación terminó en %lld ms: no está en la SD; va la cara de la conducta (%s)", (long long)(now - expr_sent_ms), fb_avi);
         char a[40], m[40];
@@ -343,7 +345,10 @@ static int play_raw(const char *avi, const char *mp3, int mode)
 {
     char p[192];
     if (!k210_anim_payload(p, sizeof p, avi, mp3, mode)) return -1;
-    if (!chk_on) anim_sent();
+    if (!chk_on) {
+        anim_sent();
+        snd_on = mp3 && mp3[0];
+    }
     return send_ext(0x02, p);
 }
 

@@ -38,12 +38,12 @@ endif()
 # con el sdkconfig de la variante (NimBLE solo observador). Sin ella, hal_home_ble dice que no la ve.
 set(BLE_SRCS)
 if("$ENV{ALMA_F2_BLE}" STREQUAL "1")
-    list(APPEND reqs bt)
+    list(APPEND reqs bt esp_coex)
     set(BLE_SRCS ble_base.c)
 endif()
 
 idf_component_register(
-    SRCS main.c hal_esp32.c vl53l0x.c r15_guard.c api_esp32.c ${BLE_SRCS} ${APP_SRCS}
+    SRCS main.c hal_esp32.c vl53l0x.c r15_guard.c api_esp32.c lan_esp32.c ${BLE_SRCS} ${APP_SRCS}
          ${S1}/k210_frames.c ${S1}/mot.c ${S1}/log_util.c ${S1}/vivo.c
          ${CORE_SRCS} ${A}/memory_store/alma_mem.c ${A}/memory_store/alma_mem_flash_esp32.c ${A}/sim/catalog_load.c ${CJSON}
     INCLUDE_DIRS ${incs}

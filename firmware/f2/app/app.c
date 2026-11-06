@@ -16,6 +16,7 @@
 #include "f2_hal.h"
 #include "hal_k210.h"
 #include "home.h"
+#include "juego_base.h"
 #include "motion_player.h"
 #include "outbox.h"
 #include "perception.h"
@@ -26,6 +27,7 @@
 
 static EXT_RAM_BSS_ATTR alma_t A;
 static alma_catalog *CAT;
+static int music_now(void);
 static EXT_RAM_BSS_ATTR alma_mem MEM;   /* esp_flash copia por su cuenta un buffer que no esté en DRAM */
 /* siesta y bajarse de la base (batería, dueño 2026-11-02): se reinician en cada arranque (app_init) */
 static int64_t nap_try_ms, leave_try_ms, bat_report_ms;
@@ -643,6 +645,28 @@ static int region_is_alma_or_blank(const alma_mem_flash *fl)
 static EXT_RAM_BSS_ATTR uint32_t brain_buf[(64 * 1024) / 4];
 static alma_mlp brain;
 static int brain_on = 1, brain_err = -9;
+static uint32_t brain_n, brain_max_us;   /* cuánto tarda cada decisión (ALMA_TIEMPOS) */
+static uint64_t brain_tot_us;
+
+static int timed_policy(void *mlp, const float *x, const unsigned char *mask, float *p)
+{
+    int64_t t0 = hal_now_us();
+    int r = alma_mlp_policy(mlp, x, mask, p);
+    uint32_t us = (uint32_t)(hal_now_us() - t0);
+    brain_n++;
+    brain_tot_us += us;
+    if (us > brain_max_us) brain_max_us = us;
+    return r;
+}
+
+void app_brain_time(uint32_t *n, uint32_t *avg_us, uint32_t *max_us)
+{
+    *n = brain_n;
+    *avg_us = brain_n ? (uint32_t)(brain_tot_us / brain_n) : 0;
+    *max_us = brain_max_us;
+    brain_n = brain_max_us = 0;
+    brain_tot_us = 0;
+}
 
 static void on_brain(void *user, const struct alma_brain_decision *d)
 {
@@ -661,7 +685,7 @@ static void brain_setup(void)
         memcpy(brain_buf, w, n);   /* alineado a 4 bytes (alma_mlp_load) */
         brain_err = alma_mlp_load(&brain, brain_buf, (uint32_t)n);
     }
-    alma_brain_set_policy(&A, !brain_err && brain_on ? alma_mlp_policy : NULL, &brain);
+    alma_brain_set_policy(&A, !brain_err && brain_on ? timed_policy : NULL, &brain);
     if (brain_err) hal_log("red: sin pesos válidos (%d); decide la fórmula", brain_err);
     else hal_log("red: modelo %lu cargado, %s", (unsigned long)brain.model_version, brain_on ? "decide ella" : "apagada (tecla N), decide la fórmula");
 }
@@ -883,6 +907,9 @@ void app_step(void)
     if (here && asleep) body_wake();
     else if (!here && !asleep) app_body_sleep("sin turno");
     ota_step(now);   /* la prueba de un firmware nuevo corre aunque Alma no esté (ota.h) */
+    /* el Pong con la base y la música para su analizador: solo con Alma en este cuerpo (juego_base.h) */
+    if (here) juego_base_step(now, music_now());
+    else hal_ble_to_base(0, 0);
     static int rlog_auto = 1;
     if (rlog_auto && now > RLOG_BOOT_MS) { rlog_auto = 0; if (rlog_on()) { hal_log("enlace: registro por Wi-Fi: fin de las 4 h del arranque"); rlog_set(0); } }
     if (now - bat_report_ms >= (bat_test ? BAT_TEST_REPORT_MS : BAT_REPORT_MS)) {   /* la curva de la batería, al servidor (relay: bateria.csv) */
@@ -1095,6 +1122,7 @@ static void help(void)
     hal_log("  0 o espacio PARO (servos quietos)  x soltar los 4 servos  r registro crudo del K210 on/off");
     hal_log("  R<nombre>Enter registrar la cara que está frente a la cámara (Esc cancela)");
     hal_log("  N la red que decide sí / no (sin ella, la fórmula de siempre)");
+    hal_log("  Y pasar el bucle de Alma al otro núcleo y reiniciar (prueba de tiempos: ALMA_TIEMPOS cada minuto)");
     hal_log("  marcha de prueba: W adelante  S atrás  A girar izquierda  D girar derecha (R14 y presupuesto; 0 = PARO)");
     hal_log("  T gesto: 20 s en el modo de piedra-papel-tijera (enséñale la mano; registra cada 3F)");
     hal_log("  K subir el sticker de prueba (0:/png/sticker.png) y encimarlo (59 01)  U quitarlo (59 03)");
@@ -1140,6 +1168,27 @@ void app_console_help(void) { help(); }
 
 /* Marcha de prueba (HALLAZGOS §5): un .mot de explore_*, con las mismas reglas que una conducta (R14, presupuesto). La
    marcha sigue fuera del sorteo (GAIT_MODE_AVAILABLE = 0) hasta verla en el robot. */
+/* un .mot del catálogo o de la SD por nombre (juego_base.c: emo_play_a_game_start, pinball). 0 = en marcha. R14 y el
+   presupuesto de servos los revisa motion_play: en la base no se mueve */
+int app_play_mot(const char *mot)
+{
+    static alma_motion_opt o;   /* el reproductor lo lee mientras corre: no puede vivir en la pila */
+    if (motion_active()) return -1;
+    memset(&o, 0, sizeof o);
+    o.n = 1;
+    snprintf(o.mot[0], sizeof o.mot[0], "%s", mot);
+    return motion_play(&o, A.on_charger, 0) == MOTION_OK ? 0 : -1;
+}
+
+/* ¿está poniendo música? (la base enciende su analizador): bailando o cantando y con sonido de verdad en el K210, hasta
+   que la animación termine (2026-11-06: cantó muda volviendo a casa y la base puso el analizador 31 s) */
+static int music_now(void)
+{
+    static int dance = -2, sing = -2;
+    if (dance == -2) { dance = alma_find(CAT, "bhv_dance"); sing = alma_find(CAT, "bhv_sing"); }
+    return A.state == ST_PERFORMING && A.cur.active && (A.cur.behavior == dance || A.cur.behavior == sing) && k210_sound_on();
+}
+
 static void test_walk(const char *mot)
 {
     static alma_motion_opt o;
@@ -1243,6 +1292,13 @@ void app_console_key(char c)
     case '\r': case '\n': return;
     case 'h': case '?': help(); return;
     case 'N': brain_on = !brain_on; brain_setup(); return;
+    case 'Y': {
+        unsigned k = hal_keep_get() ^ HAL_KEEP_CORE0;
+        hal_keep_set(k);
+        hal_log("núcleo: el bucle de Alma pasa al %d; reinicio", k & HAL_KEEP_CORE0 ? 0 : 1);
+        hal_restart();
+        return;
+    }
     case 'i': status(); return;
     case 'b': k210_boot(); return;
     case 'f': k210_face_mode(10); return;

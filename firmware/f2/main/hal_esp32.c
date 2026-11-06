@@ -35,6 +35,7 @@
 
 /* ---- reloj y registro (log_util de sesion1: [segundos.ms] y un mutex para no mezclar líneas) ---- */
 int64_t hal_now_ms(void) { return esp_timer_get_time() / 1000; }
+int64_t hal_now_us(void) { return esp_timer_get_time(); }
 
 void hal_log(const char *fmt, ...)
 {
@@ -71,6 +72,11 @@ static RTC_NOINIT_ATTR uint32_t ota_trial_magic, ota_trial_prev;
 static RTC_NOINIT_ATTR uint32_t keep_magic, keep_val;
 unsigned hal_keep_get(void) { return keep_magic == KEEP_MAGIC ? keep_val : 0; }
 void hal_keep_set(unsigned v) { keep_val = v; keep_magic = KEEP_MAGIC; }
+void hal_restart(void)
+{
+    vTaskDelay(pdMS_TO_TICKS(300));   /* que salga el registro */
+    esp_restart();
+}
 static esp_ota_handle_t ota_h;
 static const esp_partition_t *ota_part, *ota_done;
 static size_t ota_size;
@@ -304,6 +310,10 @@ extern const uint8_t alma_brain_almb_start[] asm("_binary_alma_brain_almb_start"
 extern const uint8_t alma_brain_almb_end[] asm("_binary_alma_brain_almb_end");
 #if !ALMA_F2_BLE
 int hal_home_ble(int *rssi, int64_t *age_ms) { (void)rssi; (void)age_ms; return 0; }
+int hal_home_ble_charging(void) { return -1; }
+int hal_home_pong(hal_pong_t *p, int64_t *age_ms) { (void)p; (void)age_ms; return 0; }
+void hal_ble_fast(int on) { (void)on; }
+void hal_ble_to_base(int dir, int flags) { (void)dir; (void)flags; }
 #endif
 const uint8_t *hal_brain_weights(size_t *n) { *n = (size_t)(alma_brain_almb_end - alma_brain_almb_start); return alma_brain_almb_start; }
 
@@ -720,8 +730,14 @@ void hal_sensors_read(hal_sensors *out)
         chg_next = now + CHG_EVERY_MS;
         /* GPIO36 ahora es analógico (diagnóstico Home Station / USB, 2026-10-30): con el ADC configurado la lectura
            digital da 0 siempre. Cargador = más de CHARGER_MV (medido con USB: ~2500 mV; sin nada, a medir) */
-        int c = charger_mv() > CHARGER_MV;
-        c = c ? (gpio_get_level(GPIO_NUM_3) ? 2 : 1) : 0;   /* 0 nada, 1 Home Station, 2 USB (RX0 alto) */
+        /* 0 nada, 1 Home Station, 2 USB. RX0 en alto era "USB", pero en la Home Station también lo está: si alma-base
+           anuncia que EMO se carga en ella, manda ella (battery_charger_kind; dueño, 2026-11-06) */
+        static int64_t present_since = -1;
+        int p = charger_mv() > CHARGER_MV;
+        if (!p) present_since = -1;
+        else if (present_since < 0) present_since = now;
+        int c = battery_charger_kind(p, gpio_get_level(GPIO_NUM_3), hal_home_ble_charging(), p ? now - present_since : 0);
+        if (c < 0) c = charger;   /* la base aún no confirma: se queda lo que había */
         if (c == charger_last && c != charger) {
             hal_log("cargador: %s", c == 2 ? "USB" : c == 1 ? "Home Station" : "sin cargador");
             charger = c;

@@ -8,7 +8,9 @@
 #include "f2_hal.h"
 #include "motion_player.h"
 
+#ifndef OTA_CHUNK_MAX   /* la base: el servidor le manda 4000 */
 #define OTA_CHUNK_MAX 9216   /* datos por trozo (el servidor manda 9000) */
+#endif
 
 static struct {
     int on;                  /* recibiendo */

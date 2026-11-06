@@ -28,6 +28,8 @@
 #include "voice.h"
 #include "f2_hal.h"
 #include "f2_main.h"
+#include "juego_base.h"
+#include "lan.h"
 
 #ifndef ALMA_DEV_NTP_SERVER
 #define ALMA_DEV_NTP_SERVER "pool.ntp.org"
@@ -116,12 +118,17 @@ double f2_net_start(void)
 #define ALMA_DEV_ROBOT_ID "alma"
 #endif
 static int sk = -1;
+/* Latido del hilo del enlace (2026-11-06: el robot pasó 6 h sin mandar nada ni reconectarse, con el Wi-Fi bien): cada
+   vez que el hilo hace algo (esperar Wi-Fi, conectar, mandar, recibir) se anota; el bucle principal lo revisa */
+static volatile int64_t link_beat_ms = -1;   /* −1: el hilo no arrancó (sin llave): nada que vigilar */
+int64_t f2_link_age_ms(void) { return link_beat_ms < 0 ? 0 : hal_now_ms() - link_beat_ms; }
 
 static int tx(void *u, const uint8_t *p, size_t n)
 {
     (void)u;
+    link_beat_ms = hal_now_ms();
     while (n) {
-        int r = send(sk, p, n, 0);
+        int r = send(sk, p, n, 0);   /* con SO_SNDTIMEO: si el otro lado ya no lee, no se queda aquí para siempre */
         if (r <= 0) return -1;
         p += r;
         n -= (size_t)r;
@@ -132,6 +139,7 @@ static int tx(void *u, const uint8_t *p, size_t n)
 static long rx(void *u, uint8_t *p, size_t cap, int wait_ms)
 {
     (void)u;
+    link_beat_ms = hal_now_ms();
     fd_set f;
     FD_ZERO(&f);
     FD_SET(sk, &f);
@@ -171,6 +179,13 @@ static long on_msg(const char *j, char *reply, size_t cap)
     return n;
 }
 
+/* la red local (hilo de lan_esp32.c): por ahora, la partida de Pong de la base */
+static void on_lan(const char *json, const lan_peer *from)
+{
+    (void)from;
+    juego_base_lan_msg(json);
+}
+
 static uplink_cfg link_cfg = {.host = ALMA_DEV_RELAY_HOST, .path = "/v1/robot", .robot_id = ALMA_DEV_ROBOT_ID,
                               .port = ALMA_DEV_RELAY_PORT, .state_every_ms = F2_LINK_STATE_MS,
                               .state = st, .take = take, .on_msg = on_msg};
@@ -181,7 +196,11 @@ static void link_task(void *arg)
     const uplink_io io = {tx, rx, rnd, now_ms, NULL};
     int wait_s = F2_LINK_RETRY_MIN_S;
     for (;;) {
-        while (!(xEventGroupGetBits(net_ev) & GOT_IP)) vTaskDelay(pdMS_TO_TICKS(2000));
+        while (!(xEventGroupGetBits(net_ev) & GOT_IP)) {
+            link_beat_ms = hal_now_ms();
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+        link_beat_ms = hal_now_ms();
         char port[8];
         snprintf(port, sizeof port, "%d", ALMA_DEV_RELAY_PORT);
         struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM}, *ai = NULL;
@@ -190,6 +209,15 @@ static void link_task(void *arg)
         if (getaddrinfo(ALMA_DEV_RELAY_HOST, port, &hints, &ai) != 0 || !ai) why = "no se encontró el servidor (DNS)";
         else {
             sk = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+            if (sk >= 0) {   /* envíos con límite de 15 s y keepalive: una conexión muerta se nota en ~1 min */
+                struct timeval to = {15, 0};
+                int on = 1, idle = 30, intvl = 10, cnt = 3;
+                setsockopt(sk, SOL_SOCKET, SO_SNDTIMEO, &to, sizeof to);
+                setsockopt(sk, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
+                setsockopt(sk, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof idle);
+                setsockopt(sk, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof intvl);
+                setsockopt(sk, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof cnt);
+            }
             if (sk < 0) why = "sin socket";
             else if (connect(sk, ai->ai_addr, ai->ai_addrlen) != 0) why = "el servidor no contesta";
             else {
@@ -205,7 +233,9 @@ static void link_task(void *arg)
         if (ai) freeaddrinfo(ai);
         wait_s = authed ? F2_LINK_RETRY_MIN_S : wait_s * 2 > F2_LINK_RETRY_MAX_S ? F2_LINK_RETRY_MAX_S : wait_s * 2;
         hal_log("enlace: %s; reintento en %d s", why, wait_s);
+        link_beat_ms = hal_now_ms();
         vTaskDelay(pdMS_TO_TICKS(wait_s * 1000));
+        link_beat_ms = hal_now_ms();
     }
 }
 
@@ -213,10 +243,16 @@ void f2_link_start(void)
 {
     /* la llave y el servidor no se imprimen (credenciales) */
     if (link_key_hex(ALMA_DEV_LINK_KEY, link_cfg.key)) { hal_log("enlace: ALMA_DEV_LINK_KEY no son 64 caracteres hexadecimales; sin servidor"); return; }
-    if (xTaskCreate(link_task, "enlace", F2_LINK_STACK, NULL, 4, NULL) != pdPASS) hal_log("enlace: no pude crear el hilo");
+    lan_start("robot", "robot", link_cfg.key, on_lan);   /* la red local de Alma (lan.h): la base y lo que venga */
+    link_beat_ms = hal_now_ms();
+    if (xTaskCreate(link_task, "enlace", F2_LINK_STACK, NULL, 4, NULL) != pdPASS) {
+        link_beat_ms = -1;
+        hal_log("enlace: no pude crear el hilo");
+    }
     else hal_log("enlace: hilo iniciado (servidor de alma_dev_creds.h)");
 }
 #else
 void f2_link_start(void) { hal_log("enlace: sin ALMA_DEV_RELAY_HOST/ALMA_DEV_LINK_KEY en alma_dev_creds.h; sin servidor"); }
+int64_t f2_link_age_ms(void) { return 0; }
 #endif
 #endif

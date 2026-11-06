@@ -101,3 +101,10 @@ def test_subir_archivo(tmp_path, monkeypatch):
     assert len(ch) == 2 and all(c["ext"] == "mp3" and c["nombre"] == "vader_marcha" for c in ch) and ch[1]["last"]
     assert ch[0]["size"] == 12000 and "size" not in ch[1]
     assert "ext" not in fiestas.trozos(b"x", "muertos")[0]
+
+
+def test_media_prueba(tmp_path, monkeypatch):
+    monkeypatch.setenv("ALMA_RELAY_DATA", str(tmp_path))
+    (tmp_path / "robot_cmd.txt").write_text("media sings1_1 sings1_1_000\nmedia sings1_1\nmedia ../x y\nmedia a b c\n")
+    assert robot_debug.take_cmds() == [{"t": "prueba_media", "avi": "sings1_1", "mp3": "sings1_1_000"},
+                                       {"t": "prueba_media", "avi": "sings1_1", "mp3": ""}]

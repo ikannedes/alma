@@ -60,6 +60,7 @@ class Hub:
 
 
 hub = Hub()
+base_hub = Hub()   # la Home Station con alma-base (/v1/base): solo enlace, registro, órdenes y OTA
 
 
 # ---- sesión del dueño ----
@@ -587,6 +588,9 @@ async def robot(ws: WebSocket):
         except Exception:   # ya se había ido
             pass
         return
+    if robot_id == "base":   # la Home Station entra por la misma puerta (el proxy del puerto 8080 solo abre /v1/robot)
+        await _base_session(ws, link.Session(link.session_key(k, ns, nr), i_am_server=True), robot_id)
+        return
     hub.ws, hub.sess, hub.robot_id = ws, link.Session(link.session_key(k, ns, nr), i_am_server=True), robot_id
     hub.last_seen = time.time()
     global _watch
@@ -672,6 +676,77 @@ async def robot(ws: WebSocket):
             pass
 
 
+# ---- enlace de la Home Station (alma-base, firmware/base; dueño, 2026-11-06) ----
+
+@router.websocket("/v1/base")
+async def base(ws: WebSocket):
+    """Mismo saludo y cifrado que el robot (link.py, la misma llave). Por ahora: su estado, su registro (base_log.txt),
+    sus avisos (carga, toque) y las órdenes de base_cmd.txt, con la OTA."""
+    await ws.accept()
+    key = settings.get("link_key")
+    if not key:
+        await ws.close(code=1011)
+        return
+    k = bytes.fromhex(key)
+    ns, h = link.hello()
+    await ws.send_bytes(h)
+    try:
+        frame = await asyncio.wait_for(ws.receive_bytes(), timeout=10)
+        nr, base_id = link.check_auth(k, ns, frame)
+    except (link.LinkError, asyncio.TimeoutError, WebSocketDisconnect, KeyError):
+        try:
+            await ws.close(code=1008)
+        except Exception:
+            pass
+        return
+    await _base_session(ws, link.Session(link.session_key(k, ns, nr), i_am_server=True), base_id)
+
+
+async def _base_session(ws: WebSocket, sess: link.Session, base_id: str):
+    base_hub.ws, base_hub.sess, base_hub.robot_id = ws, sess, base_id
+    base_hub.last_seen = time.time()
+    await asyncio.to_thread(robot_debug.base_append, f"servidor: base conectada ({base_id})")
+    await base_hub.send(welcome_msg())
+    cmds = asyncio.create_task(_base_cmd_watch(ws))
+    try:
+        while True:
+            msg = base_hub.sess.open(await ws.receive_bytes())
+            base_hub.last_seen = time.time()
+            t = msg.get("t")
+            if t == "state":
+                base_hub.state = msg
+            elif t == "log":
+                await asyncio.to_thread(robot_debug.base_append, str(msg.get("s", "")))
+            elif t in ("ota_ready", "ota_ok", "ota_error"):
+                await asyncio.to_thread(robot_debug.base_append, f"servidor: base → {t} {msg.get('why') or msg.get('sha256') or ''}")
+                if t == "ota_ready" and base_hub.ota_ready and not base_hub.ota_ready.done():
+                    base_hub.ota_ready.set_result(True)
+            elif t == "event":
+                base_hub.events.append(msg | {"at": int(time.time())})
+    except (link.LinkError, WebSocketDisconnect, KeyError, ValueError):
+        pass
+    finally:
+        cmds.cancel()
+        if base_hub.ws is ws:
+            base_hub.ws = base_hub.sess = None
+        await asyncio.to_thread(robot_debug.base_append, "servidor: base desconectada")
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+
+async def _base_cmd_watch(ws: WebSocket):
+    """Cada medio segundo, las órdenes de base_cmd.txt van a la base."""
+    while base_hub.ws is ws:
+        for m in await asyncio.to_thread(robot_debug.base_take_cmds):
+            if m["t"] == "_ota":
+                asyncio.create_task(_ota_send(m, base_hub, robot_debug.base_append))
+            else:
+                await base_hub.send(m)
+        await asyncio.sleep(0.5)
+
+
 async def _cmd_watch(ws: WebSocket):
     """Cada medio segundo, las órdenes que dejé en robot_cmd.txt (robot_debug.py) van al robot."""
     while hub.ws is ws:
@@ -702,27 +777,28 @@ OTA_PAUSE_S = 0.2    # entre trozos: que el robot escriba la flash antes del sig
                      # en su búfer cortaban el enlace: "frame demasiado grande", 2026-11-03)
 
 
-async def _ota_send(m: dict):
-    """Firmware nuevo por Wi-Fi: ota_begin, espera ota_ready (15 s) y manda los trozos en orden; el robot contesta ota_ok
-    u ota_error (web.robot los anota en robot_log). El reinicio va aparte ("ota reboot"), con el dueño."""
+async def _ota_send(m: dict, h: "Hub | None" = None, log=robot_debug.append):
+    """Firmware nuevo por Wi-Fi: ota_begin, espera ota_ready (15 s) y manda los trozos en orden; el robot (o la base, con
+    h=base_hub) contesta ota_ok u ota_error y se anota en su registro. El reinicio va aparte ("ota reboot"), con el dueño."""
+    h = h or hub
     with open(m["file"], "rb") as f:
         data = f.read()
-    hub.ota_ready = asyncio.get_running_loop().create_future()
-    await asyncio.to_thread(robot_debug.append, f"servidor: ota: {m['name']} ({len(data)} bytes, {m['sha256'][:12]}…)")
-    if not await hub.send({"t": "ota_begin", "size": len(data), "sha256": m["sha256"], "version": m["name"]}):
+    h.ota_ready = asyncio.get_running_loop().create_future()
+    await asyncio.to_thread(log, f"servidor: ota: {m['name']} ({len(data)} bytes, {m['sha256'][:12]}…)")
+    if not await h.send({"t": "ota_begin", "size": len(data), "sha256": m["sha256"], "version": m["name"]}):
         return
     try:
-        await asyncio.wait_for(hub.ota_ready, timeout=15)
+        await asyncio.wait_for(h.ota_ready, timeout=15)
     except asyncio.TimeoutError:
-        await asyncio.to_thread(robot_debug.append, "servidor: ota: el robot no contestó ota_ready; no se manda nada")
+        await asyncio.to_thread(log, "servidor: ota: no contestó ota_ready; no se manda nada")
         return
     chunks = robot_debug.ota_chunks(data)
     for c in chunks:
-        if not await hub.send(c):
-            await asyncio.to_thread(robot_debug.append, f"servidor: ota: se cortó el enlace en el trozo {c['seq']}")
+        if not await h.send(c):
+            await asyncio.to_thread(log, f"servidor: ota: se cortó el enlace en el trozo {c['seq']}")
             return
         await asyncio.sleep(OTA_PAUSE_S)
-    await asyncio.to_thread(robot_debug.append, f"servidor: ota: {len(chunks)} trozos enviados")
+    await asyncio.to_thread(log, f"servidor: ota: {len(chunks)} trozos enviados")
 
 
 def welcome_msg(now: float | None = None) -> dict:

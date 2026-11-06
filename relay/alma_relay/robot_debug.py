@@ -11,6 +11,7 @@ robot_log.txt; las órdenes se dejan en robot_cmd.txt, una por línea, y el cicl
   patas on|off   en la base: on = las patas siguen con corriente (rígido), off = sin corriente, flojo (por omisión)
   usb on|off   con el cable USB: on = se mueve (pruebas), off = cuenta como base y se queda quieta (por omisión)
   bateria on|off   prueba de batería: sin siesta y a casa hasta el 15 % (se apaga sola al reiniciar el robot)
+  media <cara> [sonido]   una cara de la SD con un sonido (sin extensión), para buscar nombres (canciones mudas)
 La batería llega cada 5 min y se guarda en bateria.csv (bateria()).
 Solo con acceso al servidor (SSH): no hay ruta HTTP.
 """
@@ -30,14 +31,14 @@ def _path(name: str) -> str:
     return os.path.join(settings.data_dir(), name)
 
 
-def append(s: str, now: float | None = None) -> None:
+def append(s: str, now: float | None = None, name: str = "robot_log.txt") -> None:
     """Guarda un trozo del registro del robot (líneas con \\n), con la hora del servidor al frente de cada una."""
     if not s:
         return
-    p = _path("robot_log.txt")
+    p = _path(name)
     try:
         if os.path.getsize(p) > LOG_MAX:
-            os.replace(p, _path("robot_log.1.txt"))
+            os.replace(p, _path(name.replace(".txt", ".1.txt")))
     except FileNotFoundError:
         pass
     stamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now if now is not None else time.time()))
@@ -70,6 +71,9 @@ def take_cmds() -> list[dict]:
             out.append({"t": "patas", "on": parts[1] == "on"})
         elif parts[0] == "usb" and len(parts) == 2 and parts[1] in ("on", "off"):
             out.append({"t": "usb_mueve", "on": parts[1] == "on"})
+        elif parts[0] == "media" and len(parts) == 2 and _media_ok(parts[1].split()):
+            nm = parts[1].split()
+            out.append({"t": "prueba_media", "avi": nm[0], "mp3": nm[1] if len(nm) > 1 else ""})
         elif parts[0] == "bateria" and len(parts) == 2 and parts[1] in ("on", "off"):
             out.append({"t": "prueba_bateria", "on": parts[1] == "on"})
         elif parts[0] == "ota" and len(parts) == 2:
@@ -77,6 +81,11 @@ def take_cmds() -> list[dict]:
             if m:
                 out.append(m)
     return out
+
+
+def _media_ok(names: list[str]) -> bool:
+    """media <cara> [sonido]: nombres de la SD del K210 (letras, números, _ y -), sin rutas"""
+    return 1 <= len(names) <= 2 and all(0 < len(n) <= 40 and all(c.isalnum() or c in "_-" for c in n) for n in names)
 
 
 def subir_cmd(name: str) -> dict | None:
@@ -110,7 +119,7 @@ OTA_CHUNK = 4000   # bytes por trozo (el robot acepta hasta 9216, ota.h); chicos
                    # en su búfer de 16 KB cortaban el enlace (2026-11-03)
 
 
-def ota_cmd(args: list[str]) -> dict | None:
+def ota_cmd(args: list[str], log=append) -> dict | None:
     """"ota <archivo.bin> <sha256>": solo archivos de data_dir/ota/ (sin rutas) y con el SHA-256 que dice el archivo;
     "ota reboot": que arranque la ya verificada. Lo demás se ignora."""
     if args == ["reboot"]:
@@ -123,10 +132,10 @@ def ota_cmd(args: list[str]) -> dict | None:
         with open(path, "rb") as f:
             data = f.read()
     except OSError:
-        append(f"servidor: ota: no existe {args[0]}")
+        log(f"servidor: ota: no existe {args[0]}")
         return None
     if hashlib.sha256(data).hexdigest() != sha or len(sha) != 64:
-        append(f"servidor: ota: el SHA-256 de {args[0]} no es el que dice la orden; no se manda")
+        log(f"servidor: ota: el SHA-256 de {args[0]} no es el que dice la orden; no se manda")
         return None
     return {"t": "_ota", "file": path, "name": args[0], "sha256": sha, "size": len(data)}
 
@@ -135,3 +144,52 @@ def ota_chunks(data: bytes) -> list[dict]:
     n = (len(data) + OTA_CHUNK - 1) // OTA_CHUNK
     return [{"t": "ota", "seq": i, "last": i == n - 1, "b64": base64.b64encode(data[i * OTA_CHUNK:(i + 1) * OTA_CHUNK]).decode()}
             for i in range(n)]
+
+
+# ---- la Home Station con alma-base (firmware/base; dueño, 2026-11-06) ----
+# Su registro va a base_log.txt (siempre: no tiene USB) y sus órdenes se dejan en base_cmd.txt:
+#   ota <archivo.bin> <sha256> | ota reboot   firmware nuevo por Wi-Fi, igual que el robot (data_dir/ota/)
+#   anim <nombre>   una de sus animaciones (tools/base_leds)     leds off   apagar la matriz     anims   cuáles tiene
+#   comp <r> <g> <b> [curva]   % extra por canal en los LEDs gastados por la casita de fábrica (0-300); curva
+#                  100 = recta, 200 = cuadrática (por omisión)
+#   pong | pong stop   una partida con Alma (su paleta la mueve el robot; sin él, un jugador con su estilo)
+#   musica          20 s del analizador de espectro (normalmente lo prende el robot al bailar o cantar)
+
+def base_append(s: str, now: float | None = None) -> None:
+    append(s, now, "base_log.txt")
+
+
+def base_take_cmds() -> list[dict]:
+    """Lee y borra base_cmd.txt; devuelve los mensajes para la base (lo que no entiende, se ignora)."""
+    p = _path("base_cmd.txt")
+    try:
+        with open(p, encoding="utf-8") as f:
+            text = f.read()
+        os.remove(p)
+    except FileNotFoundError:
+        return []
+    out = []
+    for ln in text.splitlines():
+        parts = ln.strip().split()
+        if len(parts) == 2 and parts[0] == "anim" and len(parts[1]) < 16 and parts[1].replace("_", "").isalnum():
+            out.append({"t": "anim", "n": parts[1]})
+        elif parts == ["leds", "off"]:
+            out.append({"t": "leds_off"})
+        elif parts == ["anims"]:
+            out.append({"t": "anims"})
+        elif parts == ["pong"]:
+            out.append({"t": "pong"})
+        elif parts == ["pong", "stop"]:
+            out.append({"t": "pong_stop"})
+        elif parts == ["musica"]:
+            out.append({"t": "musica"})
+        elif len(parts) in (4, 5) and parts[0] == "comp" and all(p.isdigit() and int(p) <= 400 for p in parts[1:]):
+            m = {"t": "comp", "r": int(parts[1]), "g": int(parts[2]), "b": int(parts[3])}
+            if len(parts) == 5:
+                m["e"] = int(parts[4])
+            out.append(m)
+        elif parts and parts[0] == "ota":
+            m = ota_cmd(parts[1:], log=base_append)
+            if m:
+                out.append(m)
+    return out

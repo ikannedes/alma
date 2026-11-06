@@ -127,6 +127,23 @@ int hal_home_ble(int *rssi, int64_t *age_ms)
     if (age_ms) *age_ms = fake_ms - fake_ble_seen_ms;
     return 1;
 }
+int fake_lan_sent;
+char fake_lan_last[128];
+int lan_send(const char *to_id, const char *body) { (void)to_id; fake_lan_sent++; snprintf(fake_lan_last, sizeof fake_lan_last, "%s", body); return 0; }
+int fake_ble_charging = -1;
+hal_pong_t fake_pong;
+int64_t fake_pong_ms = -1;
+int fake_ble_dir, fake_ble_flags, fake_ble_fast;
+int hal_home_pong(hal_pong_t *p, int64_t *age_ms)
+{
+    if (fake_pong_ms < 0) return 0;
+    *p = fake_pong;
+    if (age_ms) *age_ms = fake_ms - fake_pong_ms;
+    return 1;
+}
+void hal_ble_fast(int on) { fake_ble_fast = on; }
+void hal_ble_to_base(int dir, int flags) { fake_ble_dir = dir; fake_ble_flags = flags; }   /* lo que anuncia alma-base: −1 no sé, 0 no, 1 EMO cargándose en ella */
+int hal_home_ble_charging(void) { return fake_ble_charging; }
 const uint8_t *hal_brain_weights(size_t *n)
 {
     static uint8_t *w;
@@ -170,6 +187,7 @@ static int rx_n;
 static int64_t t34 = -1, tres = -1;
 
 int64_t hal_now_ms(void) { return fake_ms; }
+int64_t hal_now_us(void) { return fake_ms * 1000; }
 
 void hal_log(const char *fmt, ...)
 {
@@ -204,6 +222,7 @@ void hal_legs_power(int on) { if (!on && fake_legs_on) fake_legs_offs++; fake_le
 int hal_legs_on(void) { return fake_legs_on; }
 unsigned hal_keep_get(void) { return fake_keep; }
 void hal_keep_set(unsigned v) { fake_keep = v; }
+void hal_restart(void) { hal_log("reinicio (falso)"); }
 static uint8_t *ota_buf;
 static size_t ota_cap, ota_n;
 static int ota_open, ota_ok;

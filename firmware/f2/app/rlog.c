@@ -6,7 +6,9 @@
 
 #include "f2_hal.h"
 
+#ifndef RLOG_CAP   /* la base: menos (sin PSRAM) */
 #define RLOG_CAP   32768   /* en PSRAM; si se llena, se pierden las más viejas y se avisa */
+#endif
 #define RLOG_CHUNK 2048    /* texto por mensaje (antes de escapar) */
 
 static EXT_RAM_BSS_ATTR char ring[RLOG_CAP];

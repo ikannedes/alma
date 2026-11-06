@@ -13,3 +13,11 @@ float battery_pct(int bat_mv, int charging)
             return PCT[i - 1] + (PCT[i] - PCT[i - 1]) * (float)(bat_mv - MV[i - 1] - off) / (float)(MV[i] - MV[i - 1]);
     return 100;
 }
+
+int battery_charger_kind(int present, int rx0, int base, int64_t present_ms)
+{
+    if (!present) return 0;
+    if (base == 1) return 1;                      /* la base lo ve: es ella, aunque RX0 esté en alto */
+    if (base == 0) return present_ms >= BASE_LAG_MS ? 2 : -1;   /* corriente y la base dice que no: es el cable */
+    return rx0 ? 2 : 1;                           /* sin noticias de la base: como antes */
+}

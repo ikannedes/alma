@@ -33,6 +33,8 @@
 #include "body.h"
 #include "uplink.h"
 #include "repertorio.h"
+#include "juego_base.h"
+#include "lan.h"
 #include "rlog.h"
 #include "vision.h"
 #include "voice.h"
@@ -782,6 +784,13 @@ static void test_faces(void)
 static void test_battery(void)
 {
     CHECK(battery_mv(2208, 1) == 4286 && battery_pct(4286, 1) == 100, "medido [ALMA-1B]: 2208 mV en el pin con USB → 4286 mV, 100 %%");
+    /* base o cable (2026-11-06): en la Home Station RX0 también está en alto; manda lo que anuncia alma-base */
+    CHECK(battery_charger_kind(0, 1, 1, 0) == 0, "sin corriente no hay cargador aunque la base diga que sí");
+    CHECK(battery_charger_kind(1, 1, -1, 9000) == 2 && battery_charger_kind(1, 0, -1, 9000) == 1,
+          "sin noticias de la base: como antes (RX0 alto = USB)");
+    CHECK(battery_charger_kind(1, 1, 1, 0) == 1, "la base dice que EMO se carga en ella: Home Station aunque RX0 esté alto");
+    CHECK(battery_charger_kind(1, 1, 0, 1000) == -1 && battery_charger_kind(1, 1, 0, BASE_LAG_MS) == 2,
+          "corriente y la base dice que no: espera su anuncio y luego es el cable");
     static const struct { int mv, chg; float pct; } P[] = {
         {3529, 0, 20}, {3589, 0, 40}, {3669, 0, 60}, {3999, 0, 100}, {3559, 0, 30}, {3400, 0, 0}, {3000, 0, 0}, {4300, 0, 100},
         {3629, 1, 20}, {3689, 1, 40}, {3769, 1, 60}, {4099, 1, 100}, {3500, 1, 0}};
@@ -1428,6 +1437,12 @@ static void test_battery_life(void)
     CHECK(fake_log_contains("usb: se mueve con el cable") && (hal_keep_get() & 2u), "usb on por Wi-Fi: se mueve con el cable");
     api_link_msg("{\"t\":\"usb_mueve\",\"on\":false}", rep, sizeof rep);
     CHECK(fake_log_contains("usb: con el cable cuenta como base") && !(hal_keep_get() & 2u), "usb off: quieta con el cable");
+    api_link_msg("{\"t\":\"key\",\"k\":\"Y\"}", rep, sizeof rep);
+    CHECK(fake_log_contains("núcleo: el bucle de Alma pasa al 0") && fake_log_contains("reinicio (falso)") &&
+          (hal_keep_get() & HAL_KEEP_CORE0), "Y por Wi-Fi: el bucle pasa al núcleo 0 y reinicia");
+    api_link_msg("{\"t\":\"key\",\"k\":\"Y\"}", rep, sizeof rep);
+    CHECK(fake_log_contains("núcleo: el bucle de Alma pasa al 1") && !(hal_keep_get() & HAL_KEEP_CORE0),
+          "Y otra vez: de vuelta al núcleo 1");
     api_link_msg("{\"t\":\"prueba_bateria\",\"on\":false}", rep, sizeof rep);
     home_stop("fin");
     a->servo_active_s_today = 0;
@@ -3270,12 +3285,12 @@ static void test_body(void)
 static void test_console(void)
 {
     fake_log_clear();
-    const char keys[] = {'i', '\r', '\n', 'Y', '0', 'k'};
+    const char keys[] = {'i', '\r', '\n', 'q', '0', 'k'};
     for (size_t i = 0; i < sizeof keys; i++) app_console_key(keys[i]);
     app_console_key('\0');
     CHECK(fake_log_contains("tecla recibida 0x69 'i'") && fake_log_contains("estado:"), "'i': registrada y atendida");
     CHECK(fake_log_contains("tecla recibida 0x0d '?'") && fake_log_contains("tecla recibida 0x0a '?'"), "\\r y \\n registradas");
-    CHECK(fake_log_contains("tecla recibida 0x59 'Y'") && fake_log_contains("tecla 'Y' sin uso"), "tecla sin uso: registrada");
+    CHECK(fake_log_contains("tecla recibida 0x71 'q'") && fake_log_contains("tecla 'q' sin uso"), "tecla sin uso: registrada");
     CHECK(fake_log_contains("tecla recibida 0x30 '0'") && fake_log_contains("PARO") && !motion_active(), "'0': registrada, PARO");
     CHECK(fake_log_contains("tecla recibida 0x6b 'k'") && fake_log_contains("consola: EV_WAKE_WORD"), "'k': registrada y evento");
     CHECK(fake_log_contains("tecla recibida 0x00 '?'"), "byte 0x00 registrado");
@@ -3539,10 +3554,131 @@ static void test_repertorio(void)
     CHECK(fake_log_contains("inestable: se descarta") && repertorio_inventions() == n0 + 1, "invento inestable: se descarta");
     fake_sensors.tilt_b = 0;
     fake_run(1000);
+    /* ondas (vía 4): seguras, periódicas, de vuelta a 90 y con algo de movimiento */
+    int wave_ok = 1, waves = 0;
+    for (uint64_t seed = 1; seed <= 300; seed++) {
+        alma_rng wr;
+        alma_rng_seed(&wr, seed);
+        int n = repertorio_make_wave(&wr, f);
+        if (n < 0) continue;
+        waves++;
+        int moves = 0;
+        if (n > REP_FRAMES || f[n - 1].s[0] != 90 || f[n - 1].s[1] != 90 || f[n - 1].s[2] != 90 || f[n - 1].s[3] != 90) wave_ok = 0;
+        for (int k = 0; k < n - 1; k++) {
+            for (int s = 0; s < 4; s++) if (!motion_angle_ok(s, f[k].s[s])) wave_ok = 0;
+            if (abs(f[k].s[2] - 90) > 10 || abs(f[k].s[3] - 90) > 10 || f[k].ms < 80 || f[k].ms > 200) wave_ok = 0;
+            if (k + 8 < n - 1 && memcmp(f[k].s, f[k + 8].s, 4) != 0) wave_ok = 0;
+            moves |= f[k].s[0] != f[0].s[0];
+        }
+        if (!moves) wave_ok = 0;
+    }
+    CHECK(waves == 300 && wave_ok, "ondas: 300 de 300 dentro del rango seguro, pies a ±10, periódicas y terminan en 90");
+    fake_log_clear();
+    int saw_wave = 0;
+    for (int k = 0; k < 12 && !saw_wave; k++) {
+        repertorio_invent(&((alma_t *)app_alma())->rng, 0);
+        fake_run(8000);
+        saw_wave = fake_log_contains("invento: prueba onda_");
+    }
+    CHECK(saw_wave && fake_log_contains("onda_") && fake_log_contains("estable: se queda"), "inventa ondas y las prueba como los otros inventos");
 }
 
 /* Desmayo con secuela (dueño, 2026-11-05) y la caricia en el registro */
 extern int fake_legs_on;
+/* Pong con la base por Bluetooth (2026-11-06): Alma escucha la partida, decide su jugada y reacciona a los puntos */
+extern hal_pong_t fake_pong;
+extern int64_t fake_pong_ms;
+extern int fake_ble_dir, fake_ble_flags, fake_ble_fast;
+static void pong_frame(int bx, int by, int vx, int vy, int pa, int sa, int sb)
+{
+    static int seq;
+    fake_pong = (hal_pong_t){bx, by, vx, vy, pa, 3, sa, sb, ++seq};
+    fake_pong_ms = fake_ms;
+    fake_run(250);
+}
+
+static void test_juego_base(void)
+{
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_sensors.on_charger = 0;
+    fake_sensors.soc_pct = 90;
+    fake_log_clear();
+    pong_frame(2, 3, -1, 1, 6, 0, 0);
+    CHECK(fake_log_contains("pong: Alma juega con la base") && fake_ble_fast == 1 && (fake_ble_flags & BASE_F_PONG),
+          "la base anuncia una partida: Alma juega, escucha siempre y se anuncia");
+    /* la pelota baja hacia la izquierda y su paleta está a la derecha: casi siempre lleva la paleta a la izquierda */
+    hal_pong_t p = {1, 5, -1, 1, 6, 3, 0, 0, 0};
+    int left = 0, right = 0, keep = 0;
+    for (int i = 0; i < 400; i++) {
+        int t = juego_base_decide(app_alma(), &p);
+        left += t >= 0 && t < 6;
+        right += t > 6;
+        keep += t < 0;
+        if (t < -1 || t > 7) right += 1000;   /* fuera del campo: que falle abajo */
+    }
+    CHECK(left > 250 && right == 0 && keep > 0, "la pelota va a su izquierda: Alma lleva la paleta a la izquierda (a veces duda)");
+    CHECK(juego_base_skill(app_alma()) >= 0.35f && juego_base_skill(app_alma()) <= 0.95f, "qué tan bien atina, en 35-95 %%");
+    pong_frame(4, 3, 1, -1, 3, 1, 0);
+    CHECK(fake_log_contains("pong: punto de Alma (Alma 1, base 0)"), "punto de Alma: lo sabe");
+    pong_frame(4, 3, 1, -1, 3, 1, 1);
+    CHECK(fake_log_contains("pong: punto de la base (Alma 1, base 1)"), "punto de la base: lo sabe");
+    pong_frame(4, 3, 1, -1, 3, 1, 3);
+    CHECK(fake_log_contains("pong: perdió Alma (Alma 1, base 3") && fake_ble_flags == 0 && fake_ble_fast == 0,
+          "pierde: reacciona y deja de anunciarse");
+    pong_frame(4, 3, 1, -1, 3, 1, 3);
+    CHECK(!juego_base_playing(), "la partida terminada no vuelve a empezar mientras la base la siga anunciando");
+    fake_run(5000);   /* más que FRESH_MS */
+    CHECK(!juego_base_playing() && fake_ble_flags == 0, "sin anuncio: nada");
+    fake_log_clear();
+    pong_frame(5, 3, 1, 1, 3, 0, 0);
+    CHECK(fake_log_contains("pong: Alma juega con la base"), "una partida nueva empieza otra vez");
+    fake_run(5000);   /* más que FRESH_MS */
+    CHECK(fake_log_contains("pong: la base dejó de anunciar la partida") && fake_ble_fast == 0, "se corta: lo nota y vuelve a escuchar a ratos");
+    fake_pong_ms = -1;
+}
+
+/* la red local de Alma (lan.h): firma, repetidos y quién lo mandó */
+extern int fake_lan_sent;
+extern char fake_lan_last[128];
+static void test_lan(void)
+{
+    uint8_t k[LAN_KEY_LEN], k2[LAN_KEY_LEN], buf[LAN_MAX];
+    char js[LAN_MAX];
+    for (int i = 0; i < LAN_KEY_LEN; i++) { k[i] = (uint8_t)i; k2[i] = (uint8_t)(i + 1); }
+    lan_peer peers[LAN_PEERS];
+    memset(peers, 0, sizeof peers);
+    uint32_t n = 0;
+    long len = lan_pack(k, "base", 77, &n, "\"t\":\"pong\",\"bx\":3", buf, sizeof buf);
+    int who = -1;
+    CHECK(len > 0 && lan_unpack(k, buf, (size_t)len, 0x0A00A8C0u, 1000, peers, js, sizeof js, "robot", &who) > 0 &&
+          strstr(js, "\"bx\":3") && who >= 0 && !strcmp(peers[who].id, "base") && peers[who].ip == 0x0A00A8C0u,
+          "lan: un mensaje firmado se acepta y se sabe quién lo mandó");
+    CHECK(lan_unpack(k, buf, (size_t)len, 0x0A00A8C0u, 1001, peers, js, sizeof js, "robot", &who) < 0, "lan: repetido, no");
+    long l2 = lan_pack(k2, "base", 77, &n, "\"t\":\"x\"", buf, sizeof buf);
+    CHECK(lan_unpack(k, buf, (size_t)l2, 1, 1002, peers, js, sizeof js, "robot", &who) < 0, "lan: con otra llave, no");
+    len = lan_pack(k, "base", 77, &n, "\"t\":\"y\"", buf, sizeof buf);
+    buf[len - 2] ^= 1;
+    CHECK(lan_unpack(k, buf, (size_t)len, 1, 1003, peers, js, sizeof js, "robot", &who) < 0, "lan: alterado, no");
+    uint32_t n2 = 0;
+    len = lan_pack(k, "base", 78, &n2, "\"t\":\"hola\"", buf, sizeof buf);
+    CHECK(lan_unpack(k, buf, (size_t)len, 1, 1004, peers, js, sizeof js, "robot", &who) > 0, "lan: la base reinició (otro b): se acepta");
+    len = lan_pack(k, "robot", 5, &n, "\"t\":\"hola\"", buf, sizeof buf);
+    CHECK(lan_unpack(k, buf, (size_t)len, 1, 1005, peers, js, sizeof js, "robot", &who) < 0, "lan: lo propio (difusión) se ignora");
+    CHECK(lan_find(peers, "base", 1004 + LAN_PEER_MS - 1) && !lan_find(peers, "base", 1004 + LAN_PEER_MS + 1), "lan: el par caduca");
+    /* el Pong por la red: el robot juega con lo que llega por ahí aunque no haya Bluetooth */
+    boot_app(K_REPLY_SAM);
+    CHECK(run_until_ready(20000), "K210 listo");
+    fake_log_clear();
+    fake_lan_sent = 0;
+    juego_base_lan_msg("{\"id\":\"base\",\"t\":\"pong\",\"bx\":2,\"by\":3,\"vx\":-1,\"vy\":1,\"pa\":6,\"pb\":3,\"sa\":0,\"sb\":0}");
+    fake_run(300);
+    CHECK(fake_log_contains("pong: Alma juega con la base") && fake_lan_sent > 0 && strstr(fake_lan_last, "\"t\":\"robot\""),
+          "lan: la partida llega por la red y Alma le contesta por la red");
+    fake_run(6000);
+    CHECK(!juego_base_playing(), "lan: sin mensajes, la partida se da por terminada");
+}
+
 static void test_faint_fw(void)
 {
     boot_app(K_REPLY_SAM);
@@ -3641,6 +3777,8 @@ int main(int argc, char **argv)
     test_variation();
     test_tilt();
     test_repertorio();
+    test_juego_base();
+    test_lan();
     test_faint_fw();   /* al final: deja la vuelta a casa "batería baja" recién intentada (HOME_RETRY_MS) */
     printf("%d comprobaciones, %d fallas\n", checks, fails);
     return fails != 0;

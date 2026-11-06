@@ -28,6 +28,8 @@ void k210_send_small(uint8_t cmd, uint8_t d0, uint8_t d1, uint8_t d2);
 void k210_send_path(const char *path);      /* SEL 0x03 */
 /* SEL 0x02. Devuelve 0 si se mandó; −1 si el K210 no está listo o el payload no cabe. */
 int  k210_play(const char *avi, const char *mp3_or_null, int mode);
+/* 1 = la animación en curso se mandó con sonido y el K210 aún no avisa que terminó (08 00) */
+int  k210_sound_on(void);
 /* Fase del modo de caras del reposo: 0 sin empezar, 1 y 2 en el modo 1, 3 en el modo 4 (CARAS2.md) */
 int  k210_face_phase(void);
 /* 1 mientras se muestra una animación en el modo 1 (el modo 4 deja los ojos fijos); perception no da caras por perdidas */

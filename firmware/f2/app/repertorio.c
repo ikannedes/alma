@@ -115,6 +115,41 @@ static int make(alma_rng *r, mot_frame *out)
     return k;
 }
 
+/* ---- ondas (vía 4; dueño, 2026-11-06) ----
+   Cada servo sigue su onda: ángulo = 90 + O + A·sin(2π·i/WAVE_SPC + φ), las mismas cuentas que las primitivas de marcha
+   del original (gait.c), pero con amplitud, centro y desfase propios por servo: meneos, vaivenes y balanceos suaves. Se
+   muestrea en WAVE_SPC poses por ciclo (entre poses la transición es lineal). Caderas hasta ±28 con centro ±8 (S1 no baja
+   de 53), pies hasta ±10 y centrados (inclinan todo el cuerpo). */
+#define WAVE_SPC 8
+int repertorio_make_wave(alma_rng *r, mot_frame *out)
+{
+    static const float Q[4] = {0.0f, 1.5707963f, 3.1415927f, 4.712389f};
+    int A[4], O[4], period = rnd(r, 8, 20) * 80, cycles = rnd(r, 2, 3), k = 0;   /* 640–1600 ms por ciclo */
+    float ph[4];
+    A[0] = rnd(r, 8, 28);
+    A[1] = alma_rng_u01(r) < 0.6f ? A[0] : rnd(r, 8, 28);
+    A[2] = rnd(r, 0, 10);
+    A[3] = alma_rng_u01(r) < 0.6f ? A[2] : rnd(r, 0, 10);
+    O[0] = rnd(r, -8, 8);
+    O[1] = alma_rng_u01(r) < 0.5f ? -O[0] : rnd(r, -8, 8);
+    O[2] = O[3] = 0;
+    ph[0] = 0;
+    ph[1] = Q[rnd(r, 0, 2)];   /* caderas juntas, a un cuarto o opuestas */
+    ph[2] = Q[rnd(r, 0, 3)];
+    ph[3] = ph[2] + (alma_rng_u01(r) < 0.5f ? 0 : Q[2]);
+    for (int c = 0; c < cycles; c++)
+        for (int i = 0; i < WAVE_SPC; i++) {
+            int s[4];
+            for (int j = 0; j < 4; j++) {
+                s[j] = 90 + O[j] + (int)lroundf((float)A[j] * sinf(6.2831853f * (float)i / WAVE_SPC + ph[j]));
+                if (!motion_angle_ok(j, s[j])) return -1;
+            }
+            pose(&out[k++], s[0], s[1], s[2], s[3], period / WAVE_SPC);
+        }
+    pose(&out[k++], 90, 90, 90, 90, 400);
+    return k;
+}
+
 int repertorio_invent(alma_rng *r, int on_charger)
 {
     if (cand_on || motion_active()) return -1;
@@ -126,8 +161,10 @@ int repertorio_invent(alma_rng *r, int on_charger)
         hal_log("invento: repite su favorito %s (%d veces)", inv[best].name, inv[best].plays);
         return motion_play_frames(inv[best].name, inv[best].f, inv[best].n, on_charger) == MOTION_OK ? 0 : -1;
     }
-    snprintf(cand.name, sizeof cand.name, "invento_%d", ++inv_seq);
-    cand.n = make(r, cand.f);
+    int wave = alma_rng_u01(r) < 0.5f;   /* mitad poses sueltas, mitad ondas */
+    snprintf(cand.name, sizeof cand.name, "%s_%d", wave ? "onda" : "invento", ++inv_seq);
+    cand.n = wave ? repertorio_make_wave(r, cand.f) : -1;
+    if (cand.n < 0) cand.n = make(r, cand.f);
     cand.plays = 0;
     if (!perception_tilt(&cand_a0, &cand_b0)) cand_a0 = cand_b0 = 0;
     cand_dev = 0;

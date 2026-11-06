@@ -3,8 +3,10 @@
 #pragma once
 #include <stddef.h>
 
+#ifndef OUTBOX_N   /* la base (firmware/base): menos y más cortos, no tiene PSRAM */
 #define OUTBOX_N   6
 #define OUTBOX_LEN 3072   /* el resumen nocturno con las conductas del día */
+#endif
 
 /* Un objeto JSON completo, con "t". */
 void outbox_put(const char *json);

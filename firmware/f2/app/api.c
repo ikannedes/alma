@@ -1,7 +1,7 @@
 #include "api.h"
 
 /* teclas de prueba que se aceptan por Wi-Fi (las mismas que por el USB; 0 = PARO) */
-#define REMOTE_KEYS "CHgiAWSDJTKUVx0?"
+#define REMOTE_KEYS "CHgiAWSDJTKUVYx0?"
 
 #include <stdio.h>
 #include <string.h>
@@ -13,6 +13,7 @@
 #include "f2_hal.h"
 #include "fiesta.h"
 #include "ota.h"
+#include "hal_k210.h"
 #include "home.h"
 #include "outbox.h"
 #include "repertorio.h"
@@ -304,6 +305,14 @@ long api_link_msg(const char *json, char *out, size_t cap)
         /* los archivos ("cara") se reciben aunque Alma esté en el reloj: el cuerpo los sube al K210 (2026-11-03: sin Alma no
            llegaba ausente_reloj y se veía dormido); la fiesta del día solo con ella */
         if (!strcmp(t->valuestring, "cara") || !away(t->valuestring)) n = fiesta_msg(t->valuestring, json, out, cap);
+    } else if (strcmp(t->valuestring, "prueba_media") == 0) {   /* una cara con un sonido, para buscar nombres en la SD
+                                                                    (2026-11-06: las canciones no sonaban; robot_debug "media") */
+        const char *avi = str(j, "avi"), *mp3 = str(j, "mp3");
+        if (avi && avi[0]) {
+            int r = k210_play(avi, mp3 && mp3[0] ? mp3 : NULL, 0);
+            hal_log("prueba de media: %s.avi con %s%s (%s)", avi, mp3 && mp3[0] ? mp3 : "(sin sonido)", mp3 && mp3[0] ? ".mp3" : "",
+                    r == 0 ? "mandada" : "el K210 no la aceptó");
+        }
     } else if (strcmp(t->valuestring, "rlog") == 0) {   /* depuración sin el USB (dueño, 2026-11-02; robot_debug.py) */
         const cJSON *on = cJSON_GetObjectItemCaseSensitive(j, "on");
         rlog_set(cJSON_IsTrue(on));

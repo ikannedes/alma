@@ -20,6 +20,7 @@
 
 /* ---- reloj y registro ---- */
 int64_t hal_now_ms(void);                        /* monotónico desde el arranque */
+int64_t hal_now_us(void);                        /* lo mismo en microsegundos (para medir tiempos) */
 void hal_log(const char *fmt, ...) __attribute__((format(printf, 1, 2)));   /* una línea con [segundos.ms] */
 void *hal_big_alloc(size_t n);   /* búfer grande en PSRAM (la cara de una fiesta); NULL si no hay */
 void hal_big_free(void *p);
@@ -37,6 +38,9 @@ const char *hal_ota_running_label(void);
    hal_servo_set la vuelve a prender. Sin corriente, los pies repiten su última lectura buena */
 void hal_legs_power(int on);
 int  hal_legs_on(void);
+/* bit de hal_keep: el bucle de Alma en el núcleo 0, junto al Wi-Fi (sin él, en el 1). Prueba de tiempos (dueño, 2026-11-06) */
+#define HAL_KEEP_CORE0 4u
+void hal_restart(void);             /* reinicio por software (deja salir el registro) */
 unsigned hal_keep_get(void);        /* banderas que sobreviven a un reinicio por software (no a un apagón); 0 al encender */
 void hal_keep_set(unsigned v);
 int  hal_ota_trial(char *prev, size_t cap);      /* 1 = este arranque es a prueba; prev = de dónde venía */
@@ -111,6 +115,21 @@ int  hal_power_probe(hal_power_probe_t *out);
 /* Home Station por Bluetooth (main/ble_base.c): 1 si alguna vez se oyó su anuncio; rssi en dBm y hace cuánto (ms).
    Sin Bluetooth en la variante, 0 */
 int hal_home_ble(int *rssi, int64_t *age_ms);
+/* lo que dice alma-base de sí misma por Bluetooth: 1 = EMO se está cargando en ella (lo sabe por su GPIO39), 0 = no,
+   −1 = no sé (sin anuncio reciente, o la base trae el firmware de fábrica) */
+#define HOME_BLE_FLAGS_MS 5000
+int hal_home_ble_charging(void);
+/* Pong con la base por Bluetooth (2026-11-06): el último estado que anunció (campo 10 x 8: pelota bx 0-9, by 0-7, su
+   velocidad, paletas pa (Alma, abajo) y pb (la base, arriba) por su columna izquierda, marcador sa/sb, seq del anuncio).
+   1 = hay; *age_ms = hace cuánto */
+typedef struct { int bx, by, vx, vy, pa, pb, sa, sb, seq; } hal_pong_t;
+int  hal_home_pong(hal_pong_t *p, int64_t *age_ms);
+void hal_ble_fast(int on);              /* escuchar siempre (partida) o a ratos (50 ms cada 1 s) */
+/* lo que el robot le anuncia a la base: dir = jugada de Alma (la columna 0-7 a la que lleva su paleta); flags bit 0 =
+   jugando Pong, bit 1 = poniendo música. flags 0 = deja de anunciarse */
+#define BASE_F_PONG   1
+#define BASE_F_MUSICA 2
+void hal_ble_to_base(int dir, int flags);
 /* Rumbo integrado del giroscopio (grados, eje vertical = Y del IMU, como la gravedad). Deriva: sirve para giros cortos */
 float hal_yaw_deg(void);
 

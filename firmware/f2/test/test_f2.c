@@ -3446,6 +3446,30 @@ static void test_tilt(void)
     fake_sensors.tilt_a = 0;
     floors(1, 1, 1, 1);
     fake_run(4000);
+
+    /* dueño, 2026-11-05: "si está haciendo un movimiento que no detecte sensores, hasta que lo termine" (mirar abajo) */
+    mot_frame f[2];
+    memset(f, 0, sizeof f);
+    f[0].mode = f[1].mode = MOT_MODE_POSE;
+    f[0].s[0] = 90; f[0].s[1] = 90; f[0].s[2] = 110; f[0].s[3] = 70; f[0].ms = 1500;
+    f[1].s[0] = f[1].s[1] = f[1].s[2] = f[1].s[3] = 90; f[1].ms = 1500;
+    fake_log_clear();
+    motion_play_frames("mirar_abajo", f, 2, 0);
+    fake_run(500);
+    floors(0, 1, 1, 1);   /* a media animación, un sensor pierde la mesa */
+    fake_run(1000);
+    floors(1, 1, 1, 1);
+    fake_run(3000);
+    CHECK(!fake_log_contains("REFLEJO EV_CLIFF"), "a media animación un sensor sin piso no es borde");
+    fake_log_clear();
+    motion_play_frames("mirar_abajo", f, 2, 0);
+    fake_run(500);
+    floors(0, 1, 0, 1);   /* y sigue sin piso al terminar: ahí sí */
+    fake_run(4500);
+    CHECK(fake_log_contains("sigue tras el movimiento") && fake_log_contains("REFLEJO EV_CLIFF"),
+          "terminada la animación y aún sin piso: se revisa y es borde");
+    floors(1, 1, 1, 1);
+    fake_run(4000);
 }
 
 /* Sus movimientos propios (dueño, 2026-11-05): trucos de Haiku (vía 3) e inventos (vía 2) */

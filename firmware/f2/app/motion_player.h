@@ -39,6 +39,7 @@ void motion_release_all(void);
 int  motion_all_released(void);
 void motion_boot(void);            /* al arrancar la app (servos activos otra vez) */
 int  motion_active(void);
+int  motion_walking(void);   /* el cuadro en curso es de marcha (camina o gira), no una pose */
 
 /* Escucha (04): GPIO26 bloqueado mientras dure ST_LISTENING */
 void motion_lock_gpio26(int locked);

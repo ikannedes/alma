@@ -172,6 +172,7 @@ static void log_event(const alma_ev *e)
 static void settle_start(void)
 {
     static alma_motion_opt o;
+    if (home_active()) { hal_log("acomodarse: va a la base; no"); return; }
     hal_sensors s;
     hal_sensors_read(&s);
     float ta = s.tilt_a, tb = s.tilt_b;
@@ -1024,10 +1025,21 @@ void app_step(void)
     /* máquina de estados de los bordes: durante un movimiento de reflejo y 500 ms después, no se dispara otro */
     if (A.state == ST_REFLEX && motion_active()) perception_hold_edges(now + 500);
     if (motion_active()) perception_moving(now);
+    /* dueño, 2026-11-05: "si está haciendo un movimiento que no detecte sensores, hasta que lo termine". Sus animaciones
+       (mirar abajo, bailar, gestos) inclinan los pies y los sensores pierden la mesa un instante: no es borde. Al terminar
+       se vuelve a revisar desde cero (edge_recheck). Caminando sí revisa cada paso (regla del dueño, 2026-10-29) */
+    if (motion_active() && !motion_walking()) perception_hold_edges(now + 400);
     perception_poll_sensors(&s);   /* los reflejos salen de aquí en el acto */
     alma_near(&A, perception_front_mm(), app_now_s());   /* qué tan cerca le interesa lo decide la red */
+    /* ladeada: solo cuenta quieta 1.5 s (no a media animación ni volviendo a casa; 2026-11-05 17:58 se quiso acomodar
+       por la inclinación de su propio giro) */
+    static int64_t still_since;
+    if (motion_active() || home_active() || leave_steps) still_since = now;
     float ta, tb;
-    if (perception_tilt(&ta, &tb)) alma_tilt(&A, ta, tb, app_now_s());   /* ladeada: la red decide (bhv_settle…) */
+    if (perception_tilt(&ta, &tb)) {
+        if (now - still_since >= 1500) alma_tilt(&A, ta, tb, app_now_s());
+        else alma_tilt(&A, 0, 0, app_now_s());
+    }
     {   /* la base cerca (red v8): encima −20…−30 dBm, a un par de metros ~−50; con cargador, encima */
         int rssi;
         int64_t age;

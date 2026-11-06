@@ -337,6 +337,8 @@ void motion_stop_now(void)
     P.gait_on = 0;
 }
 
+int motion_walking(void) { return P.active && P.k < P.n && gait_supported(P.f[P.k].mode); }
+
 int motion_active(void) { return P.active; }
 
 void motion_lock_gpio26(int locked)

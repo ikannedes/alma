@@ -44,6 +44,8 @@ static int edge_side;              /* pie entero en el aire: bit 2 izquierdo, bi
    EDGE_SETTLE_MS quieto antes de volver a evaluar. Durante la espera los bordes siguen frenando la marcha. */
 #define EDGE_SETTLE_MS 500
 static int64_t edge_hold_until = -1;
+#define EDGE_RETRIES 3
+static int edge_streak;   /* revisiones seguidas tras un reflejo que aún ven borde */
 static int edge_recheck;
 /* Sacudida propia (robot, 2026-11-02): react_look_down_2/4 hacen que el IMU pase SHAKE_ON 500 ms y salía EV_SHAKEN sin
    que nadie lo tocara. Durante sus movimientos y SHAKE_SETTLE_MS después no cuenta, salvo en la mano. */
@@ -230,7 +232,7 @@ static void on_face(const uint8_t *p, size_t n)
 void perception_init(perc_emit_fn fn)
 {
     emit = fn;
-    have_last = low_sent = edge_now = edge_side = gait_dir = edge_recheck = 0;
+    have_last = low_sent = edge_now = edge_side = gait_dir = edge_recheck = edge_streak = 0;
     edge_hold_until = shake_hold_until = -1;
     swing_foot = -1;
     unknown = 0;
@@ -433,14 +435,21 @@ void perception_poll_sensors(alma_sensors *for_tick)
     if (hal_now_ms() < edge_hold_until) {
         /* en un movimiento de reflejo o en la espera de después: no se avisa (los bordes siguen frenando la marcha) */
     } else if (edge_recheck) {
-        /* terminó el movimiento y pasó la espera: se vuelve a evaluar desde cero */
+        /* terminó el movimiento y pasó la espera: se vuelve a evaluar desde cero. Si tras EDGE_RETRIES retrocesos el borde
+           sigue (2026-11-06: 19 seguidos en una orilla, los pasos no la sacaban), se queda quieta: un retroceso más no
+           ayuda. Vuelve a reaccionar cuando el borde se va, la levantan o cambia de lado */
         edge_recheck = 0;
-        if (e) post_edge(e, ", sigue tras el movimiento");
+        if (e && ++edge_streak <= EDGE_RETRIES) post_edge(e, ", sigue tras el movimiento");
+        else if (e && edge_streak == EDGE_RETRIES + 1)   /* el borde sigue frenando la marcha hacia ese lado */
+            hal_log("perception: el borde sigue tras %d retrocesos: se queda quieta (necesita ayuda)", EDGE_RETRIES);
+        if (!e) edge_streak = 0;
     } else if ((e && !edge_now) || ((e & 12) && !edge_side)) {
         /* un pie no sale de golpe: primero se pierde un sensor (borde adelante o atrás) y luego el otro. Cuando el
            borde que ya había pasa a ser un pie entero en el aire, se avisa otra vez (medido en el robot, 2026-10-30) */
         post_edge(e, "");
     }
+    if (!e && !edge_recheck && hal_now_ms() >= edge_hold_until) edge_streak = 0;   /* ya hay piso: se reinicia la cuenta */
+    if (s.lifted) edge_streak = 0;
     edge_now = e & 3;
     edge_side = e & 12;
     last = s;

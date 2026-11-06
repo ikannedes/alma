@@ -3443,6 +3443,12 @@ static void test_tilt(void)
     fake_log_clear();
     fake_run(2000);
     CHECK(fake_log_contains("REFLEJO EV_CLIFF"), "nariz abajo y sin piso adelante (el lado bajo): sí es borde");
+    /* 2026-11-06: en una orilla retrocedía sin parar (19 veces); tras 3 se queda quieta */
+    fake_run(20000);
+    CHECK(fake_log_contains("el borde sigue tras 3 retrocesos: se queda quieta"), "el borde sigue tras 3 retrocesos: se queda quieta");
+    fake_log_clear();
+    fake_run(10000);
+    CHECK(!fake_log_contains("REFLEJO EV_CLIFF"), "y ya no vuelve a retroceder mientras el borde no cambie");
     fake_sensors.tilt_a = 0;
     floors(1, 1, 1, 1);
     fake_run(4000);

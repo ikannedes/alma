@@ -169,6 +169,8 @@ static void log_event(const alma_ev *e)
    aire y va hacia el que tiene piso. Antes de moverse revisa que los pies de ese lado vean piso; si no, se queda quieta.
    Muy ladeada (≥ SETTLE_MAX_DEG) no se mueve nunca. Si lo decide o no, es de la red (bhv_settle) */
 #define SETTLE_MAX_DEG 35.0f
+#define SETTLE_MIN_DEG 12.0f
+#define SETTLE_AFTER_CLIFF_S 60.0
 static void settle_start(void)
 {
     static alma_motion_opt o;
@@ -179,7 +181,11 @@ static void settle_start(void)
     memset(&o, 0, sizeof o);
     o.hhmm0 = o.hhmm1 = -1;
     const char *why = NULL;
+    /* en una orilla, medio apoyada, el lado bajo puede ser justo el de la orilla (2026-11-06 00:19: con B 8° giró hacia
+       allá y el pie quedó sin piso). Solo con inclinación clara y sin un borde reciente */
     if (fabsf(ta) >= SETTLE_MAX_DEG || fabsf(tb) >= SETTLE_MAX_DEG) why = "muy ladeada: no se mueve";
+    else if (fabsf(ta) < SETTLE_MIN_DEG && fabsf(tb) < SETTLE_MIN_DEG) why = "poco ladeada: no hace falta";
+    else if (app_now_s() - A.last_ev_t[EV_CLIFF] < SETTLE_AFTER_CLIFF_S || perception_edges_now()) why = "hubo un borde hace poco";
     else if (fabsf(ta) >= fabsf(tb)) {
         int fwd = ta < 0;   /* nariz abajo: los de adelante tienen piso → avanza; cara arriba → retrocede */
         int p = fwd ? HAL_FLOOR_FRONT : HAL_FLOOR_REAR;
